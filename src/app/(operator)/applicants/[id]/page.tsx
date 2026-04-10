@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
@@ -133,7 +133,8 @@ function ScoreRing({ score }: { score: number | null }) {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function ApplicantDetailPage({ params }: { params: { id: string } }) {
+export default function ApplicantDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [app, setApp] = useState<ApplicationDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [queryError, setQueryError] = useState<string | null>(null);
@@ -159,7 +160,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
         cv_analyses(*),
         voice_calls(*, call_analyses(*))
       `)
-      .eq("id", params.id)
+      .eq("id", id)
       .single();
     if (error) {
       console.error("[applicant detail] query error:", error);
@@ -172,30 +173,30 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
     setLoading(false);
   }
 
-  useEffect(() => { loadApp(); }, [params.id]);
+  useEffect(() => { loadApp(); }, [id]);
 
   async function updateStage(stage: string) {
     setStageSaving(true);
-    await supabase.from("applications").update({ pipeline_stage: stage }).eq("id", params.id);
+    await supabase.from("applications").update({ pipeline_stage: stage }).eq("id", id);
     setApp((prev) => prev ? { ...prev, pipeline_stage: stage } : prev);
     setStageSaving(false);
   }
 
   async function saveNotes() {
     setSavingNotes(true);
-    await supabase.from("applications").update({ operator_notes: notes }).eq("id", params.id);
+    await supabase.from("applications").update({ operator_notes: notes }).eq("id", id);
     setSavingNotes(false);
   }
 
   async function releaseToPortal() {
     await supabase.from("applications").update({
       customer_decision: "pending", pipeline_stage: "presented",
-    }).eq("id", params.id);
+    }).eq("id", id);
     setApp((prev) => prev ? { ...prev, customer_decision: "pending", pipeline_stage: "presented" } : prev);
   }
 
   async function quickDecision(decision: "accepted" | "rejected") {
-    await supabase.from("applications").update({ pipeline_stage: decision }).eq("id", params.id);
+    await supabase.from("applications").update({ pipeline_stage: decision }).eq("id", id);
     setApp((prev) => prev ? { ...prev, pipeline_stage: decision } : prev);
   }
 
@@ -205,7 +206,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
       await fetch("/api/cv-analyse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ application_id: params.id }),
+        body: JSON.stringify({ application_id: id }),
       });
       await loadApp();
     } finally {
@@ -231,7 +232,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
             Fehler: {queryError}
           </p>
         )}
-        <p className="font-label text-[10px] text-outline">ID: {params.id}</p>
+        <p className="font-label text-[10px] text-outline">ID: {id}</p>
       </div>
     );
   }
