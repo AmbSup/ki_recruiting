@@ -190,15 +190,19 @@ export function FunnelsClient() {
                 <p className="font-label text-[10px] text-outline-variant mb-4">{funnel.job?.company.name}</p>
 
                 {/* URL */}
-                <div className="flex items-center gap-2 bg-surface-container rounded-lg px-3 py-2 mb-5">
+                <a
+                  href={getFunnelPublicUrl(funnel)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-2 bg-surface-container hover:bg-surface-container-high rounded-lg px-3 py-2 mb-5 transition-colors group/url"
+                >
                   <span className="material-symbols-outlined text-outline-variant text-sm">link</span>
-                  <span className="font-label text-[10px] text-outline truncate">
+                  <span className="font-label text-[10px] text-outline group-hover/url:text-primary truncate transition-colors">
                     {getFunnelPublicUrl(funnel)}
                   </span>
-                  {funnel.status === "active" && (
-                    <span className="material-symbols-outlined text-primary text-sm ml-auto">open_in_new</span>
-                  )}
-                </div>
+                  <span className="material-symbols-outlined text-primary text-sm ml-auto flex-shrink-0">open_in_new</span>
+                </a>
 
                 {/* Metrics */}
                 <div className="grid grid-cols-3 gap-3 mb-4">
