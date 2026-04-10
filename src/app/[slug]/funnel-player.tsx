@@ -154,7 +154,9 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           cv_url,
           answers,
         }),
-      }).catch(() => {/* best-effort */});
+      }).then(async (r) => {
+        if (!r.ok) console.error("[apply] failed:", await r.text());
+      }).catch((e) => console.error("[apply] network error:", e));
     })();
   }
 

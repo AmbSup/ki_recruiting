@@ -133,6 +133,13 @@ export function PipelineClient() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={load}
+              className="p-2.5 rounded-xl border border-outline-variant/20 text-on-surface-variant hover:bg-surface-container transition-colors"
+              title="Aktualisieren"
+            >
+              <span className="material-symbols-outlined text-sm">refresh</span>
+            </button>
             {/* View Toggle */}
             <div className="flex bg-surface-container-lowest border border-outline-variant/20 rounded-xl overflow-hidden">
               <button
