@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { runCvAnalysis } from "@/agents/cv-analyzer";
 
+export const maxDuration = 60;
+
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const { application_id } = await req.json();

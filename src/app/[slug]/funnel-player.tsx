@@ -141,6 +141,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         } catch { /* best-effort */ }
       }
 
+      // Save application, then trigger CV analysis in its own request
       fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -154,6 +155,16 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           cv_url,
           answers,
         }),
+      }).then(async (r) => {
+        if (!r.ok) return;
+        const { application_id } = await r.json();
+        if (!application_id) return;
+        // Trigger CV analysis as its own long-running request (maxDuration = 60s)
+        fetch("/api/cv-analyse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ application_id }),
+        }).catch(() => {/* best-effort */});
       }).catch(() => {/* best-effort */});
     })();
   }

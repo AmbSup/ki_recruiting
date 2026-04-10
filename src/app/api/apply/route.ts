@@ -1,125 +1,96 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { runCvAnalysis } from "@/agents/cv-analyzer";
+
+export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
   try {
-  const supabase = createAdminClient();
+    const supabase = createAdminClient();
 
-  const body = await req.json();
-  const { funnel_id, job_id, name, email, phone, city, cv_url, answers } = body;
+    const body = await req.json();
+    const { funnel_id, job_id, name, email, phone, city, cv_url, answers } = body;
 
-  if (!funnel_id || !job_id || !name || !email) {
-    return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
-  }
+    if (!funnel_id || !job_id || !name || !email) {
+      return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
+    }
 
-  // 1. Find or create applicant
-  let applicantId: string | null = null;
+    // 1. Find or create applicant
+    let applicantId: string | null = null;
 
-  const { data: existing } = await supabase
-    .from("applicants")
-    .select("id")
-    .eq("email", email)
-    .maybeSingle();
-
-  if (existing) {
-    applicantId = existing.id;
-    // Update phone/cv if provided
-    await supabase.from("applicants").update({
-      phone: phone || undefined,
-      cv_file_url: cv_url || undefined,
-      consent_given_at: new Date().toISOString(),
-    }).eq("id", applicantId);
-  } else {
-    const { data: newApplicant, error: insertErr } = await supabase
+    const { data: existing } = await supabase
       .from("applicants")
-      .insert({
-        full_name: name,
-        email,
-        phone: phone || null,
-        cv_file_url: cv_url || null,
-        consent_given_at: new Date().toISOString(),
-      })
       .select("id")
-      .single();
+      .eq("email", email)
+      .maybeSingle();
 
-    if (insertErr || !newApplicant) {
-      return NextResponse.json({ error: insertErr?.message ?? "Bewerber konnte nicht gespeichert werden" }, { status: 500 });
+    if (existing) {
+      applicantId = existing.id;
+      await supabase.from("applicants").update({
+        phone: phone || undefined,
+        cv_file_url: cv_url || undefined,
+        consent_given_at: new Date().toISOString(),
+      }).eq("id", applicantId);
+    } else {
+      const { data: newApplicant, error: insertErr } = await supabase
+        .from("applicants")
+        .insert({
+          full_name: name,
+          email,
+          phone: phone || null,
+          cv_file_url: cv_url || null,
+          consent_given_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
+
+      if (insertErr || !newApplicant) {
+        return NextResponse.json({ error: insertErr?.message ?? "Bewerber konnte nicht gespeichert werden" }, { status: 500 });
+      }
+      applicantId = newApplicant.id;
     }
-    applicantId = newApplicant.id;
-  }
 
-  if (!applicantId) {
-    return NextResponse.json({ error: "Bewerber ID fehlt" }, { status: 500 });
-  }
-
-  // 2. Find or create application (unique per applicant+job)
-  let applicationId: string | null = null;
-
-  const { data: existingApp } = await supabase
-    .from("applications")
-    .select("id")
-    .eq("applicant_id", applicantId)
-    .eq("job_id", job_id)
-    .maybeSingle();
-
-  if (existingApp) {
-    applicationId = existingApp.id;
-    // Update responses and cv if re-applying
-    await supabase.from("applications").update({
-      funnel_responses: answers ?? {},
-      funnel_id,
-    }).eq("id", applicationId);
-  } else {
-    const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
-      applicant_id: applicantId,
-      job_id,
-      funnel_id,
-      funnel_responses: answers ?? {},
-      source: "direct",
-    }).select("id").single();
-
-    if (appicErr || !newApplication) {
-      return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
+    if (!applicantId) {
+      return NextResponse.json({ error: "Bewerber ID fehlt" }, { status: 500 });
     }
-    applicationId = newApplication.id;
-  }
 
-  if (!applicationId) {
-    return NextResponse.json({ error: "Bewerbungs-ID fehlt" }, { status: 500 });
-  }
+    // 2. Find or create application (unique per applicant+job)
+    let applicationId: string | null = null;
 
-  // Shim for backward compat with CV analysis below
-  const newApplication = { id: applicationId };
+    const { data: existingApp } = await supabase
+      .from("applications")
+      .select("id")
+      .eq("applicant_id", applicantId)
+      .eq("job_id", job_id)
+      .maybeSingle();
 
-  // 3. Trigger CV analysis in background (fire-and-forget)
-  const { data: job } = await supabase
-    .from("jobs")
-    .select("title, requirements, must_qualifications, nice_to_have_qualifications, ko_criteria, hard_skills, soft_skills, ideal_candidate, scoring_criteria")
-    .eq("id", job_id)
-    .single();
+    if (existingApp) {
+      applicationId = existingApp.id;
+      await supabase.from("applications").update({
+        funnel_responses: answers ?? {},
+        funnel_id,
+      }).eq("id", applicationId);
+    } else {
+      const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
+        applicant_id: applicantId,
+        job_id,
+        funnel_id,
+        funnel_responses: answers ?? {},
+        source: "direct",
+      }).select("id").single();
 
-  if (job) {
-    runCvAnalysis({
-      application_id: newApplication.id,
-      applicant_name: name,
-      cv_file_url: cv_url ?? null,
-      job: {
-        title: job.title,
-        requirements: job.requirements ?? null,
-        must_qualifications: job.must_qualifications ?? null,
-        nice_to_have_qualifications: job.nice_to_have_qualifications ?? null,
-        ko_criteria: job.ko_criteria ?? null,
-        hard_skills: job.hard_skills ?? null,
-        soft_skills: job.soft_skills ?? null,
-        ideal_candidate: job.ideal_candidate ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        scoring_criteria: (job.scoring_criteria as any) ?? [],
-      },
-    }).catch((e) => console.error("[apply] CV analysis failed:", e));
-  }
+      if (appicErr || !newApplication) {
+        return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
+      }
+      applicationId = newApplication.id;
+    }
 
-  return NextResponse.json({ success: true });
+    if (!applicationId) {
+      return NextResponse.json({ error: "Bewerbungs-ID fehlt" }, { status: 500 });
+    }
+
+    // Return application_id so client can trigger CV analysis in a separate request
+    return NextResponse.json({ success: true, application_id: applicationId });
+
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[apply] uncaught error:", e);

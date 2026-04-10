@@ -174,7 +174,7 @@ export async function runCvAnalysis(options: {
   }
 
   // Save cv_analysis record
-  await supabase.from("cv_analyses").insert({
+  const { error: insertErr } = await supabase.from("cv_analyses").insert({
     application_id: options.application_id,
     raw_text: null,
     structured_data: result.structured_data,
@@ -184,11 +184,13 @@ export async function runCvAnalysis(options: {
     summary: result.summary,
     model_version: "claude-sonnet-4-6",
   });
+  if (insertErr) console.error("[cv-analyzer] insert error:", insertErr);
 
   // Update application: overall_score, score_breakdown, pipeline_stage
-  await supabase.from("applications").update({
+  const { error: updateErr } = await supabase.from("applications").update({
     overall_score: result.match_score,
     score_breakdown: result.score_breakdown,
     pipeline_stage: "cv_analyzed",
   }).eq("id", options.application_id);
+  if (updateErr) console.error("[cv-analyzer] update error:", updateErr);
 }
