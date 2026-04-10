@@ -662,18 +662,41 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 ) : null}
               </div>
             ) : (
-              <div className="flex flex-col items-center py-12 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center mb-4">
+              <div className="flex flex-col items-center py-10 text-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-surface-container flex items-center justify-center">
                   <span className="material-symbols-outlined text-2xl text-outline-variant">psychology</span>
                 </div>
-                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1">
-                  Noch keine Analyse
-                </p>
-                <p className="font-body text-sm text-on-surface-variant">
-                  {app.applicant.cv_file_url
-                    ? "Klicke auf \"Analyse starten\" oben."
-                    : "Kein Lebenslauf vorhanden — Analyse trotzdem möglich."}
-                </p>
+                <div>
+                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1">
+                    Noch keine Analyse
+                  </p>
+                  <p className="font-body text-sm text-on-surface-variant">
+                    {app.applicant.cv_file_url
+                      ? "Lebenslauf liegt vor — Analyse starten."
+                      : "Kein Lebenslauf vorhanden — Analyse trotzdem möglich."}
+                  </p>
+                </div>
+                {app.applicant.cv_file_url && (
+                  <a
+                    href={app.applicant.cv_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors font-label text-xs font-bold"
+                  >
+                    <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+                    Lebenslauf öffnen
+                  </a>
+                )}
+                <button
+                  onClick={startCvAnalysis}
+                  disabled={analysingCv}
+                  className="flex items-center gap-2 bg-primary text-on-primary px-5 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60"
+                >
+                  {analysingCv
+                    ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                    : <span className="material-symbols-outlined text-sm">psychology</span>}
+                  {analysingCv ? "Analysiere…" : "Analyse starten"}
+                </button>
               </div>
             )}
           </div>
