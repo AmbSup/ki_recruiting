@@ -100,7 +100,7 @@ export function PipelineClient() {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("applications")
       .select(`
         id, pipeline_stage, overall_score, customer_decision, applied_at,
@@ -108,6 +108,7 @@ export function PipelineClient() {
         job:jobs(title, company:companies(name))
       `)
       .order("applied_at", { ascending: false });
+    if (error) console.error("[pipeline] load error:", error);
     setApplications((data ?? []) as unknown as Application[]);
     setLoading(false);
   }, []);
