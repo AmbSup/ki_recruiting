@@ -44,10 +44,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: appicErr.message }, { status: 500 });
   }
 
-  // 3. Increment funnel submissions
-  await supabase.rpc("increment_funnel_submissions", { p_funnel_id: funnel_id }).catch(() => {
-    // fallback if rpc doesn't exist
-  });
-
   return NextResponse.json({ success: true });
 }
