@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -126,20 +125,18 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     advance();
     setSubmitting(false);
 
-    // Upload CV to Supabase Storage (if provided), then call API
+    // Upload CV via server route (admin key), then call /api/apply
     (async () => {
       let cv_url: string | null = null;
       if (cvFile) {
         try {
-          const supabase = createClient();
-          const ext = cvFile.name.split(".").pop() ?? "pdf";
-          const path = `${funnel.id}/${Date.now()}.${ext}`;
-          const { error: upErr } = await supabase.storage
-            .from("cvs")
-            .upload(path, cvFile, { contentType: cvFile.type, upsert: false });
-          if (!upErr) {
-            const { data: urlData } = supabase.storage.from("cvs").getPublicUrl(path);
-            cv_url = urlData.publicUrl;
+          const fd = new FormData();
+          fd.append("file", cvFile);
+          fd.append("funnel_id", funnel.id);
+          const res = await fetch("/api/upload-cv", { method: "POST", body: fd });
+          if (res.ok) {
+            const json = await res.json();
+            cv_url = json.url ?? null;
           }
         } catch { /* best-effort */ }
       }
