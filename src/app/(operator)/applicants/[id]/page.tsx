@@ -136,6 +136,7 @@ function ScoreRing({ score }: { score: number | null }) {
 export default function ApplicantDetailPage({ params }: { params: { id: string } }) {
   const [app, setApp] = useState<ApplicationDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [queryError, setQueryError] = useState<string | null>(null);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
   const [analysingCv, setAnalysingCv] = useState(false);
@@ -143,7 +144,7 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
   const supabase = createClient();
 
   async function loadApp() {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("applications")
       .select(`
         *,
@@ -160,6 +161,10 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
       `)
       .eq("id", params.id)
       .single();
+    if (error) {
+      console.error("[applicant detail] query error:", error);
+      setQueryError(error.message);
+    }
     if (data) {
       setApp(data as unknown as ApplicationDetail);
       setNotes(data.operator_notes ?? "");
@@ -219,8 +224,14 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
   }
   if (!app) {
     return (
-      <div className="px-8 pt-10">
+      <div className="px-8 pt-10 space-y-2">
         <p className="font-body text-on-surface-variant">Bewerbung nicht gefunden.</p>
+        {queryError && (
+          <p className="font-body text-xs text-error bg-error-container/20 px-3 py-2 rounded-lg">
+            Fehler: {queryError}
+          </p>
+        )}
+        <p className="font-label text-[10px] text-outline">ID: {params.id}</p>
       </div>
     );
   }
