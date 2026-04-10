@@ -116,25 +116,17 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   }
 
   async function handleSubmit() {
-    if (!form.name || !form.email || !form.phone) return;
+    if (!form.name || !form.email) return;
     if (!consent) return;
     setSubmitting(true);
 
-    let cv_url: string | null = null;
+    // Advance immediately for good UX — save in background
+    setSubmitted(true);
+    advance();
+    setSubmitting(false);
 
-    // Upload CV if provided (via separate Supabase storage endpoint)
-    if (cvFile) {
-      const formData = new FormData();
-      formData.append("file", cvFile);
-      formData.append("funnel_id", funnel.id);
-      const uploadRes = await fetch("/api/apply/upload", { method: "POST", body: formData }).catch(() => null);
-      if (uploadRes?.ok) {
-        const json = await uploadRes.json();
-        cv_url = json.url ?? null;
-      }
-    }
-
-    const res = await fetch("/api/apply", {
+    // Fire-and-forget API call
+    fetch("/api/apply", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -142,18 +134,12 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         job_id: funnel.job_id,
         name: form.name,
         email: form.email,
-        phone: form.phone,
+        phone: form.phone || null,
         city: form.city || null,
-        cv_url,
+        cv_url: null,
         answers,
       }),
-    });
-
-    setSubmitting(false);
-    if (res.ok) {
-      setSubmitted(true);
-      advance();
-    }
+    }).catch(() => {/* best-effort */});
   }
 
   if (!currentPage) {
@@ -388,7 +374,7 @@ function BlockRenderer({
 
   // ── CONTACT FORM ──
   if (block.type === "contact_form") {
-    const isValid = form.name && form.email && form.phone && consent;
+    const isValid = form.name && form.email && consent;
     return (
       <div className="px-5 py-6">
         <h2 className="font-black text-lg text-gray-900 mb-4">{c.headline || "Deine Kontaktdaten"}</h2>
