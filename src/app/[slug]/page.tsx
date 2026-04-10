@@ -43,10 +43,6 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
     await supabase.from("funnels").update({ views: (funnel.views ?? 0) + 1 }).eq("id", funnel.id);
   } catch { /* ignore */ }
 
-  return (
-    <FunnelPlayer
-      funnel={funnel as Parameters<typeof FunnelPlayer>[0]["funnel"]}
-      pages={(pages ?? []) as Parameters<typeof FunnelPlayer>[0]["pages"]}
-    />
-  );
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return <FunnelPlayer funnel={funnel as any} pages={(pages ?? []) as any} />;
 }
