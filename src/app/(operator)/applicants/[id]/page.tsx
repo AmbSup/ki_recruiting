@@ -4,11 +4,19 @@ import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 
+type ScoreBreakdown = {
+  hard_skills: number;
+  soft_skills: number;
+  experience: number;
+  education: number;
+  ko_criteria_passed: boolean;
+};
+
 type ApplicationDetail = {
   id: string;
   pipeline_stage: string;
   overall_score: number | null;
-  score_breakdown: Record<string, number>;
+  score_breakdown: ScoreBreakdown | null;
   customer_decision: string;
   operator_notes: string | null;
   funnel_responses: Record<string, string[]>;
@@ -75,10 +83,11 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
   const [loading, setLoading] = useState(true);
   const [notes, setNotes] = useState("");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [analysingCv, setAnalysingCv] = useState(false);
   const supabase = createClient();
 
-  useEffect(() => {
-    supabase
+  async function loadApp() {
+    const { data } = await supabase
       .from("applications")
       .select(`
         *,
@@ -89,15 +98,29 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
         voice_calls(*, call_analyses(*))
       `)
       .eq("id", params.id)
-      .single()
-      .then(({ data }) => {
-        if (data) {
-          setApp(data as unknown as ApplicationDetail);
-          setNotes(data.operator_notes ?? "");
-        }
-        setLoading(false);
+      .single();
+    if (data) {
+      setApp(data as unknown as ApplicationDetail);
+      setNotes(data.operator_notes ?? "");
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => { loadApp(); }, [params.id]);
+
+  async function startCvAnalysis() {
+    setAnalysingCv(true);
+    try {
+      await fetch("/api/cv-analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application_id: params.id }),
       });
-  }, [params.id]);
+      await loadApp();
+    } finally {
+      setAnalysingCv(false);
+    }
+  }
 
   async function updateStage(stage: string) {
     await supabase.from("applications").update({ pipeline_stage: stage }).eq("id", params.id);
@@ -236,7 +259,19 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
       <div className="grid grid-cols-12 gap-5">
         {/* CV Analysis */}
         <div className="col-span-12 md:col-span-7 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-          <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">KI CV-Analyse</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">KI CV-Analyse</h3>
+            <button
+              onClick={startCvAnalysis}
+              disabled={analysingCv}
+              className="flex items-center gap-1.5 bg-primary text-on-primary px-3 py-1.5 rounded-xl font-label text-[10px] font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60"
+            >
+              {analysingCv
+                ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
+                : <span className="material-symbols-outlined text-xs">psychology</span>}
+              {analysingCv ? "Analysiere…" : cvAnalysis ? "Neu analysieren" : "Analyse starten"}
+            </button>
+          </div>
           {cvAnalysis ? (
             <div className="space-y-5">
               {/* Match Score */}
@@ -249,6 +284,45 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
                   <div className="bg-primary h-full rounded-full" style={{ width: `${cvAnalysis.match_score ?? 0}%` }} />
                 </div>
               </div>
+
+              {/* Score Breakdown */}
+              {app.score_breakdown && (
+                <div>
+                  <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-3">Score-Aufschlüsselung</span>
+                  <div className="grid grid-cols-2 gap-x-6 gap-y-2.5">
+                    {(["hard_skills", "soft_skills", "experience", "education"] as const).map((key) => {
+                      const labels: Record<string, string> = {
+                        hard_skills: "Fachkenntnisse",
+                        soft_skills: "Soft Skills",
+                        experience: "Erfahrung",
+                        education: "Ausbildung",
+                      };
+                      const val = app.score_breakdown?.[key] ?? 0;
+                      return (
+                        <div key={key}>
+                          <div className="flex justify-between mb-1">
+                            <span className="font-label text-[10px] text-on-surface-variant">{labels[key]}</span>
+                            <span className="font-label text-[10px] font-bold text-on-surface">{val}%</span>
+                          </div>
+                          <div className="w-full bg-outline-variant/20 h-1.5 rounded-full">
+                            <div className="bg-secondary h-full rounded-full" style={{ width: `${val}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div className={`mt-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-[10px] font-bold ${
+                    app.score_breakdown.ko_criteria_passed
+                      ? "bg-primary-container/40 text-on-primary-container"
+                      : "bg-error-container/40 text-error"
+                  }`}>
+                    <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {app.score_breakdown.ko_criteria_passed ? "check_circle" : "cancel"}
+                    </span>
+                    KO-Kriterien: {app.score_breakdown.ko_criteria_passed ? "Bestanden" : "Nicht bestanden"}
+                  </div>
+                </div>
+              )}
 
               {/* Summary */}
               {cvAnalysis.summary && (
@@ -316,9 +390,13 @@ export default function ApplicantDetailPage({ params }: { params: { id: string }
             </div>
           ) : (
             <div className="flex flex-col items-center py-10 text-center">
-              <span className="material-symbols-outlined text-4xl text-outline-variant mb-3">description</span>
-              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Keine CV-Analyse</p>
-              <p className="font-body text-sm text-on-surface-variant mt-1">Wird automatisch nach CV-Upload erstellt.</p>
+              <span className="material-symbols-outlined text-4xl text-outline-variant mb-3">psychology</span>
+              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Noch keine Analyse</p>
+              <p className="font-body text-sm text-on-surface-variant mt-1">
+                {app.applicant.cv_file_url
+                  ? "Klicke auf \"Analyse starten\" um den Lebenslauf zu analysieren."
+                  : "Kein Lebenslauf vorhanden. Trotzdem analysieren?"}
+              </p>
             </div>
           )}
         </div>

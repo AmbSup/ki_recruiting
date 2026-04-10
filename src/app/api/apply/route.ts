@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { runCvAnalysis } from "@/agents/cv-analyzer";
 
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
@@ -52,16 +53,43 @@ export async function POST(req: NextRequest) {
   }
 
   // 2. Insert application
-  const { error: appicErr } = await supabase.from("applications").insert({
+  const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
     applicant_id: applicantId,
     job_id,
     funnel_id,
     funnel_responses: answers ?? {},
     source: "direct",
-  });
+  }).select("id").single();
 
-  if (appicErr) {
-    return NextResponse.json({ error: appicErr.message }, { status: 500 });
+  if (appicErr || !newApplication) {
+    return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
+  }
+
+  // 3. Trigger CV analysis in background (fire-and-forget)
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("title, requirements, must_qualifications, nice_to_have_qualifications, ko_criteria, hard_skills, soft_skills, ideal_candidate, scoring_criteria")
+    .eq("id", job_id)
+    .single();
+
+  if (job) {
+    runCvAnalysis({
+      application_id: newApplication.id,
+      applicant_name: name,
+      cv_file_url: cv_url ?? null,
+      job: {
+        title: job.title,
+        requirements: job.requirements ?? null,
+        must_qualifications: job.must_qualifications ?? null,
+        nice_to_have_qualifications: job.nice_to_have_qualifications ?? null,
+        ko_criteria: job.ko_criteria ?? null,
+        hard_skills: job.hard_skills ?? null,
+        soft_skills: job.soft_skills ?? null,
+        ideal_candidate: job.ideal_candidate ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        scoring_criteria: (job.scoring_criteria as any) ?? [],
+      },
+    }).catch((e) => console.error("[apply] CV analysis failed:", e));
   }
 
   return NextResponse.json({ success: true });
