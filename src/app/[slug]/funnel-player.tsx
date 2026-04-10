@@ -130,45 +130,31 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
       let cv_url: string | null = null;
       if (cvFile) {
         try {
-          console.log("[submit] uploading CV…");
           const fd = new FormData();
           fd.append("file", cvFile);
           fd.append("funnel_id", funnel.id);
           const res = await fetch("/api/upload-cv", { method: "POST", body: fd });
-          console.log("[submit] upload status:", res.status);
           if (res.ok) {
             const json = await res.json();
             cv_url = json.url ?? null;
-            console.log("[submit] cv_url set:", cv_url);
-          } else {
-            console.error("[submit] upload failed:", await res.text());
           }
-        } catch (e) {
-          console.error("[submit] upload exception:", e);
-        }
+        } catch { /* best-effort */ }
       }
 
-      console.log("[submit] calling /api/apply, job_id:", funnel.job_id, "cv_url:", cv_url);
-      try {
-        const r = await fetch("/api/apply", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            funnel_id: funnel.id,
-            job_id: funnel.job_id,
-            name: form.name,
-            email: form.email,
-            phone: form.phone || null,
-            city: form.city || null,
-            cv_url,
-            answers,
-          }),
-        });
-        const text = await r.text();
-        console.log("[submit] apply response:", r.status, text);
-      } catch (e) {
-        console.error("[submit] apply exception:", e);
-      }
+      fetch("/api/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          funnel_id: funnel.id,
+          job_id: funnel.job_id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone || null,
+          city: form.city || null,
+          cv_url,
+          answers,
+        }),
+      }).catch(() => {/* best-effort */});
     })();
   }
 

@@ -7,9 +7,7 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
 
   const body = await req.json();
-  console.log("[apply] received body keys:", Object.keys(body));
   const { funnel_id, job_id, name, email, phone, city, cv_url, answers } = body;
-  console.log("[apply] funnel_id:", funnel_id, "job_id:", job_id, "name:", name, "email:", email);
 
   if (!funnel_id || !job_id || !name || !email) {
     return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
@@ -55,18 +53,44 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Bewerber ID fehlt" }, { status: 500 });
   }
 
-  // 2. Insert application
-  const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
-    applicant_id: applicantId,
-    job_id,
-    funnel_id,
-    funnel_responses: answers ?? {},
-    source: "direct",
-  }).select("id").single();
+  // 2. Find or create application (unique per applicant+job)
+  let applicationId: string | null = null;
 
-  if (appicErr || !newApplication) {
-    return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
+  const { data: existingApp } = await supabase
+    .from("applications")
+    .select("id")
+    .eq("applicant_id", applicantId)
+    .eq("job_id", job_id)
+    .maybeSingle();
+
+  if (existingApp) {
+    applicationId = existingApp.id;
+    // Update responses and cv if re-applying
+    await supabase.from("applications").update({
+      funnel_responses: answers ?? {},
+      funnel_id,
+    }).eq("id", applicationId);
+  } else {
+    const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
+      applicant_id: applicantId,
+      job_id,
+      funnel_id,
+      funnel_responses: answers ?? {},
+      source: "direct",
+    }).select("id").single();
+
+    if (appicErr || !newApplication) {
+      return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
+    }
+    applicationId = newApplication.id;
   }
+
+  if (!applicationId) {
+    return NextResponse.json({ error: "Bewerbungs-ID fehlt" }, { status: 500 });
+  }
+
+  // Shim for backward compat with CV analysis below
+  const newApplication = { id: applicationId };
 
   // 3. Trigger CV analysis in background (fire-and-forget)
   const { data: job } = await supabase
