@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
 
 type Application = {
   id: string;
@@ -56,7 +57,7 @@ function ScoreBadge({ score }: { score: number | null }) {
 
 function KanbanCard({ app }: { app: Application }) {
   return (
-    <div className="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(45,52,51,0.06)] hover:shadow-[0_8px_24px_-4px_rgba(45,52,51,0.1)] hover:-translate-y-0.5 transition-all cursor-pointer border border-outline-variant/10 group">
+    <Link href={`/applicants/${app.id}`} className="block bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(45,52,51,0.06)] hover:shadow-[0_8px_24px_-4px_rgba(45,52,51,0.1)] hover:-translate-y-0.5 transition-all border border-outline-variant/10 group">
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-[10px] font-bold text-on-primary-container flex-shrink-0">
@@ -87,7 +88,7 @@ function KanbanCard({ app }: { app: Application }) {
           <span className="material-symbols-outlined text-outline-variant text-xs">arrow_forward</span>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }
 
