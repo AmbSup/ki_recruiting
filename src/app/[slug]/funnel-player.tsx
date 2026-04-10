@@ -116,7 +116,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   }
 
   async function handleSubmit() {
-    if (!form.name || !form.email) return;
+    if (!form.name || !form.email || !form.phone) return;
     if (!consent) return;
     setSubmitting(true);
 
@@ -374,7 +374,7 @@ function BlockRenderer({
 
   // ── CONTACT FORM ──
   if (block.type === "contact_form") {
-    const isValid = form.name && form.email && consent;
+    const isValid = form.name && form.email && form.phone && consent;
     return (
       <div className="px-5 py-6">
         <h2 className="font-black text-lg text-gray-900 mb-4">{c.headline || "Deine Kontaktdaten"}</h2>
@@ -439,6 +439,11 @@ function BlockRenderer({
             {consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden."}
           </span>
         </button>
+        {!isValid && (form.name || form.email || form.phone) && (
+          <p className="text-xs text-red-500 mb-3 text-center">
+            {!form.name ? "Bitte Namen eingeben." : !form.email ? "Bitte E-Mail eingeben." : !form.phone ? "Bitte Telefonnummer eingeben — wird für dein Bewerbungsgespräch benötigt." : "Bitte Datenschutz zustimmen."}
+          </p>
+        )}
         <button
           onClick={onSubmit}
           disabled={!isValid || submitting}
