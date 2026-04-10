@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  n8n:
+    image: n8nio/n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=password
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - WEBHOOK_URL=http://localhost:5678/
+    volumes:
+      - ./n8n_data:/home/node/.n8n
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: ki-recruiting-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ki_recruiting
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: ki-recruiting-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:

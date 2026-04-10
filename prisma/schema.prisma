@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// --- Auth (NextAuth) ---
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Users & Roles ---
+
+enum Role {
+  ADMIN
+  RECRUITER
+  HIRING_MANAGER
+  CANDIDATE
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(RECRUITER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts     Account[]
+  sessions     Session[]
+  jobPostings  JobPosting[]
+  aiAnalyses   AiAnalysis[]
+}
+
+// --- Jobs ---
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+  ARCHIVED
+}
+
+model JobPosting {
+  id           String    @id @default(cuid())
+  title        String
+  description  String    @db.Text
+  requirements String?   @db.Text
+  location     String?
+  salaryMin    Int?
+  salaryMax    Int?
+  status       JobStatus @default(DRAFT)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  createdBy   User   @relation(fields: [createdById], references: [id])
+  createdById String
+
+  applications Application[]
+}
+
+// --- Applications ---
+
+enum ApplicationStatus {
+  NEW
+  SCREENING
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+model Application {
+  id          String            @id @default(cuid())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  resumeUrl   String?
+  coverLetter String?           @db.Text
+  status      ApplicationStatus @default(NEW)
+  score       Int?              // KI-Score 0-100
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  jobPosting   JobPosting @relation(fields: [jobPostingId], references: [id])
+  jobPostingId String
+
+  aiAnalyses AiAnalysis[]
+}
+
+// --- KI-Analysen ---
+
+enum AnalysisType {
+  RESUME_SCREENING
+  COVER_LETTER
+  SKILL_MATCH
+  INTERVIEW_QUESTIONS
+}
+
+model AiAnalysis {
+  id            String       @id @default(cuid())
+  type          AnalysisType
+  prompt        String       @db.Text
+  result        String       @db.Text
+  tokensUsed    Int?
+  createdAt     DateTime     @default(now())
+
+  application   Application? @relation(fields: [applicationId], references: [id])
+  applicationId String?
+  createdBy     User?        @relation(fields: [createdById], references: [id])
+  createdById   String?
+}
