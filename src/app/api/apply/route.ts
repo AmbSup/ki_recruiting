@@ -3,10 +3,13 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { runCvAnalysis } from "@/agents/cv-analyzer";
 
 export async function POST(req: NextRequest) {
+  try {
   const supabase = createAdminClient();
 
   const body = await req.json();
+  console.log("[apply] received body keys:", Object.keys(body));
   const { funnel_id, job_id, name, email, phone, city, cv_url, answers } = body;
+  console.log("[apply] funnel_id:", funnel_id, "job_id:", job_id, "name:", name, "email:", email);
 
   if (!funnel_id || !job_id || !name || !email) {
     return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
@@ -93,4 +96,9 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ success: true });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error("[apply] uncaught error:", e);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
