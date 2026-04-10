@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -120,26 +121,44 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     if (!consent) return;
     setSubmitting(true);
 
-    // Advance immediately for good UX — save in background
+    // Advance immediately for good UX
     setSubmitted(true);
     advance();
     setSubmitting(false);
 
-    // Fire-and-forget API call
-    fetch("/api/apply", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        funnel_id: funnel.id,
-        job_id: funnel.job_id,
-        name: form.name,
-        email: form.email,
-        phone: form.phone || null,
-        city: form.city || null,
-        cv_url: null,
-        answers,
-      }),
-    }).catch(() => {/* best-effort */});
+    // Upload CV to Supabase Storage (if provided), then call API
+    (async () => {
+      let cv_url: string | null = null;
+      if (cvFile) {
+        try {
+          const supabase = createClient();
+          const ext = cvFile.name.split(".").pop() ?? "pdf";
+          const path = `${funnel.id}/${Date.now()}.${ext}`;
+          const { error: upErr } = await supabase.storage
+            .from("cvs")
+            .upload(path, cvFile, { contentType: cvFile.type, upsert: false });
+          if (!upErr) {
+            const { data: urlData } = supabase.storage.from("cvs").getPublicUrl(path);
+            cv_url = urlData.publicUrl;
+          }
+        } catch { /* best-effort */ }
+      }
+
+      fetch("/api/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          funnel_id: funnel.id,
+          job_id: funnel.job_id,
+          name: form.name,
+          email: form.email,
+          phone: form.phone || null,
+          city: form.city || null,
+          cv_url,
+          answers,
+        }),
+      }).catch(() => {/* best-effort */});
+    })();
   }
 
   if (!currentPage) {
