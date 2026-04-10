@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,7 +82,6 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   const [submitted, setSubmitted] = useState(false);
   const [autoAdvance, setAutoAdvance] = useState<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const supabase = createClient();
 
   const currentPage = pages[pageIdx];
 
@@ -117,43 +115,45 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     });
   }
 
-  async function handleSubmit(block: Block) {
+  async function handleSubmit() {
     if (!form.name || !form.email || !form.phone) return;
     if (!consent) return;
     setSubmitting(true);
 
     let cv_url: string | null = null;
+
+    // Upload CV if provided (via separate Supabase storage endpoint)
     if (cvFile) {
-      const { data } = await supabase.storage
-        .from("cv-uploads")
-        .upload(`${funnel.id}/${Date.now()}_${cvFile.name}`, cvFile);
-      if (data) {
-        const { data: urlData } = supabase.storage.from("cv-uploads").getPublicUrl(data.path);
-        cv_url = urlData.publicUrl;
+      const formData = new FormData();
+      formData.append("file", cvFile);
+      formData.append("funnel_id", funnel.id);
+      const uploadRes = await fetch("/api/apply/upload", { method: "POST", body: formData }).catch(() => null);
+      if (uploadRes?.ok) {
+        const json = await uploadRes.json();
+        cv_url = json.url ?? null;
       }
     }
 
-    // 1. Upsert applicant by email
-    const { data: applicant } = await supabase
-      .from("applicants")
-      .upsert({ full_name: form.name, email: form.email, phone: form.phone || null, cv_file_url: cv_url, consent_given_at: new Date().toISOString() }, { onConflict: "email" })
-      .select("id")
-      .single();
-
-    // 2. Create application
-    if (applicant) {
-      await supabase.from("applications").insert({
-        applicant_id: applicant.id,
-        job_id: funnel.job_id,
+    const res = await fetch("/api/apply", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
         funnel_id: funnel.id,
-        funnel_responses: answers,
-        source: "funnel",
-      });
-    }
+        job_id: funnel.job_id,
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        city: form.city || null,
+        cv_url,
+        answers,
+      }),
+    });
 
-    setSubmitted(true);
     setSubmitting(false);
-    advance();
+    if (res.ok) {
+      setSubmitted(true);
+      advance();
+    }
   }
 
   if (!currentPage) {
@@ -201,7 +201,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
             cvFile={cvFile}
             onCvChange={setCvFile}
             submitting={submitting}
-            onSubmit={() => handleSubmit(block)}
+            onSubmit={handleSubmit}
             submitted={submitted}
           />
         ))}
@@ -247,7 +247,7 @@ function BlockRenderer({
   consent: boolean; onConsentChange: (v: boolean) => void;
   consentText: string | null;
   cvFile: File | null; onCvChange: (f: File | null) => void;
-  submitting: boolean; onSubmit: () => void; submitted: boolean;
+  submitting: boolean; onSubmit: () => Promise<void>; submitted: boolean;
 }) {
   const c = block.content;
 
