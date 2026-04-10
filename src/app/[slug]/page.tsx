@@ -8,7 +8,7 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
 
   const { data: funnel } = await supabase
     .from("funnels")
-    .select("id, name, slug, status, funnel_type, external_url, branding, consent_text, job_id, job:jobs(title, company:companies(name))")
+    .select("id, name, slug, status, funnel_type, external_url, branding, consent_text, job_id, views, job:jobs(title, company:companies(name))")
     .eq("slug", slug)
     .single();
 
@@ -38,8 +38,10 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
     .eq("funnel_id", funnel.id)
     .order("page_order");
 
-  // Track view
-  await supabase.rpc("increment_funnel_views", { funnel_id: funnel.id }).catch(() => {});
+  // Track view (best-effort, ignore errors)
+  try {
+    await supabase.from("funnels").update({ views: (funnel.views ?? 0) + 1 }).eq("id", funnel.id);
+  } catch { /* ignore */ }
 
   return (
     <FunnelPlayer
