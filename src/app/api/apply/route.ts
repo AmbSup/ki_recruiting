@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     job_id,
     funnel_id,
     funnel_responses: answers ?? {},
-    source: "funnel",
+    source: "direct",
   });
 
   if (appicErr) {
