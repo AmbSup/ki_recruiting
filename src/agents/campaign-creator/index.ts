@@ -5,6 +5,19 @@ import { generateCreatives } from '@/agents/creative-generator';
 import { getFunnelPublicUrl } from '@/lib/funnel-url';
 import type { CampaignCreateOptions, MetaTargeting } from '@/types/meta-ads';
 
+// Meta region key IDs for Austrian states (Bundesländer)
+const AT_REGION_KEYS: Record<string, string> = {
+  'Wien':             '657',
+  'Niederösterreich': '658',
+  'Oberösterreich':   '659',
+  'Steiermark':       '660',
+  'Tirol':            '661',
+  'Salzburg':         '662',
+  'Kärnten':          '663',
+  'Vorarlberg':       '664',
+  'Burgenland':       '665',
+};
+
 // Interest clusters per job category
 const INTEREST_CLUSTERS: Record<string, { id: string; name: string }[]> = {
   Elektriker: [
@@ -71,9 +84,13 @@ function buildTargetingVariants(
   }
 ): Array<{ name: string; targeting: MetaTargeting }> {
   const interests = INTEREST_CLUSTERS[jobCategory] ?? [];
+  const mappedRegions = regions
+    .map((r) => AT_REGION_KEYS[r])
+    .filter(Boolean)
+    .map((key) => ({ key }));
   const geoLocations: MetaTargeting['geo_locations'] =
-    regions.length > 0
-      ? { countries: ['AT'], regions: regions.map((r) => ({ key: r })) }
+    mappedRegions.length > 0
+      ? { countries: ['AT'], regions: mappedRegions }
       : { countries: ['AT'] };
 
   const ageMin = options.age_min ?? 22;
