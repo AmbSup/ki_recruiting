@@ -230,13 +230,20 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
     }
   );
 
+  const isEmployment = specialAdCategories.includes('EMPLOYMENT');
+
   for (const variant of targetingVariants) {
+    // EMPLOYMENT special category prohibits detailed targeting (interests/behaviors)
+    const targeting = isEmployment
+      ? { ...variant.targeting, interests: undefined, behaviors: undefined }
+      : variant.targeting;
+
     const metaAdSet = await createMetaAdSet({
       campaign_id: metaCampaign.id,
       name: `${campaignName} – ${variant.name}`,
       status: 'PAUSED',
       daily_budget_cents: Math.floor(options.daily_budget_cents / targetingVariants.length),
-      targeting: variant.targeting,
+      targeting,
     });
 
     // Save ad set to DB

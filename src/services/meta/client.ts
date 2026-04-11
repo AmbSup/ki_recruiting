@@ -42,6 +42,8 @@ export async function metaFetch<T>(
   const json = await res.json();
 
   if (json.error) {
+    console.error('[Meta API] Error on', endpoint, '| body:', JSON.stringify(body ?? {}));
+    console.error('[Meta API] Response:', JSON.stringify(json.error));
     throw new MetaApiError(
       json.error.message ?? 'Meta API error',
       json.error.code ?? res.status,

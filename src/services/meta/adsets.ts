@@ -33,6 +33,7 @@ export async function createMetaAdSet(
       targeting: params.targeting,
       optimization_goal: params.optimization_goal ?? 'LEAD_GENERATION',
       billing_event: params.billing_event ?? 'IMPRESSIONS',
+      destination_type: 'WEBSITE',
       ...(params.bid_amount_cents ? { bid_amount: params.bid_amount_cents } : {}),
       ...(params.promoted_object ? { promoted_object: params.promoted_object } : {}),
     },
