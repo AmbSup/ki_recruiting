@@ -24,8 +24,8 @@ export async function createMetaCampaign(
       name: params.name,
       objective: params.objective,
       status: params.status,
-      daily_budget: params.daily_budget_cents,
       special_ad_categories: params.special_ad_categories ?? [],
+      // Budget is managed at ad set level — no campaign-level budget
     },
   });
 }

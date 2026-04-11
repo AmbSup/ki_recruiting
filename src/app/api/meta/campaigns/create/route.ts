@@ -78,8 +78,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result, { status: 201 });
   } catch (err) {
     console.error('[/api/meta/campaigns/create]', err);
+    const message = err instanceof Error ? err.message : 'Internal server error';
+    const raw = (err as { raw?: unknown })?.raw;
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : 'Internal server error' },
+      { error: message, ...(raw ? { meta_error: raw } : {}) },
       { status: 500 }
     );
   }
