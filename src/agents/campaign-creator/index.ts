@@ -173,12 +173,12 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
       objective: objective as string,
       status: 'PAUSED',
       daily_budget_cents: options.daily_budget_cents,
-      ...(options.funnel_id ? { funnel_id: options.funnel_id } : {}),
+      funnel_id: options.funnel_id ?? null,
     })
     .select('id')
     .single();
 
-  if (campaignError || !dbCampaign) throw new Error('Failed to save campaign to DB');
+  if (campaignError || !dbCampaign) throw new Error(`Failed to save campaign to DB: ${campaignError?.message}`);
 
   // 3. Generate or use provided creatives
   let creatives;
