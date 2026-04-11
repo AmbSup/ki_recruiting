@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
     gender?: 'ALL' | 'MALE' | 'FEMALE';
     placement_type?: 'automatic' | 'manual';
     placements?: string[];
+    destination_url?: string;
     primary_text?: string;
     headline?: string;
     cta_type?: string;
@@ -66,6 +67,7 @@ export async function POST(req: NextRequest) {
       gender: body.gender,
       placement_type: body.placement_type,
       placements: body.placements,
+      destination_url: body.destination_url,
       primary_text: body.primary_text,
       headline: body.headline,
       cta_type: body.cta_type,

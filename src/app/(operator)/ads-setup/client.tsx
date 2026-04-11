@@ -114,7 +114,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
     company_id: "",
     job_category: "",
     campaign_name: "",
-    objective: "LEAD_GENERATION",
+    objective: "OUTCOME_LEADS",
     special_category: "EMPLOYMENT",
     regions: [],
     age_min: 18,
@@ -217,6 +217,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
         gender: form.gender,
         placement_type: form.placement_type,
         placements: form.placements,
+        destination_url: form.destination_url || undefined,
         primary_text: form.primary_text || undefined,
         headline: form.headline || undefined,
         cta_type: form.cta_type,
@@ -331,12 +332,13 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                 </Field>
                 <Field label="Ziel *">
                   <select value={form.objective} onChange={(e) => update({ objective: e.target.value })} className={inputClass}>
-                    <option value="LEAD_GENERATION">Lead Generation</option>
-                    <option value="LINK_CLICKS">Traffic</option>
-                    <option value="CONVERSIONS">Conversions</option>
-                    <option value="MESSAGES">Messages</option>
+                    <option value="OUTCOME_LEADS">Leads (empfohlen)</option>
+                    <option value="OUTCOME_TRAFFIC">Traffic</option>
+                    <option value="OUTCOME_SALES">Sales / Conversions</option>
+                    <option value="OUTCOME_ENGAGEMENT">Engagement</option>
+                    <option value="OUTCOME_AWARENESS">Awareness</option>
                   </select>
-                  <p className={hintClass}>Für Recruiting-Funnels empfohlen: Lead Generation</p>
+                  <p className={hintClass}>Für Recruiting-Funnels empfohlen: Leads</p>
                 </Field>
                 <Field label="Sonderkategorie">
                   <select value={form.special_category} onChange={(e) => update({ special_category: e.target.value })} className={inputClass}>

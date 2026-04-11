@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { createMetaCampaign } from '@/services/meta/campaigns';
 import { createMetaAdSet } from '@/services/meta/adsets';
 import { generateCreatives } from '@/agents/creative-generator';
+import { getFunnelPublicUrl } from '@/lib/funnel-url';
 import type { CampaignCreateOptions, MetaTargeting } from '@/types/meta-ads';
 
 // Interest clusters per job category
@@ -135,14 +136,27 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
 
   if (jobError || !job) throw new Error(`Job not found: ${options.job_id}`);
 
+  // Resolve destination URL from funnel if not explicitly provided
+  let destinationUrl = options.destination_url;
+  if (!destinationUrl && options.funnel_id) {
+    const { data: funnelData } = await supabase
+      .from('funnels')
+      .select('slug, funnel_type, external_url')
+      .eq('id', options.funnel_id)
+      .single();
+    if (funnelData) {
+      destinationUrl = getFunnelPublicUrl(funnelData as { slug: string; funnel_type: string; external_url: string | null });
+    }
+  }
+
   const campaignName = options.campaign_name ?? `[KI] ${job.title} – ${job.location ?? 'AT'}`;
-  const objective = (options.objective ?? 'LEAD_GENERATION') as import('@/types/meta-ads').MetaAdObjective;
+  const objective = (options.objective ?? 'OUTCOME_LEADS') as import('@/types/meta-ads').MetaAdObjective;
   const specialAdCategories = options.special_category ? [options.special_category] : [];
 
   // 1. Create Meta campaign
   const metaCampaign = await createMetaCampaign({
     name: campaignName,
-    objective: objective as 'LEAD_GENERATION',
+    objective: objective as 'OUTCOME_LEADS',
     status: 'PAUSED',
     daily_budget_cents: options.daily_budget_cents,
     special_ad_categories: specialAdCategories,
@@ -159,6 +173,7 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
       objective: objective as string,
       status: 'PAUSED',
       daily_budget_cents: options.daily_budget_cents,
+      ...(options.funnel_id ? { funnel_id: options.funnel_id } : {}),
     })
     .select('id')
     .single();
@@ -238,6 +253,7 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
         cta_type: c.cta_type,
         variant_label: labels[i],
         generated_by_ai: true,
+        ...(destinationUrl ? { destination_url: destinationUrl } : {}),
       });
     }
   }

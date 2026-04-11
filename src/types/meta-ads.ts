@@ -11,11 +11,12 @@ export type MetaCampaignStatus =
   | 'WITH_ISSUES';
 
 export type MetaAdObjective =
-  | 'LEAD_GENERATION'
-  | 'LINK_CLICKS'
-  | 'REACH'
-  | 'BRAND_AWARENESS'
-  | 'CONVERSIONS';
+  | 'OUTCOME_LEADS'
+  | 'OUTCOME_SALES'
+  | 'OUTCOME_ENGAGEMENT'
+  | 'OUTCOME_AWARENESS'
+  | 'OUTCOME_TRAFFIC'
+  | 'OUTCOME_APP_PROMOTION';
 
 export type OptimizationAction =
   | 'budget_increased'
@@ -242,6 +243,7 @@ export interface CampaignCreateOptions {
   gender?: 'ALL' | 'MALE' | 'FEMALE';
   placement_type?: 'automatic' | 'manual';
   placements?: string[];
+  destination_url?: string;
   primary_text?: string;
   headline?: string;
   cta_type?: string;
