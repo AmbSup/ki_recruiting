@@ -150,11 +150,16 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
           setFunnel(f);
           const jobTitle = f.job?.title ?? "";
           const campaignName = `[KI] ${jobTitle} – Österreich`;
+          // Supabase may return nested joins as array or object — handle both
+          const rawCompany = f.job?.company as unknown;
+          const companyId = Array.isArray(rawCompany)
+            ? (rawCompany as { id: string }[])[0]?.id ?? ""
+            : (rawCompany as { id: string } | null)?.id ?? "";
           setForm((prev) => ({
             ...prev,
             funnel_id: f.id,
             job_id: f.job_id,
-            company_id: f.job?.company.id ?? "",
+            company_id: companyId,
             campaign_name: campaignName,
             utm_campaign: slugify(campaignName),
             destination_url: getFunnelPublicUrl(f),
@@ -568,10 +573,14 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                         if (!selected) return;
                         const jobTitle = selected.job?.title ?? "";
                         const campaignName = `[KI] ${jobTitle} – Österreich`;
+                        const rawC = selected.job?.company as unknown;
+                        const cId = Array.isArray(rawC)
+                          ? (rawC as { id: string }[])[0]?.id ?? ""
+                          : (rawC as { id: string } | null)?.id ?? "";
                         update({
                           funnel_id: selected.id,
                           job_id: selected.job_id,
-                          company_id: selected.job?.company.id ?? "",
+                          company_id: cId,
                           destination_url: getFunnelPublicUrl(selected),
                           campaign_name: campaignName,
                           utm_campaign: slugify(campaignName),
