@@ -66,11 +66,28 @@ function migratePageToBlocks(page: FunnelPage): Block[] {
 
 // ─── Facebook App Events helper ───────────────────────────────────────────────
 
-type FbWindow = Window & { FB?: { AppEvents?: { logEvent: (name: string, value?: number | null, params?: Record<string, string | number>) => void } } };
+type FbWindow = Window & { FB?: { init: (opts: Record<string, unknown>) => void; AppEvents?: { logEvent: (name: string, value?: number | null, params?: Record<string, string | number>) => void } } };
 
 function fbAppEvent(name: string, value?: number | null, params?: Record<string, string | number>) {
   if (typeof window === "undefined") return;
   (window as FbWindow).FB?.AppEvents?.logEvent(name, value ?? null, params ?? {});
+}
+
+function loadFbSdk(appId: string) {
+  if (typeof window === "undefined") return;
+  if (document.getElementById("facebook-jssdk")) return;
+  const js = document.createElement("script");
+  js.id = "facebook-jssdk";
+  js.src = "https://connect.facebook.net/en_US/sdk.js";
+  js.onload = () => {
+    (window as FbWindow).FB?.init({
+      appId,
+      autoLogAppEvents: true,
+      xfbml: false,
+      version: "v21.0",
+    });
+  };
+  document.body.appendChild(js);
 }
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -94,12 +111,19 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
   const currentPage = pages[pageIdx];
 
-  // Fire ViewContent App Event once on mount
+  // Load FB SDK and fire ViewContent App Event once on mount
   useEffect(() => {
-    fbAppEvent('fb_mobile_content_view', null, {
-      fb_content_id: funnel.id,
-      fb_content_type: 'job',
-    });
+    const appId = process.env.NEXT_PUBLIC_META_APP_ID;
+    if (appId) {
+      loadFbSdk(appId);
+      // Wait briefly for SDK to initialize before firing first event
+      setTimeout(() => {
+        fbAppEvent('fb_mobile_content_view', null, {
+          fb_content_id: funnel.id,
+          fb_content_type: 'job',
+        });
+      }, 2000);
+    }
   }, []);
 
   // Auto-advance loading screen + fire Contact event when contact form is shown
