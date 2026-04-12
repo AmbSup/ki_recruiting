@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
+import Script from "next/script";
 import { FunnelPlayer } from "./funnel-player";
 
 export default async function FunnelPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -43,6 +44,23 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
     await supabase.from("funnels").update({ views: (funnel.views ?? 0) + 1 }).eq("id", funnel.id);
   } catch { /* ignore */ }
 
+  const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return <FunnelPlayer funnel={funnel as any} pages={(pages ?? []) as any} />;
+  return (
+    <>
+      {pixelId && (
+        <Script id="meta-pixel" strategy="afterInteractive">{`
+          !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+          n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
+          n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
+          t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
+          document,'script','https://connect.facebook.net/en_US/fbevents.js');
+          fbq('init', '${pixelId}');
+          fbq('track', 'PageView');
+        `}</Script>
+      )}
+      <FunnelPlayer funnel={funnel as any} pages={(pages ?? []) as any} />
+    </>
+  );
 }

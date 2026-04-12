@@ -159,6 +159,10 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         if (!r.ok) return;
         const { application_id } = await r.json();
         if (!application_id) return;
+        // Fire Meta Pixel conversion event
+        if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
+          (window as Window & { fbq?: (...args: unknown[]) => void }).fbq!("track", "SubmitApplication");
+        }
         // Trigger CV analysis as its own long-running request (maxDuration = 60s)
         fetch("/api/cv-analyse", {
           method: "POST",
