@@ -60,7 +60,7 @@ async function generateFluxPrompt(
     messages: [{
       role: 'user',
       content: `Create a single concise image generation prompt (max 2 sentences) for a Facebook recruitment ad background photo.
-Job: ${jobTitle}${category ? ` (${category})` : ''}
+Job: ${jobTitle}${category ? ` (${category})` : ''}${description ? `\nContext: ${description.slice(0, 200)}` : ''}
 Scene hint: ${styleHint}
 Rules: photorealistic, professional, NO text or words in image, bright modern lighting, wide diversity of people, cinematic quality.
 Return ONLY the prompt, nothing else.`,
@@ -117,10 +117,10 @@ export async function POST(
 
     const supabase = createAdminClient();
 
-    // 1. Fetch job
+    // 1. Fetch job + company logo
     const { data: job, error: jobError } = await supabase
       .from('jobs')
-      .select('id, title, category, description, location')
+      .select('id, title, category, description, location, benefits, company:companies(logo_url)')
       .eq('id', jobId)
       .single();
 
@@ -128,16 +128,25 @@ export async function POST(
       return NextResponse.json({ error: 'Job not found' }, { status: 404 });
     }
 
+    // Parse up to 3 benefits from the benefits text field
+    const benefitLines: string[] = job.benefits
+      ? (job.benefits as string).split('\n').map((l: string) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean).slice(0, 3)
+      : [];
+
+    const logoUrl: string | undefined = (job.company as { logo_url?: string } | null)?.logo_url ?? undefined;
+
     // 2. Generate FLUX prompt via Claude
-    const aiPrompt = await generateFluxPrompt(job.title, job.category, job.description, style);
+    const aiPrompt = await generateFluxPrompt(job.title, job.category as string | null, job.description as string | null, style);
 
     // 3. Generate image with FLUX
     const backgroundUrl = await runFlux(aiPrompt);
 
-    // 4. Compose: background + text overlay
+    // 4. Compose: background + branding overlay (logo + benefits + title + CTA)
     const composedBuffer = await composeAdImage(backgroundUrl, {
       title: job.title,
-      location: job.location ?? undefined,
+      location: (job.location as string | null) ?? undefined,
+      benefits: benefitLines,
+      logoUrl,
     });
 
     // 5. Upload to Supabase Storage
