@@ -45,6 +45,7 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
   } catch { /* ignore */ }
 
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
+  const appId = process.env.NEXT_PUBLIC_META_APP_ID;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (
@@ -58,6 +59,25 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
           document,'script','https://connect.facebook.net/en_US/fbevents.js');
           fbq('init', '${pixelId}');
           fbq('track', 'PageView');
+        `}</Script>
+      )}
+      {appId && (
+        <Script id="fb-sdk" strategy="afterInteractive">{`
+          window.fbAsyncInit = function() {
+            FB.init({
+              appId: '${appId}',
+              autoLogAppEvents: true,
+              xfbml: false,
+              version: 'v21.0'
+            });
+          };
+          (function(d,s,id){
+            var js,fjs=d.getElementsByTagName(s)[0];
+            if(d.getElementById(id))return;
+            js=d.createElement(s);js.id=id;
+            js.src="https://connect.facebook.net/en_US/sdk.js";
+            fjs.parentNode.insertBefore(js,fjs);
+          }(document,'script','facebook-jssdk'));
         `}</Script>
       )}
       <FunnelPlayer funnel={funnel as any} pages={(pages ?? []) as any} />

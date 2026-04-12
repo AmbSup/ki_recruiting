@@ -64,6 +64,15 @@ function migratePageToBlocks(page: FunnelPage): Block[] {
   return [];
 }
 
+// ─── Facebook App Events helper ───────────────────────────────────────────────
+
+type FbWindow = Window & { FB?: { AppEvents?: { logEvent: (name: string, value?: number | null, params?: Record<string, string | number>) => void } } };
+
+function fbAppEvent(name: string, value?: number | null, params?: Record<string, string | number>) {
+  if (typeof window === "undefined") return;
+  (window as FbWindow).FB?.AppEvents?.logEvent(name, value ?? null, params ?? {});
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; pages: FunnelPage[] }) {
@@ -85,7 +94,15 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
   const currentPage = pages[pageIdx];
 
-  // Auto-advance loading screen
+  // Fire ViewContent App Event once on mount
+  useEffect(() => {
+    fbAppEvent('fb_mobile_content_view', null, {
+      fb_content_id: funnel.id,
+      fb_content_type: 'job',
+    });
+  }, []);
+
+  // Auto-advance loading screen + fire Contact event when contact form is shown
   useEffect(() => {
     if (!currentPage) return;
     const hasLoading = currentPage.blocks.some((b) => b.type === "loading_screen");
@@ -94,6 +111,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
       setAutoAdvance(t);
       return () => clearTimeout(t);
     }
+    const hasContactForm = currentPage.blocks.some((b) => b.type === "contact_form");
+    if (hasContactForm) fbAppEvent('Contact');
   }, [pageIdx]);
 
   function advance() {
@@ -163,6 +182,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
           (window as Window & { fbq?: (...args: unknown[]) => void }).fbq!("track", "SubmitApplication");
         }
+        // Fire Facebook App Event
+        fbAppEvent('fb_mobile_complete_registration', null, { fb_registration_method: 'funnel' });
         // Trigger CV analysis as its own long-running request (maxDuration = 60s)
         fetch("/api/cv-analyse", {
           method: "POST",
