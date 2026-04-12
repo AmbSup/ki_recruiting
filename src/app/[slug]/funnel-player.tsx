@@ -202,9 +202,11 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         if (!r.ok) return;
         const { application_id } = await r.json();
         if (!application_id) return;
-        // Fire Meta Pixel conversion event
+        // Fire Meta Pixel standard events
         if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
-          (window as Window & { fbq?: (...args: unknown[]) => void }).fbq!("track", "SubmitApplication");
+          const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq!;
+          fbq("track", "Lead");
+          fbq("track", "CompleteRegistration");
         }
         // Fire Facebook App Event
         fbAppEvent('fb_mobile_complete_registration', null, { fb_registration_method: 'funnel' });
