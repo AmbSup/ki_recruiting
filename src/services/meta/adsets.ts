@@ -10,7 +10,7 @@ export interface MetaAdSetCreateParams {
   optimization_goal?: string;
   billing_event?: string;
   bid_amount_cents?: number;
-  promoted_object?: { page_id?: string; pixel_id?: string };
+  promoted_object?: { page_id?: string; pixel_id?: string; custom_event_type?: string };
 }
 
 export interface MetaAdSetResponse {
@@ -34,8 +34,15 @@ export async function createMetaAdSet(
       optimization_goal: params.optimization_goal ?? 'LEAD_GENERATION',
       billing_event: params.billing_event ?? 'IMPRESSIONS',
       destination_type: 'WEBSITE',
+      bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
       ...(params.bid_amount_cents ? { bid_amount: params.bid_amount_cents } : {}),
-      ...(params.promoted_object ? { promoted_object: params.promoted_object } : {}),
+      ...(params.promoted_object
+        ? {
+            promoted_object: params.promoted_object.pixel_id
+              ? { ...params.promoted_object, custom_event_type: params.promoted_object.custom_event_type ?? 'LEAD' }
+              : params.promoted_object,
+          }
+        : {}),
     },
   });
 }

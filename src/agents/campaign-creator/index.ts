@@ -238,12 +238,23 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
       ? { ...variant.targeting, interests: undefined, behaviors: undefined }
       : variant.targeting;
 
+    const pixelId = process.env.META_PIXEL_ID;
+    const pageId = process.env.META_PAGE_ID;
+
     const metaAdSet = await createMetaAdSet({
       campaign_id: metaCampaign.id,
       name: `${campaignName} – ${variant.name}`,
       status: 'PAUSED',
       daily_budget_cents: Math.floor(options.daily_budget_cents / targetingVariants.length),
       targeting,
+      ...(pixelId || pageId
+        ? {
+            promoted_object: {
+              ...(pixelId ? { pixel_id: pixelId } : {}),
+              ...(pageId ? { page_id: pageId } : {}),
+            },
+          }
+        : {}),
     });
 
     // Save ad set to DB

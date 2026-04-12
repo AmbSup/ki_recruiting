@@ -187,7 +187,7 @@ export default function CampaignsPage() {
                       {st.label}
                     </span>
                     <a
-                      href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${process.env.NEXT_PUBLIC_META_AD_ACCOUNT_ID ?? '2548572985537368'}&selected_campaign_ids=${campaign.id}`}
+                      href={`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${process.env.NEXT_PUBLIC_META_AD_ACCOUNT_ID ?? '933017306388057'}&selected_campaign_ids=${campaign.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="material-symbols-outlined text-outline hover:text-on-surface text-xl"

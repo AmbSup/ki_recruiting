@@ -1,5 +1,5 @@
 const META_API_BASE = 'https://graph.facebook.com/v21.0';
-export const AD_ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID ?? 'act_2548572985537368';
+export const AD_ACCOUNT_ID = process.env.META_AD_ACCOUNT_ID ?? 'act_933017306388057';
 
 interface MetaFetchOptions {
   method?: 'GET' | 'POST' | 'DELETE';

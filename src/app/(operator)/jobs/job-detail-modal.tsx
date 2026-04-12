@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { JobAdImages } from "./job-ad-images";
 
 type JobDetail = {
   id: string;
@@ -48,6 +49,7 @@ type Props = { jobId: string | null; onClose: () => void };
 export function JobDetailModal({ jobId, onClose }: Props) {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"details" | "images">("details");
 
   useEffect(() => {
     if (!jobId) return;
@@ -115,9 +117,31 @@ export function JobDetailModal({ jobId, onClose }: Props) {
           </button>
         </div>
 
+        {/* Tab bar */}
+        <div className="flex gap-1 px-6 pb-0 pt-1 border-b border-outline-variant/20 flex-shrink-0">
+          {(["details", "images"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex items-center gap-1.5 px-4 py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${
+                activeTab === tab
+                  ? "border-primary text-primary"
+                  : "border-transparent text-outline hover:text-on-surface"
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">
+                {tab === "details" ? "description" : "image"}
+              </span>
+              {tab === "details" ? "Details" : "Ad Bilder"}
+            </button>
+          ))}
+        </div>
+
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-          {loading ? (
+          {activeTab === "images" && job ? (
+            <JobAdImages jobId={job.id} jobTitle={job.title} jobLocation={job.location} />
+          ) : loading ? (
             <div className="space-y-3">
               {[100, 80, 60, 100, 90, 70].map((w, i) => (
                 <div key={i} className="h-4 bg-surface-container-high rounded animate-pulse" style={{ width: `${Math.min(w, 100)}%` }} />
