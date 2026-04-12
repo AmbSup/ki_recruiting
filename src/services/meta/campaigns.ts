@@ -30,6 +30,36 @@ export async function createMetaCampaign(
   });
 }
 
+export interface MetaCampaignListItem {
+  id: string;
+  name: string;
+  status: string;
+  objective: string;
+  daily_budget?: string;
+  created_time: string;
+  insights?: {
+    data: Array<{
+      impressions?: string;
+      clicks?: string;
+      spend?: string;
+      actions?: Array<{ action_type: string; value: string }>;
+    }>;
+  };
+}
+
+export async function listMetaCampaigns(): Promise<MetaCampaignListItem[]> {
+  const result = await metaFetch<{ data: MetaCampaignListItem[] }>(
+    `${AD_ACCOUNT_ID}/campaigns`,
+    {
+      params: {
+        fields: 'id,name,status,objective,daily_budget,created_time,insights.date_preset(last_30d){impressions,clicks,spend,actions}',
+        limit: '50',
+      },
+    }
+  );
+  return result.data ?? [];
+}
+
 export async function updateMetaCampaignStatus(
   metaCampaignId: string,
   status: MetaCampaignStatus
