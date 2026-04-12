@@ -12,7 +12,7 @@ type AdImage = {
   created_at: string;
 };
 
-const STYLE_OPTIONS = ["Büro", "Produktion", "Außendienst", "Team"];
+const STYLE_OPTIONS = ["Auto", "Büro", "Produktion", "Außendienst", "Team"];
 
 type Props = {
   jobId: string;
@@ -25,7 +25,7 @@ export function JobAdImages({ jobId, jobTitle, jobLocation }: Props) {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [selectedStyle, setSelectedStyle] = useState("Büro");
+  const [selectedStyle, setSelectedStyle] = useState("Auto");
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +46,7 @@ export function JobAdImages({ jobId, jobTitle, jobLocation }: Props) {
       const res = await fetch(`/api/jobs/${jobId}/images/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ style: selectedStyle }),
+        body: JSON.stringify({ style: selectedStyle === "Auto" ? undefined : selectedStyle }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Fehler");
@@ -95,7 +95,7 @@ export function JobAdImages({ jobId, jobTitle, jobLocation }: Props) {
       <div className="flex flex-wrap items-center gap-3">
         {/* Style selector */}
         <div className="flex items-center gap-2">
-          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Stil</span>
+          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Szene</span>
           <div className="flex gap-1">
             {STYLE_OPTIONS.map((s) => (
               <button

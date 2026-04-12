@@ -5,12 +5,44 @@ import { composeAdImage } from '@/services/meta/image-composer';
 
 export const maxDuration = 60;
 
-const STYLE_HINTS: Record<string, string> = {
+const JOB_SCENE_MAP: Array<{ keywords: string[]; scene: string }> = [
+  { keywords: ['filialleiter', 'einzelhandel', 'retail', 'verkauf', 'markt', 'shop', 'store', 'kassierer'],
+    scene: 'modern retail store interior, professional store manager between product shelves, staff interaction, bright shop lighting' },
+  { keywords: ['küche', 'koch', 'restaurant', 'gastronomie', 'hotel', 'service', 'kellner', 'gastro'],
+    scene: 'professional restaurant kitchen or dining area, chef or service staff at work, warm ambience' },
+  { keywords: ['bau', 'bauleiter', 'elektriker', 'installateur', 'monteur', 'handwerk', 'tischler', 'maler', 'schlosser'],
+    scene: 'construction site or workshop, skilled tradesperson with tools, safety equipment, professional environment' },
+  { keywords: ['pflege', 'krankenpflege', 'altenpflege', 'sozial', 'betreuer', 'arzt', 'arzthelfer'],
+    scene: 'modern healthcare facility, caring professional with patient or colleague, bright clinical environment' },
+  { keywords: ['lager', 'logistik', 'fahrer', 'transport', 'spedition', 'kommissionier'],
+    scene: 'modern warehouse or logistics center, worker with scanner or forklift, organized shelving' },
+  { keywords: ['entwickler', 'software', 'it', 'programmierer', 'data', 'devops', 'ux', 'designer'],
+    scene: 'modern tech office, developer at multiple screens, collaborative open workspace, natural light' },
+  { keywords: ['buchhalter', 'steuer', 'controlling', 'finanzen', 'rechnungswesen', 'bilanz'],
+    scene: 'professional office with financial documents, accountant at desk with computer, clean modern workspace' },
+  { keywords: ['vertrieb', 'sales', 'marketing', 'außendienst', 'kundenberater', 'account'],
+    scene: 'professional in client meeting or on the road, business presentation, confident sales environment' },
+  { keywords: ['produktion', 'fertigung', 'industrie', 'maschine', 'qualität', 'cnc', 'operator'],
+    scene: 'clean modern production facility, technician operating machinery, industrial environment with safety gear' },
+  { keywords: ['assistent', 'sekretär', 'verwaltung', 'office', 'sachbearbeiter', 'büro'],
+    scene: 'bright modern office, professional at desk, organized workspace, natural light' },
+];
+
+// Manual style overrides (shown as optional UI buttons)
+const MANUAL_STYLES: Record<string, string> = {
   'Büro':         'modern office environment, professional desk, bright workspace',
   'Produktion':   'industrial production facility, clean factory floor, machinery',
   'Außendienst':  'outdoor professional field work, road, vehicle, nature background',
   'Team':         'diverse team collaboration, group of professionals, meeting room',
 };
+
+function detectScene(jobTitle: string, category: string | null): string {
+  const text = `${jobTitle} ${category ?? ''}`.toLowerCase();
+  for (const entry of JOB_SCENE_MAP) {
+    if (entry.keywords.some((k) => text.includes(k))) return entry.scene;
+  }
+  return 'professional at work in a modern workplace, bright natural light, diverse team';
+}
 
 async function generateFluxPrompt(
   jobTitle: string,
@@ -19,7 +51,8 @@ async function generateFluxPrompt(
   style: string | undefined
 ): Promise<string> {
   const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-  const styleHint = style ? STYLE_HINTS[style] ?? style : (STYLE_HINTS['Büro']);
+  // Use manual override if provided, otherwise auto-detect from job title/category
+  const styleHint = style ? (MANUAL_STYLES[style] ?? style) : detectScene(jobTitle, category);
 
   const msg = await anthropic.messages.create({
     model: 'claude-haiku-4-5-20251001',
