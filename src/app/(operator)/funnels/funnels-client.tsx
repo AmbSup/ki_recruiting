@@ -18,7 +18,7 @@ type Funnel = {
   submissions: number;
   published_at: string | null;
   created_at: string;
-  job: { id: string; title: string; company: { name: string } } | null;
+  job: { id: string; title: string; selected_ad_image_url: string | null; company: { name: string } } | null;
 };
 
 const statusConfig = {
@@ -44,7 +44,7 @@ export function FunnelsClient() {
       .from("funnels")
       .select(`
         id, name, slug, status, funnel_type, external_url, views, submissions, published_at, created_at,
-        job:jobs(id, title, company:companies(name))
+        job:jobs(id, title, selected_ad_image_url, company:companies(name))
       `)
       .order("created_at", { ascending: false });
     setFunnels((data ?? []) as unknown as Funnel[]);
@@ -146,8 +146,26 @@ export function FunnelsClient() {
             return (
               <div
                 key={funnel.id}
-                className="md:col-span-6 xl:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] hover:bg-surface-bright transition-all group"
+                className="md:col-span-6 xl:col-span-4 bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] hover:bg-surface-bright transition-all group"
               >
+                {/* Ad image banner */}
+                {funnel.job?.selected_ad_image_url && (
+                  <div className="relative h-28 bg-surface-container-high overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={funnel.job.selected_ad_image_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-primary/90 rounded-full px-2 py-0.5">
+                      <span className="material-symbols-outlined text-on-primary text-xs">campaign</span>
+                      <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Ad Bild</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-6">
                 {/* Status + Actions */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-2">
@@ -241,6 +259,7 @@ export function FunnelsClient() {
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>
                   </a>
                 </div>
+                </div>{/* /p-6 */}
               </div>
             );
           })}
