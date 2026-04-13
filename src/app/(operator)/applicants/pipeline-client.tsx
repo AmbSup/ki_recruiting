@@ -42,6 +42,13 @@ const stages: { key: Stage; label: string; icon: string; color: string; headerBg
   { key: "rejected",       label: "Abgelehnt",     icon: "cancel",        color: "border-error-container/50",      headerBg: "bg-error-container/10" },
 ];
 
+function formatAppliedAt(iso: string) {
+  const d = new Date(iso);
+  const date = d.toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit", year: "numeric" });
+  const time = d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
+  return `${date} · ${time}`;
+}
+
 function ScoreBadge({ score }: { score: number | null }) {
   if (score === null) return null;
   const color =
@@ -79,7 +86,7 @@ function KanbanCard({ app }: { app: Application }) {
 
       <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10">
         <span className="font-label text-[10px] text-outline">
-          {new Date(app.applied_at).toLocaleDateString("de-AT", { day: "2-digit", month: "short" })}
+          {formatAppliedAt(app.applied_at)}
         </span>
         <div className="flex items-center gap-1">
           {app.applicant.phone && (
@@ -113,7 +120,20 @@ export function PipelineClient() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Realtime: reload whenever a new application is inserted
+    const supabase = createClient();
+    const channel = supabase
+      .channel("applications-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "applications" },
+        () => load()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load]);
 
   const byStage = (stage: Stage) => applications.filter((a) => a.pipeline_stage === stage);
 
@@ -276,7 +296,7 @@ export function PipelineClient() {
                       <ScoreBadge score={app.overall_score} />
                     </div>
                     <div className="col-span-2 font-label text-[10px] text-outline">
-                      {new Date(app.applied_at).toLocaleDateString("de-AT")}
+                      {formatAppliedAt(app.applied_at)}
                     </div>
                     <div className="col-span-1 flex justify-end">
                       <a href={`/applicants/${app.id}`} className="material-symbols-outlined text-outline hover:text-primary transition-colors text-lg">
