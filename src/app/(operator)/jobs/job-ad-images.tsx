@@ -192,63 +192,59 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, selectedUrl, onSelec
           {images.map((img) => {
             const isSelected = img.url === selectedUrl;
             return (
-              <div
-                key={img.id}
-                className={`group relative aspect-square rounded-xl overflow-hidden bg-surface-container-high cursor-pointer ring-2 transition-all ${
-                  isSelected ? "ring-primary shadow-lg" : "ring-transparent"
-                }`}
-                onClick={() => onSelect?.(img.url)}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={img.url}
-                  alt={`Ad Bild – ${jobTitle}`}
-                  className="w-full h-full object-cover"
-                />
+              <div key={img.id} className="flex flex-col gap-1.5">
+                {/* Image */}
+                <div
+                  className={`relative aspect-square rounded-xl overflow-hidden bg-surface-container-high cursor-pointer ring-2 transition-all ${
+                    isSelected ? "ring-primary shadow-lg" : "ring-transparent"
+                  }`}
+                  onClick={() => onSelect?.(img.url)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={img.url}
+                    alt={`Ad Bild – ${jobTitle}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Selected badge */}
+                  {isSelected && (
+                    <div className="absolute top-2 left-2 flex items-center gap-1 bg-primary rounded-full px-2 py-0.5">
+                      <span className="material-symbols-outlined text-on-primary text-xs">check_circle</span>
+                      <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Aktiv</span>
+                    </div>
+                  )}
+                  {/* AI badge */}
+                  {img.ai_generated && (
+                    <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-inverse-surface/70 rounded-full px-2 py-0.5">
+                      <span className="material-symbols-outlined text-inverse-on-surface text-xs">auto_awesome</span>
+                    </div>
+                  )}
+                </div>
 
-                {/* Hover overlay */}
-                <div className="absolute inset-0 bg-inverse-surface/0 group-hover:bg-inverse-surface/50 transition-all opacity-0 group-hover:opacity-100 flex items-start justify-between p-2">
-                  {/* Select for Ads button */}
+                {/* Action bar — always visible */}
+                <div className="flex gap-1.5">
                   <button
                     onClick={(e) => selectForAds(e, isSelected ? null : img.url)}
                     disabled={savingSelect === img.url}
-                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                    className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 ${
                       isSelected
                         ? "bg-primary text-on-primary"
-                        : "bg-surface text-on-surface hover:bg-primary hover:text-on-primary"
+                        : "bg-surface-container-high text-on-surface-variant hover:bg-primary hover:text-on-primary"
                     }`}
-                    title={isSelected ? "Auswahl aufheben" : "Für Ads auswählen"}
                   >
-                    <span className="material-symbols-outlined text-base">
-                      {savingSelect === img.url ? "hourglass_empty" : "check_circle"}
+                    <span className="material-symbols-outlined text-sm">
+                      {savingSelect === img.url ? "hourglass_empty" : isSelected ? "check_circle" : "radio_button_unchecked"}
                     </span>
+                    {isSelected ? "Aktiv" : "Wählen"}
                   </button>
-
-                  {/* Delete button */}
                   <button
                     onClick={(e) => deleteImage(e, img.id, img.url)}
-                    className="w-8 h-8 rounded-full bg-error flex items-center justify-center shadow-lg"
+                    className="w-8 flex items-center justify-center rounded-lg bg-surface-container-high text-error hover:bg-error hover:text-on-error transition-colors"
                     title="Löschen"
                   >
-                    <span className="material-symbols-outlined text-on-error text-base">delete</span>
+                    <span className="material-symbols-outlined text-sm">delete</span>
                   </button>
                 </div>
-
-                {/* Selected badge */}
-                {isSelected && (
-                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-primary rounded-full px-2 py-0.5">
-                    <span className="material-symbols-outlined text-on-primary text-xs">check_circle</span>
-                    <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Aktiv</span>
-                  </div>
-                )}
-
-                {/* AI badge */}
-                {img.ai_generated && !isSelected && (
-                  <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-inverse-surface/70 rounded-full px-2 py-0.5">
-                    <span className="material-symbols-outlined text-inverse-on-surface text-xs">auto_awesome</span>
-                    <span className="font-label text-[9px] font-bold text-inverse-on-surface uppercase tracking-widest">KI</span>
-                  </div>
-                )}
               </div>
             );
           })}
