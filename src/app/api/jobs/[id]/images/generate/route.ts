@@ -120,7 +120,7 @@ export async function POST(
     // 1. Fetch job + company logo
     const { data: job, error: jobError } = await supabase
       .from('jobs')
-      .select('id, title, category, description, location, benefits, company:companies(logo_url)')
+      .select('id, title, category, description, location, benefits, company:companies(name, logo_url)')
       .eq('id', jobId)
       .single();
 
@@ -133,7 +133,8 @@ export async function POST(
       ? (job.benefits as string).split('\n').map((l: string) => l.replace(/^[-•*]\s*/, '').trim()).filter(Boolean).slice(0, 3)
       : [];
 
-    const logoUrl: string | undefined = (job.company as { logo_url?: string } | null)?.logo_url ?? undefined;
+    const logoUrl: string | undefined = (job.company as { logo_url?: string; name?: string } | null)?.logo_url ?? undefined;
+    const companyName: string | undefined = (job.company as { name?: string } | null)?.name ?? undefined;
 
     // 2. Generate FLUX prompt via Claude
     const aiPrompt = await generateFluxPrompt(job.title, job.category as string | null, job.description as string | null, style);
@@ -144,6 +145,7 @@ export async function POST(
     // 4. Compose: background + branding overlay (logo + benefits + title + CTA)
     const composedBuffer = await composeAdImage(backgroundUrl, {
       title: job.title,
+      companyName,
       location: (job.location as string | null) ?? undefined,
       benefits: benefitLines,
       logoUrl,

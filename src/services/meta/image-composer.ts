@@ -2,6 +2,7 @@ import sharp from 'sharp';
 
 interface TextOverlay {
   title: string;
+  companyName?: string;
   location?: string;
   cta?: string;
   benefits?: string[];   // up to 3 items
@@ -9,148 +10,181 @@ interface TextOverlay {
 }
 
 /**
- * Downloads a background image and composites a branded text overlay:
- * - Company logo (top-left)
- * - Dark gradient (bottom half)
- * - Up to 3 benefit chips
- * - Job title
- * - Location
- * - CTA button
+ * Composes a recruitment ad image:
  *
- * Returns a PNG buffer ready for upload.
+ * Layout (reference: LinkedIn/Facebook job ads):
+ *   TOP    — Logo + Company name
+ *            "Wir stellen ein:"
+ *            Job Title (large, bold)
+ *   MIDDLE — 3 benefit bullet points
+ *   BOTTOM — CTA button
+ *
+ * Dark semi-transparent overlay over entire background photo.
  */
 export async function composeAdImage(
   backgroundUrl: string,
   text: TextOverlay
 ): Promise<Buffer> {
-  const { title, location, cta = 'Jetzt bewerben', benefits = [], logoUrl } = text;
+  const {
+    title,
+    companyName,
+    location,
+    cta = 'Jetzt bewerben!',
+    benefits = [],
+    logoUrl,
+  } = text;
 
-  // Download background image
+  // Download & resize background to 1080×1080
   const res = await fetch(backgroundUrl);
   if (!res.ok) throw new Error(`Failed to download background image: ${res.status}`);
   const bgBuffer = Buffer.from(await res.arrayBuffer());
-
-  // Resize to 1080×1080 (standard Facebook feed square)
   const bg = sharp(bgBuffer).resize(1080, 1080, { fit: 'cover', position: 'centre' });
 
-  // Fetch & convert logo to base64 PNG (80×80, transparent bg)
+  // Fetch & prepare logo (80×80 PNG)
   let logoBase64: string | null = null;
   if (logoUrl) {
     try {
       const logoRes = await fetch(logoUrl);
       if (logoRes.ok) {
-        const logoBuffer = Buffer.from(await logoRes.arrayBuffer());
-        const logoPng = await sharp(logoBuffer)
+        const logoBuf = Buffer.from(await logoRes.arrayBuffer());
+        const logoPng = await sharp(logoBuf)
           .resize(80, 80, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
           .png()
           .toBuffer();
         logoBase64 = logoPng.toString('base64');
       }
-    } catch {
-      // Logo is optional — silently skip on failure
-    }
+    } catch { /* logo is optional */ }
   }
 
-  // Layout constants (1080×1080)
+  // ── Layout constants ──────────────────────────────────────────
   const W = 1080;
   const H = 1080;
-  const PAD = 56;
-  const gradientStart = Math.round(H * 0.42); // gradient covers bottom 58%
+  const PAD = 64;
 
-  // Text positions (bottom-up)
-  const ctaH = 72;
-  const ctaW = 380;
-  const ctaY = H - 72;                         // CTA pill top
-  const locationY = ctaY - 28;                 // location baseline
-  const titleY = locationY - 80;               // title baseline
-  const hasBenefits = benefits.length > 0;
-  const benefitY = titleY - (hasBenefits ? 90 : 0); // benefit chips top
+  // Truncate title for 2 lines max (~22 chars per line at 80px)
+  const maxChars = 22;
+  const words = title.split(' ');
+  let line1 = '';
+  let line2 = '';
+  for (const word of words) {
+    if (line1.length + word.length + 1 <= maxChars) {
+      line1 = line1 ? `${line1} ${word}` : word;
+    } else {
+      line2 = line2 ? `${line2} ${word}` : word;
+    }
+  }
+  if (line2.length > maxChars) line2 = line2.slice(0, maxChars - 1) + '…';
 
-  // Truncate title
-  const maxChars = 30;
-  const titleText = title.length <= maxChars ? title : title.slice(0, maxChars - 1) + '…';
+  const hasTwoLines = line2.length > 0;
 
-  // Truncate each benefit to fit in chip (~14 chars at 28px)
-  const maxBenefitChars = 14;
+  // Top section positions
+  const logoY = PAD;
+  const companyNameX = logoUrl ? PAD + 90 : PAD;
+  const companyNameY = logoY + 50;
+
+  const taglineY = logoUrl ? logoY + 110 : PAD + 60;   // "Wir stellen ein:"
+  const titleY1 = taglineY + 90;                        // title line 1
+  const titleY2 = titleY1 + 95;                         // title line 2 (if needed)
+
+  // Benefits section
+  const benefitsStartY = (hasTwoLines ? titleY2 : titleY1) + 80;
+  const benefitLineH = 72;
+
+  // CTA at bottom
+  const ctaH = 76;
+  const ctaW = 400;
+  const ctaY = H - PAD - ctaH;
+
+  // Location (small, above CTA)
+  const locationY = ctaY - 24;
+
+  // Truncate benefits
+  const bMax = 20;
   const b = benefits.slice(0, 3).map((s) =>
-    s.length <= maxBenefitChars ? s : s.slice(0, maxBenefitChars - 1) + '…'
+    s.length <= bMax ? s : s.slice(0, bMax - 1) + '…'
   );
 
-  // Benefit chip positions (3 across)
-  const chipH = 60;
-  const chipGap = 14;
-  const chipW = Math.floor((W - PAD * 2 - chipGap * (b.length - 1)) / Math.max(b.length, 1));
-
-  const benefitChips = b.map((txt, i) => {
-    const x = PAD + i * (chipW + chipGap);
-    const y = benefitY;
-    return `
-    <rect x="${x}" y="${y}" width="${chipW}" height="${chipH}" rx="${chipH / 2}" fill="rgba(255,255,255,0.20)" />
-    <text x="${x + 20}" y="${y + chipH / 2 + 1}"
-      font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="28"
-      fill="white" dominant-baseline="middle"
-    >✓ ${escapeXml(txt)}</text>`;
-  }).join('\n');
-
-  // Logo block (top-left)
+  // ── SVG ──────────────────────────────────────────────────────
   const logoBlock = logoBase64 ? `
   <defs>
     <clipPath id="lc">
-      <rect x="${PAD}" y="${PAD}" width="80" height="80" rx="10"/>
+      <rect x="${PAD}" y="${logoY}" width="80" height="80" rx="12"/>
     </clipPath>
   </defs>
-  <!-- Logo white backing -->
-  <rect x="${PAD - 4}" y="${PAD - 4}" width="88" height="88" rx="13" fill="white" opacity="0.92"/>
-  <!-- Logo image -->
+  <rect x="${PAD - 4}" y="${logoY - 4}" width="88" height="88" rx="15" fill="white" opacity="0.15"/>
   <image href="data:image/png;base64,${logoBase64}"
-    x="${PAD}" y="${PAD}" width="80" height="80"
+    x="${PAD}" y="${logoY}" width="80" height="80"
     clip-path="url(#lc)" preserveAspectRatio="xMidYMid meet"/>
   ` : '';
 
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}">
-  <defs>
-    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="rgba(0,0,0,0)"/>
-      <stop offset="100%" stop-color="rgba(0,0,0,0.85)"/>
-    </linearGradient>
-  </defs>
+  const benefitItems = b.map((txt, i) => {
+    const y = benefitsStartY + i * benefitLineH;
+    return `
+    <text x="${PAD + 44}" y="${y}"
+      font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="38"
+      fill="white" dominant-baseline="middle"
+    >${escapeXml(txt)}</text>
+    <circle cx="${PAD + 14}" cy="${y}" r="8" fill="white" opacity="0.9"/>`;
+  }).join('\n');
 
-  <!-- Gradient overlay -->
-  <rect x="0" y="${gradientStart}" width="${W}" height="${H - gradientStart}" fill="url(#grad)"/>
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}">
+
+  <!-- Dark overlay over entire image for readability -->
+  <rect x="0" y="0" width="${W}" height="${H}" fill="rgba(0,0,0,0.55)"/>
 
   ${logoBlock}
 
-  ${hasBenefits ? `<!-- Benefit chips -->\n${benefitChips}` : ''}
+  ${companyName ? `
+  <!-- Company name -->
+  <text x="${companyNameX}" y="${companyNameY}"
+    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="34"
+    fill="white" dominant-baseline="middle" opacity="0.95"
+  >${escapeXml(companyName)}</text>` : ''}
 
-  <!-- Job title -->
-  <text x="${PAD}" y="${titleY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="72"
+  <!-- "Wir stellen ein:" tagline -->
+  <text x="${PAD}" y="${taglineY}"
+    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="42"
+    fill="rgba(255,255,255,0.85)" dominant-baseline="auto"
+  >Wir stellen ein:</text>
+
+  <!-- Job title line 1 -->
+  <text x="${PAD}" y="${titleY1}"
+    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="84"
     fill="white" dominant-baseline="auto"
-  >${escapeXml(titleText)}</text>
+  >${escapeXml(line1)}</text>
+
+  ${hasTwoLines ? `
+  <!-- Job title line 2 -->
+  <text x="${PAD}" y="${titleY2}"
+    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="84"
+    fill="white" dominant-baseline="auto"
+  >${escapeXml(line2)}</text>` : ''}
+
+  <!-- Benefits -->
+  ${benefitItems}
 
   ${location ? `
   <!-- Location -->
   <text x="${PAD}" y="${locationY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="38"
-    fill="rgba(255,255,255,0.88)" dominant-baseline="auto"
+    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="34"
+    fill="rgba(255,255,255,0.75)" dominant-baseline="auto"
   >${escapeXml(location)}</text>` : ''}
 
   <!-- CTA pill -->
   <rect x="${PAD}" y="${ctaY}" width="${ctaW}" height="${ctaH}" rx="${ctaH / 2}" fill="white"/>
   <text x="${PAD + ctaW / 2}" y="${ctaY + ctaH / 2 + 2}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="30"
+    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="32"
     fill="#111111" text-anchor="middle" dominant-baseline="middle"
   >${escapeXml(cta)}</text>
+
 </svg>`;
 
   const svgBuffer = Buffer.from(svg);
 
-  const result = await bg
+  return bg
     .composite([{ input: svgBuffer, top: 0, left: 0 }])
     .png()
     .toBuffer();
-
-  return result;
 }
 
 function escapeXml(str: string): string {
