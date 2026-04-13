@@ -1,30 +1,48 @@
 import sharp from 'sharp';
+import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
+import path from 'path';
 
-interface TextOverlay {
+// Register a bundled font once (Noto Sans ships with @napi-rs/canvas)
+// Falls back to system sans-serif if registration fails
+let fontRegistered = false;
+function ensureFont() {
+  if (fontRegistered) return;
+  try {
+    // @napi-rs/canvas bundles Noto Sans – register from its package directory
+    const fontPath = path.join(
+      require.resolve('@napi-rs/canvas'),
+      '../../fonts/NotoSans-Regular.ttf',
+    );
+    GlobalFonts.registerFromPath(fontPath, 'Noto Sans');
+  } catch {
+    // font registration is best-effort
+  }
+  fontRegistered = true;
+}
+
+export interface TextOverlay {
   title: string;
   companyName?: string;
   location?: string;
   cta?: string;
-  benefits?: string[];   // up to 3 items
-  logoUrl?: string;      // company logo URL
+  benefits?: string[];
+  logoUrl?: string;
 }
 
+const W = 1080;
+const H = 1080;
+const PAD = 64;
+
 /**
- * Composes a recruitment ad image:
- *
- * Layout (reference: LinkedIn/Facebook job ads):
- *   TOP    — Logo + Company name
- *            "Wir stellen ein:"
- *            Job Title (large, bold)
- *   MIDDLE — 3 benefit bullet points
- *   BOTTOM — CTA button
- *
- * Dark semi-transparent overlay over entire background photo.
+ * Composes a recruitment ad image with canvas-drawn text overlay.
+ * Layout: Logo + Headline top → Benefits middle → CTA bottom.
  */
 export async function composeAdImage(
   backgroundUrl: string,
   text: TextOverlay
 ): Promise<Buffer> {
+  ensureFont();
+
   const {
     title,
     companyName,
@@ -34,164 +52,147 @@ export async function composeAdImage(
     logoUrl,
   } = text;
 
-  // Download & resize background to 1080×1080
-  const res = await fetch(backgroundUrl);
-  if (!res.ok) throw new Error(`Failed to download background image: ${res.status}`);
-  const bgBuffer = Buffer.from(await res.arrayBuffer());
-  const bg = sharp(bgBuffer).resize(1080, 1080, { fit: 'cover', position: 'centre' });
+  // 1. Download & resize background
+  const bgRes = await fetch(backgroundUrl);
+  if (!bgRes.ok) throw new Error(`Background download failed: ${bgRes.status}`);
+  const bgBuf = await sharp(Buffer.from(await bgRes.arrayBuffer()))
+    .resize(W, H, { fit: 'cover', position: 'centre' })
+    .png()
+    .toBuffer();
 
-  // Fetch & prepare logo (80×80 PNG)
-  let logoBase64: string | null = null;
+  // 2. Optionally fetch & resize logo
+  let logoBuf: Buffer | null = null;
   if (logoUrl) {
     try {
-      const logoRes = await fetch(logoUrl);
-      if (logoRes.ok) {
-        const logoBuf = Buffer.from(await logoRes.arrayBuffer());
-        const logoPng = await sharp(logoBuf)
+      const lr = await fetch(logoUrl);
+      if (lr.ok) {
+        logoBuf = await sharp(Buffer.from(await lr.arrayBuffer()))
           .resize(80, 80, { fit: 'contain', background: { r: 255, g: 255, b: 255, alpha: 0 } })
           .png()
           .toBuffer();
-        logoBase64 = logoPng.toString('base64');
       }
     } catch { /* logo is optional */ }
   }
 
-  // ── Layout constants ──────────────────────────────────────────
-  const W = 1080;
-  const H = 1080;
-  const PAD = 64;
+  // 3. Draw on canvas
+  const canvas = createCanvas(W, H);
+  const ctx = canvas.getContext('2d');
 
-  // Truncate title for 2 lines max (~22 chars per line at 80px)
-  const maxChars = 22;
-  const words = title.split(' ');
-  let line1 = '';
-  let line2 = '';
-  for (const word of words) {
-    if (line1.length + word.length + 1 <= maxChars) {
-      line1 = line1 ? `${line1} ${word}` : word;
-    } else {
-      line2 = line2 ? `${line2} ${word}` : word;
-    }
+  // Background
+  const bgImg = await loadImage(bgBuf);
+  ctx.drawImage(bgImg, 0, 0, W, H);
+
+  // Dark overlay
+  ctx.fillStyle = 'rgba(0,0,0,0.58)';
+  ctx.fillRect(0, 0, W, H);
+
+  // Logo (top-left, rounded white backing)
+  let textStartX = PAD;
+  if (logoBuf) {
+    const logoImg = await loadImage(logoBuf);
+    // white rounded backing
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    roundRect(ctx, PAD - 4, PAD - 4, 88, 88, 14);
+    ctx.fill();
+    ctx.drawImage(logoImg, PAD, PAD, 80, 80);
+    textStartX = PAD + 96;
   }
-  if (line2.length > maxChars) line2 = line2.slice(0, maxChars - 1) + '…';
 
-  const hasTwoLines = line2.length > 0;
+  // Company name (next to logo, or at top-left)
+  let cursorY = PAD + 50;
+  if (companyName) {
+    ctx.fillStyle = 'rgba(255,255,255,0.90)';
+    ctx.font = `bold 34px "Noto Sans", sans-serif`;
+    ctx.fillText(companyName, textStartX, cursorY);
+  }
 
-  // Top section positions
-  const logoY = PAD;
-  const companyNameX = logoUrl ? PAD + 90 : PAD;
-  const companyNameY = logoY + 50;
+  // "Wir stellen ein:" tagline
+  cursorY = (logoBuf || companyName) ? PAD + 120 : PAD + 60;
+  ctx.fillStyle = 'rgba(255,255,255,0.80)';
+  ctx.font = `400 44px "Noto Sans", sans-serif`;
+  ctx.fillText('Wir stellen ein:', PAD, cursorY);
 
-  const taglineY = logoUrl ? logoY + 110 : PAD + 60;   // "Wir stellen ein:"
-  const titleY1 = taglineY + 90;                        // title line 1
-  const titleY2 = titleY1 + 95;                         // title line 2 (if needed)
+  // Title (split into lines at ~22 chars)
+  const titleLines = splitLines(title, 22);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold 84px "Noto Sans", sans-serif`;
+  cursorY += 96;
+  for (const line of titleLines.slice(0, 2)) {
+    ctx.fillText(line, PAD, cursorY);
+    cursorY += 96;
+  }
 
-  // Benefits section
-  const benefitsStartY = (hasTwoLines ? titleY2 : titleY1) + 80;
-  const benefitLineH = 72;
+  // Benefits
+  cursorY += 20;
+  ctx.font = `400 40px "Noto Sans", sans-serif`;
+  for (const benefit of benefits.slice(0, 3)) {
+    ctx.fillStyle = 'rgba(255,255,255,0.95)';
+    // bullet dot
+    ctx.beginPath();
+    ctx.arc(PAD + 10, cursorY - 12, 8, 0, Math.PI * 2);
+    ctx.fill();
+    // text
+    ctx.fillText(benefit, PAD + 32, cursorY);
+    cursorY += 64;
+  }
 
-  // CTA at bottom
-  const ctaH = 76;
+  // Location
+  if (location) {
+    ctx.fillStyle = 'rgba(255,255,255,0.70)';
+    ctx.font = `400 34px "Noto Sans", sans-serif`;
+    ctx.fillText(location, PAD, H - PAD - 80 - 28);
+  }
+
+  // CTA button
   const ctaW = 400;
+  const ctaH = 76;
+  const ctaX = PAD;
   const ctaY = H - PAD - ctaH;
+  ctx.fillStyle = '#ffffff';
+  roundRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH / 2);
+  ctx.fill();
+  ctx.fillStyle = '#111111';
+  ctx.font = `bold 32px "Noto Sans", sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.fillText(cta, ctaX + ctaW / 2, ctaY + ctaH / 2 + 11);
+  ctx.textAlign = 'left';
 
-  // Location (small, above CTA)
-  const locationY = ctaY - 24;
-
-  // Truncate benefits
-  const bMax = 20;
-  const b = benefits.slice(0, 3).map((s) =>
-    s.length <= bMax ? s : s.slice(0, bMax - 1) + '…'
-  );
-
-  // ── SVG ──────────────────────────────────────────────────────
-  const logoBlock = logoBase64 ? `
-  <defs>
-    <clipPath id="lc">
-      <rect x="${PAD}" y="${logoY}" width="80" height="80" rx="12"/>
-    </clipPath>
-  </defs>
-  <rect x="${PAD - 4}" y="${logoY - 4}" width="88" height="88" rx="15" fill="white" opacity="0.15"/>
-  <image href="data:image/png;base64,${logoBase64}"
-    x="${PAD}" y="${logoY}" width="80" height="80"
-    clip-path="url(#lc)" preserveAspectRatio="xMidYMid meet"/>
-  ` : '';
-
-  const benefitItems = b.map((txt, i) => {
-    const y = benefitsStartY + i * benefitLineH;
-    return `
-    <text x="${PAD + 44}" y="${y}"
-      font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="38"
-      fill="white" dominant-baseline="middle"
-    >${escapeXml(txt)}</text>
-    <circle cx="${PAD + 14}" cy="${y}" r="8" fill="white" opacity="0.9"/>`;
-  }).join('\n');
-
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${W}" height="${H}">
-
-  <!-- Dark overlay over entire image for readability -->
-  <rect x="0" y="0" width="${W}" height="${H}" fill="rgba(0,0,0,0.55)"/>
-
-  ${logoBlock}
-
-  ${companyName ? `
-  <!-- Company name -->
-  <text x="${companyNameX}" y="${companyNameY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="34"
-    fill="white" dominant-baseline="middle" opacity="0.95"
-  >${escapeXml(companyName)}</text>` : ''}
-
-  <!-- "Wir stellen ein:" tagline -->
-  <text x="${PAD}" y="${taglineY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="42"
-    fill="rgba(255,255,255,0.85)" dominant-baseline="auto"
-  >Wir stellen ein:</text>
-
-  <!-- Job title line 1 -->
-  <text x="${PAD}" y="${titleY1}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="84"
-    fill="white" dominant-baseline="auto"
-  >${escapeXml(line1)}</text>
-
-  ${hasTwoLines ? `
-  <!-- Job title line 2 -->
-  <text x="${PAD}" y="${titleY2}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="84"
-    fill="white" dominant-baseline="auto"
-  >${escapeXml(line2)}</text>` : ''}
-
-  <!-- Benefits -->
-  ${benefitItems}
-
-  ${location ? `
-  <!-- Location -->
-  <text x="${PAD}" y="${locationY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="34"
-    fill="rgba(255,255,255,0.75)" dominant-baseline="auto"
-  >${escapeXml(location)}</text>` : ''}
-
-  <!-- CTA pill -->
-  <rect x="${PAD}" y="${ctaY}" width="${ctaW}" height="${ctaH}" rx="${ctaH / 2}" fill="white"/>
-  <text x="${PAD + ctaW / 2}" y="${ctaY + ctaH / 2 + 2}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="32"
-    fill="#111111" text-anchor="middle" dominant-baseline="middle"
-  >${escapeXml(cta)}</text>
-
-</svg>`;
-
-  const svgBuffer = Buffer.from(svg);
-
-  return bg
-    .composite([{ input: svgBuffer, top: 0, left: 0 }])
-    .png()
-    .toBuffer();
+  // 4. Convert canvas to PNG buffer
+  const composedPng = canvas.toBuffer('image/png');
+  return composedPng;
 }
 
-function escapeXml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+// ── Helpers ────────────────────────────────────────────────────
+
+function splitLines(text: string, maxChars: number): string[] {
+  const words = text.split(' ');
+  const lines: string[] = [];
+  let current = '';
+  for (const word of words) {
+    if (current.length + word.length + 1 <= maxChars) {
+      current = current ? `${current} ${word}` : word;
+    } else {
+      if (current) lines.push(current);
+      current = word;
+    }
+  }
+  if (current) lines.push(current);
+  return lines;
+}
+
+function roundRect(
+  ctx: ReturnType<ReturnType<typeof createCanvas>['getContext']>,
+  x: number, y: number, w: number, h: number, r: number
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
 }
