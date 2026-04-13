@@ -54,41 +54,41 @@ export async function composeAdImage(
   // Layout constants (1080×1080)
   const W = 1080;
   const H = 1080;
-  const PAD = 48;
-  const gradientStart = Math.round(H * 0.38);
+  const PAD = 56;
+  const gradientStart = Math.round(H * 0.42); // gradient covers bottom 58%
 
   // Text positions (bottom-up)
-  const ctaH = 52;
-  const ctaW = 300;
-  const ctaY = H - 56;                    // CTA pill top
-  const locationY = ctaY - 20;            // location baseline
-  const titleY = locationY - 54;          // title baseline
+  const ctaH = 72;
+  const ctaW = 380;
+  const ctaY = H - 72;                         // CTA pill top
+  const locationY = ctaY - 28;                 // location baseline
+  const titleY = locationY - 80;               // title baseline
   const hasBenefits = benefits.length > 0;
-  const benefitY = titleY - (hasBenefits ? 68 : 0); // benefit chips top
+  const benefitY = titleY - (hasBenefits ? 90 : 0); // benefit chips top
 
   // Truncate title
-  const maxChars = 36;
+  const maxChars = 30;
   const titleText = title.length <= maxChars ? title : title.slice(0, maxChars - 1) + '…';
 
-  // Truncate each benefit to fit in ~330px (≈ 18 chars at 22px)
-  const maxBenefitChars = 18;
+  // Truncate each benefit to fit in chip (~14 chars at 28px)
+  const maxBenefitChars = 14;
   const b = benefits.slice(0, 3).map((s) =>
     s.length <= maxBenefitChars ? s : s.slice(0, maxBenefitChars - 1) + '…'
   );
 
   // Benefit chip positions (3 across)
-  const chipH = 40;
-  const chipGap = 16;
+  const chipH = 60;
+  const chipGap = 14;
   const chipW = Math.floor((W - PAD * 2 - chipGap * (b.length - 1)) / Math.max(b.length, 1));
 
   const benefitChips = b.map((txt, i) => {
     const x = PAD + i * (chipW + chipGap);
     const y = benefitY;
     return `
-    <rect x="${x}" y="${y}" width="${chipW}" height="${chipH}" rx="${chipH / 2}" fill="rgba(255,255,255,0.18)" />
-    <text x="${x + 14}" y="${y + chipH / 2 + 1}"
-      font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="20"
-      fill="rgba(255,255,255,0.95)" dominant-baseline="middle"
+    <rect x="${x}" y="${y}" width="${chipW}" height="${chipH}" rx="${chipH / 2}" fill="rgba(255,255,255,0.20)" />
+    <text x="${x + 20}" y="${y + chipH / 2 + 1}"
+      font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="28"
+      fill="white" dominant-baseline="middle"
     >✓ ${escapeXml(txt)}</text>`;
   }).join('\n');
 
@@ -124,21 +124,21 @@ export async function composeAdImage(
 
   <!-- Job title -->
   <text x="${PAD}" y="${titleY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="52"
+    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="72"
     fill="white" dominant-baseline="auto"
   >${escapeXml(titleText)}</text>
 
   ${location ? `
   <!-- Location -->
   <text x="${PAD}" y="${locationY}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="28"
-    fill="rgba(255,255,255,0.85)" dominant-baseline="auto"
-  >📍 ${escapeXml(location)}</text>` : ''}
+    font-family="Arial,Helvetica,sans-serif" font-weight="400" font-size="38"
+    fill="rgba(255,255,255,0.88)" dominant-baseline="auto"
+  >${escapeXml(location)}</text>` : ''}
 
   <!-- CTA pill -->
   <rect x="${PAD}" y="${ctaY}" width="${ctaW}" height="${ctaH}" rx="${ctaH / 2}" fill="white"/>
-  <text x="${PAD + ctaW / 2}" y="${ctaY + ctaH / 2 + 1}"
-    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="22"
+  <text x="${PAD + ctaW / 2}" y="${ctaY + ctaH / 2 + 2}"
+    font-family="Arial,Helvetica,sans-serif" font-weight="700" font-size="30"
     fill="#111111" text-anchor="middle" dominant-baseline="middle"
   >${escapeXml(cta)}</text>
 </svg>`;
