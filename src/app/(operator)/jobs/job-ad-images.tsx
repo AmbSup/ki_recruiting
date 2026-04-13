@@ -18,9 +18,10 @@ type Props = {
   jobId: string;
   jobTitle: string;
   jobLocation?: string | null;
+  onSelect?: (url: string) => void;
 };
 
-export function JobAdImages({ jobId, jobTitle, jobLocation }: Props) {
+export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
   const [images, setImages] = useState<AdImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
@@ -168,7 +169,11 @@ export function JobAdImages({ jobId, jobTitle, jobLocation }: Props) {
       ) : (
         <div className="grid grid-cols-3 gap-3">
           {images.map((img) => (
-            <div key={img.id} className="group relative aspect-square rounded-xl overflow-hidden bg-surface-container-high">
+            <div
+              key={img.id}
+              className="group relative aspect-square rounded-xl overflow-hidden bg-surface-container-high cursor-pointer"
+              onClick={() => onSelect?.(img.url)}
+            >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={img.url}

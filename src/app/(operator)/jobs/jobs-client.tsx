@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { JobModal } from "./job-modal";
-import { JobDetailModal } from "./job-detail-modal";
 import { createClient } from "@/lib/supabase/client";
 
 type Job = {
@@ -33,10 +33,10 @@ const employmentLabels: Record<string, string> = {
 };
 
 export function JobsClient() {
+  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [detailJobId, setDetailJobId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -183,7 +183,7 @@ export function JobsClient() {
                     <span>{job._count?.applications ?? 0} Bewerber</span>
                   </div>
                   <button
-                    onClick={() => setDetailJobId(job.id)}
+                    onClick={() => router.push(`/jobs/${job.id}`)}
                     className="ml-auto font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                   >
                     Details
@@ -197,7 +197,6 @@ export function JobsClient() {
       )}
 
       <JobModal open={modalOpen} onClose={() => setModalOpen(false)} onSuccess={load} />
-      <JobDetailModal jobId={detailJobId} onClose={() => setDetailJobId(null)} />
     </div>
   );
 }
