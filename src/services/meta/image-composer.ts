@@ -1,22 +1,12 @@
 import sharp from 'sharp';
 import { createCanvas, loadImage, GlobalFonts } from '@napi-rs/canvas';
-import path from 'path';
+import { GEIST_FONT_B64 } from './geist-font';
 
-// Register a bundled font once (Noto Sans ships with @napi-rs/canvas)
-// Falls back to system sans-serif if registration fails
+// Register font once per cold start — base64 is baked in so no filesystem dependency
 let fontRegistered = false;
 function ensureFont() {
   if (fontRegistered) return;
-  try {
-    // @napi-rs/canvas bundles Noto Sans – register from its package directory
-    const fontPath = path.join(
-      require.resolve('@napi-rs/canvas'),
-      '../../fonts/NotoSans-Regular.ttf',
-    );
-    GlobalFonts.registerFromPath(fontPath, 'Noto Sans');
-  } catch {
-    // font registration is best-effort
-  }
+  GlobalFonts.register(Buffer.from(GEIST_FONT_B64, 'base64'), 'Geist');
   fontRegistered = true;
 }
 
@@ -42,7 +32,6 @@ export async function composeAdImage(
   text: TextOverlay
 ): Promise<Buffer> {
   ensureFont();
-
   const {
     title,
     companyName,
@@ -102,20 +91,20 @@ export async function composeAdImage(
   let cursorY = PAD + 50;
   if (companyName) {
     ctx.fillStyle = 'rgba(255,255,255,0.90)';
-    ctx.font = `bold 34px "Noto Sans", sans-serif`;
+    ctx.font = `bold 34px Geist`;
     ctx.fillText(companyName, textStartX, cursorY);
   }
 
   // "Wir stellen ein:" tagline
   cursorY = (logoBuf || companyName) ? PAD + 120 : PAD + 60;
   ctx.fillStyle = 'rgba(255,255,255,0.80)';
-  ctx.font = `400 44px "Noto Sans", sans-serif`;
+  ctx.font = `400 44px Geist`;
   ctx.fillText('Wir stellen ein:', PAD, cursorY);
 
   // Title (split into lines at ~22 chars)
   const titleLines = splitLines(title, 22);
   ctx.fillStyle = '#ffffff';
-  ctx.font = `bold 84px "Noto Sans", sans-serif`;
+  ctx.font = `bold 84px Geist`;
   cursorY += 96;
   for (const line of titleLines.slice(0, 2)) {
     ctx.fillText(line, PAD, cursorY);
@@ -124,7 +113,7 @@ export async function composeAdImage(
 
   // Benefits
   cursorY += 20;
-  ctx.font = `400 40px "Noto Sans", sans-serif`;
+  ctx.font = `400 40px Geist`;
   for (const benefit of benefits.slice(0, 3)) {
     ctx.fillStyle = 'rgba(255,255,255,0.95)';
     // bullet dot
@@ -139,7 +128,7 @@ export async function composeAdImage(
   // Location
   if (location) {
     ctx.fillStyle = 'rgba(255,255,255,0.70)';
-    ctx.font = `400 34px "Noto Sans", sans-serif`;
+    ctx.font = `400 34px Geist`;
     ctx.fillText(location, PAD, H - PAD - 80 - 28);
   }
 
@@ -152,7 +141,7 @@ export async function composeAdImage(
   roundRect(ctx, ctaX, ctaY, ctaW, ctaH, ctaH / 2);
   ctx.fill();
   ctx.fillStyle = '#111111';
-  ctx.font = `bold 32px "Noto Sans", sans-serif`;
+  ctx.font = `bold 32px Geist`;
   ctx.textAlign = 'center';
   ctx.fillText(cta, ctaX + ctaW / 2, ctaY + ctaH / 2 + 11);
   ctx.textAlign = 'left';

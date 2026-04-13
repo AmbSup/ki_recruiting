@@ -12,6 +12,7 @@ type Job = {
   employment_type: string;
   status: "draft" | "active" | "paused" | "closed" | "filled";
   created_at: string;
+  selected_ad_image_url: string | null;
   company: { id: string; name: string };
   _count?: { funnels: number; applications: number };
 };
@@ -46,7 +47,7 @@ export function JobsClient() {
     const { data } = await supabase
       .from("jobs")
       .select(`
-        id, title, location, employment_type, status, created_at,
+        id, title, location, employment_type, status, created_at, selected_ad_image_url,
         company:companies(id, name),
         funnels:funnels(count),
         applications:applications(count)
@@ -144,8 +145,26 @@ export function JobsClient() {
             return (
               <div
                 key={job.id}
-                className="md:col-span-6 xl:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] hover:bg-surface-bright transition-all group"
+                className="md:col-span-6 xl:col-span-4 bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] hover:bg-surface-bright transition-all group"
               >
+                {/* Ad image banner */}
+                {job.selected_ad_image_url ? (
+                  <div className="relative h-28 bg-surface-container-high overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={job.selected_ad_image_url}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                    <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-primary/90 rounded-full px-2 py-0.5">
+                      <span className="material-symbols-outlined text-on-primary text-xs">campaign</span>
+                      <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Ad Bild</span>
+                    </div>
+                  </div>
+                ) : null}
+
+                <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
                   <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
                     {st.label}
@@ -190,6 +209,7 @@ export function JobsClient() {
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>
                   </button>
                 </div>
+                </div>{/* /p-6 */}
               </div>
             );
           })}

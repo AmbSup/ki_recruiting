@@ -18,16 +18,19 @@ type Props = {
   jobId: string;
   jobTitle: string;
   jobLocation?: string | null;
+  selectedUrl?: string | null;
   onSelect?: (url: string) => void;
+  onSelectForAds?: (url: string | null) => void;
 };
 
-export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
+export function JobAdImages({ jobId, jobTitle, jobLocation, selectedUrl, onSelect, onSelectForAds }: Props) {
   const [images, setImages] = useState<AdImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState("Auto");
   const [error, setError] = useState<string | null>(null);
+  const [savingSelect, setSavingSelect] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(async () => {
@@ -71,7 +74,6 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
       const { error: upErr } = await supabase.storage.from("funnel-media").upload(path, file, { upsert: false });
       if (upErr) throw new Error(upErr.message);
       const { data } = supabase.storage.from("funnel-media").getPublicUrl(path);
-      // Save to DB
       const { data: inserted } = await supabase
         .from("job_ad_images")
         .insert({ job_id: jobId, url: data.publicUrl, ai_generated: false })
@@ -85,16 +87,37 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
     }
   };
 
-  const deleteImage = async (imageId: string) => {
+  const deleteImage = async (e: React.MouseEvent, imageId: string, imageUrl: string) => {
+    e.stopPropagation();
     const res = await fetch(`/api/jobs/${jobId}/images?image_id=${imageId}`, { method: "DELETE" });
-    if (res.ok) setImages((prev) => prev.filter((img) => img.id !== imageId));
+    if (res.ok) {
+      setImages((prev) => prev.filter((img) => img.id !== imageId));
+      // If deleted image was the selected one, clear selection
+      if (imageUrl === selectedUrl) {
+        await selectForAds(new MouseEvent("click") as unknown as React.MouseEvent, null);
+      }
+    }
+  };
+
+  const selectForAds = async (e: React.MouseEvent, url: string | null) => {
+    e.stopPropagation();
+    setSavingSelect(url ?? "__clear__");
+    try {
+      await fetch(`/api/jobs/${jobId}/images`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ selected_ad_image_url: url }),
+      });
+      onSelectForAds?.(url);
+    } finally {
+      setSavingSelect(null);
+    }
   };
 
   return (
     <div className="space-y-5">
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-3">
-        {/* Style selector */}
         <div className="flex items-center gap-2">
           <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Szene</span>
           <div className="flex gap-1">
@@ -115,7 +138,6 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
         </div>
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Upload button */}
           <button
             onClick={() => fileRef.current?.click()}
             disabled={uploading}
@@ -132,7 +154,6 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
             onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileUpload(f); e.target.value = ""; }}
           />
 
-          {/* Generate button */}
           <button
             onClick={generate}
             disabled={generating}
@@ -168,43 +189,75 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, onSelect }: Props) {
         </div>
       ) : (
         <div className="grid grid-cols-3 gap-3">
-          {images.map((img) => (
-            <div
-              key={img.id}
-              className="group relative aspect-square rounded-xl overflow-hidden bg-surface-container-high cursor-pointer"
-              onClick={() => onSelect?.(img.url)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={img.url}
-                alt={`Ad Bild – ${jobTitle}`}
-                className="w-full h-full object-cover"
-              />
-              {/* Hover overlay */}
-              <div className="absolute inset-0 bg-inverse-surface/0 group-hover:bg-inverse-surface/40 transition-all flex items-start justify-end p-2 opacity-0 group-hover:opacity-100">
-                <button
-                  onClick={() => deleteImage(img.id)}
-                  className="w-8 h-8 rounded-full bg-error flex items-center justify-center shadow-lg"
-                  title="Löschen"
-                >
-                  <span className="material-symbols-outlined text-on-error text-base">delete</span>
-                </button>
-              </div>
-              {/* AI badge */}
-              {img.ai_generated && (
-                <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-inverse-surface/70 rounded-full px-2 py-0.5">
-                  <span className="material-symbols-outlined text-inverse-on-surface text-xs">auto_awesome</span>
-                  <span className="font-label text-[9px] font-bold text-inverse-on-surface uppercase tracking-widest">KI</span>
+          {images.map((img) => {
+            const isSelected = img.url === selectedUrl;
+            return (
+              <div
+                key={img.id}
+                className={`group relative aspect-square rounded-xl overflow-hidden bg-surface-container-high cursor-pointer ring-2 transition-all ${
+                  isSelected ? "ring-primary shadow-lg" : "ring-transparent"
+                }`}
+                onClick={() => onSelect?.(img.url)}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={img.url}
+                  alt={`Ad Bild – ${jobTitle}`}
+                  className="w-full h-full object-cover"
+                />
+
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-inverse-surface/0 group-hover:bg-inverse-surface/50 transition-all opacity-0 group-hover:opacity-100 flex items-start justify-between p-2">
+                  {/* Select for Ads button */}
+                  <button
+                    onClick={(e) => selectForAds(e, isSelected ? null : img.url)}
+                    disabled={savingSelect === img.url}
+                    className={`w-8 h-8 rounded-full flex items-center justify-center shadow-lg transition-colors ${
+                      isSelected
+                        ? "bg-primary text-on-primary"
+                        : "bg-surface text-on-surface hover:bg-primary hover:text-on-primary"
+                    }`}
+                    title={isSelected ? "Auswahl aufheben" : "Für Ads auswählen"}
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      {savingSelect === img.url ? "hourglass_empty" : "check_circle"}
+                    </span>
+                  </button>
+
+                  {/* Delete button */}
+                  <button
+                    onClick={(e) => deleteImage(e, img.id, img.url)}
+                    className="w-8 h-8 rounded-full bg-error flex items-center justify-center shadow-lg"
+                    title="Löschen"
+                  >
+                    <span className="material-symbols-outlined text-on-error text-base">delete</span>
+                  </button>
                 </div>
-              )}
-            </div>
-          ))}
+
+                {/* Selected badge */}
+                {isSelected && (
+                  <div className="absolute top-2 left-2 flex items-center gap-1 bg-primary rounded-full px-2 py-0.5">
+                    <span className="material-symbols-outlined text-on-primary text-xs">check_circle</span>
+                    <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Aktiv</span>
+                  </div>
+                )}
+
+                {/* AI badge */}
+                {img.ai_generated && !isSelected && (
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-inverse-surface/70 rounded-full px-2 py-0.5">
+                    <span className="material-symbols-outlined text-inverse-on-surface text-xs">auto_awesome</span>
+                    <span className="font-label text-[9px] font-bold text-inverse-on-surface uppercase tracking-widest">KI</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
       {images.length > 0 && (
         <p className="font-label text-[10px] text-outline text-center">
-          {images.length} {images.length === 1 ? "Bild" : "Bilder"} · Hover zum Löschen
+          {images.length} {images.length === 1 ? "Bild" : "Bilder"} · Hover: auswählen oder löschen
         </p>
       )}
     </div>

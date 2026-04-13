@@ -54,3 +54,20 @@ export async function DELETE(
 
   return NextResponse.json({ success: true });
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id: jobId } = await params;
+  const { selected_ad_image_url } = await req.json();
+
+  const supabase = createAdminClient();
+  const { error } = await supabase
+    .from('jobs')
+    .update({ selected_ad_image_url: selected_ad_image_url ?? null })
+    .eq('id', jobId);
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ success: true });
+}

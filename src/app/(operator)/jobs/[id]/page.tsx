@@ -16,6 +16,7 @@ type JobDetail = {
   salary_range: string | null;
   daily_budget: number | null;
   benefits: string | null;
+  selected_ad_image_url: string | null;
   main_tasks: string | null;
   must_qualifications: string | null;
   nice_to_have_qualifications: string | null;
@@ -60,6 +61,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   // Selected image preview
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [selectedAdImageUrl, setSelectedAdImageUrl] = useState<string | null>(null);
 
   useEffect(() => {
     params.then(({ id }) => setJobId(id));
@@ -72,7 +74,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       .from("jobs")
       .select(`
         id, title, category, description, location, employment_type,
-        salary_range, daily_budget, benefits,
+        salary_range, daily_budget, benefits, selected_ad_image_url,
         main_tasks, must_qualifications, nice_to_have_qualifications,
         ko_criteria, hard_skills, soft_skills,
         requirements, ideal_candidate, application_process,
@@ -87,6 +89,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           setJob(j);
           setBenefitsText(j.benefits ?? "");
           setLogoUrl(j.company?.logo_url ?? "");
+          setSelectedAdImageUrl(j.selected_ad_image_url ?? null);
         }
         setLoading(false);
       });
@@ -314,7 +317,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               jobId={job.id}
               jobTitle={job.title}
               jobLocation={job.location}
+              selectedUrl={selectedAdImageUrl}
               onSelect={(url) => setPreviewUrl(url)}
+              onSelectForAds={(url) => setSelectedAdImageUrl(url)}
             />
           </div>
 

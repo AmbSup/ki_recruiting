@@ -56,3 +56,5 @@ next-env.d.ts
 
 # Local plan/skill files
 skills-lock.json
+
+.vercel

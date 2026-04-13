@@ -64,12 +64,26 @@ type ApplicationDetail = {
   voice_calls: {
     id: string;
     status: string;
+    started_at: string | null;
     scheduled_at: string | null;
     duration_seconds: number | null;
+    recording_url: string | null;
+    transcripts: {
+      id: string;
+      full_text: string | null;
+      segments: { index: number; speaker: string; text: string }[];
+      transcribed_at: string;
+    }[];
     call_analyses: {
+      id: string;
       interview_score: number | null;
       recommendation: string | null;
       summary: string | null;
+      key_insights: string[];
+      red_flags: string[];
+      criteria_scores: { criterion: string; score: number; reasoning: string }[];
+      analyzed_at: string;
+      model_version: string | null;
     }[];
   }[];
 };
@@ -97,12 +111,12 @@ const sourceLabels: Record<string, string> = {
   linkedin: "LinkedIn", direct: "Direkt", referral: "Empfehlung",
 };
 
-const recommendationConfig: Record<string, { label: string; bg: string; text: string }> = {
-  strong_yes: { label: "Starkes Ja",  bg: "bg-primary-container",      text: "text-on-primary-container" },
-  yes:        { label: "Ja",          bg: "bg-primary-container/60",    text: "text-on-primary-container" },
-  maybe:      { label: "Vielleicht",  bg: "bg-tertiary-container/50",   text: "text-on-tertiary-container" },
-  no:         { label: "Nein",        bg: "bg-error-container/40",      text: "text-error" },
-  strong_no:  { label: "Starkes Nein",bg: "bg-error-container/70",      text: "text-error" },
+const recommendationConfig: Record<string, { label: string; bg: string; text: string; icon: string }> = {
+  strong_yes: { label: "Starkes Ja",   bg: "bg-primary-container",      text: "text-on-primary-container", icon: "thumb_up" },
+  yes:        { label: "Ja",           bg: "bg-primary-container/60",    text: "text-on-primary-container", icon: "check_circle" },
+  maybe:      { label: "Vielleicht",   bg: "bg-tertiary-container/50",   text: "text-on-tertiary-container", icon: "help" },
+  no:         { label: "Nein",         bg: "bg-error-container/40",      text: "text-error",                icon: "cancel" },
+  strong_no:  { label: "Starkes Nein", bg: "bg-error-container/70",      text: "text-error",                icon: "thumb_down" },
 };
 
 function formatDuration(s: number | null) {
@@ -142,6 +156,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
   const [savingNotes, setSavingNotes] = useState(false);
   const [analysingCv, setAnalysingCv] = useState(false);
   const [stageSaving, setStageSaving] = useState(false);
+  const [transcriptOpen, setTranscriptOpen] = useState<Record<string, boolean>>({});
   const supabase = createClient();
 
   async function loadApp() {
@@ -158,7 +173,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
         funnel:funnels(name, slug),
         applicant:applicants(id, full_name, email, phone, cv_file_url, consent_given_at),
         cv_analyses(*),
-        voice_calls(*, call_analyses(*))
+        voice_calls(*, transcripts(*), call_analyses(*))
       `)
       .eq("id", id)
       .single();
@@ -776,64 +791,230 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
         {/* ── Right Column ─────────────────────────────────────────────── */}
         <div className="col-span-12 lg:col-span-5 space-y-5">
 
-          {/* Voice Calls */}
-          <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-            <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">
-              Voice Calls
-            </h3>
-            {app.voice_calls.length > 0 ? (
-              <div className="space-y-3">
-                {app.voice_calls.map((vc) => {
-                  const ca = vc.call_analyses[0] ?? null;
-                  const rec = ca?.recommendation ? recommendationConfig[ca.recommendation] : null;
-                  return (
-                    <Link key={vc.id} href={`/calls/${vc.id}`}
-                      className="flex items-center justify-between p-3 bg-surface-container rounded-xl hover:bg-surface-container-high transition-colors group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-primary-container/30 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-primary text-sm">call</span>
-                        </div>
-                        <div>
-                          <p className="font-label text-xs font-bold text-on-surface">
-                            {vc.scheduled_at
-                              ? new Date(vc.scheduled_at).toLocaleDateString("de-AT")
-                              : "Ungeplant"}
-                          </p>
-                          <p className="font-label text-[10px] text-outline">{formatDuration(vc.duration_seconds)}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {ca?.interview_score != null && (
-                          <span className="font-headline text-lg text-on-surface">{ca.interview_score}%</span>
-                        )}
-                        {rec && (
-                          <span className={`px-2 py-0.5 rounded-full font-label text-[10px] font-bold ${rec.bg} ${rec.text}`}>
-                            {rec.label}
-                          </span>
-                        )}
-                        <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-sm">
-                          arrow_forward
-                        </span>
-                      </div>
-                    </Link>
-                  );
-                })}
-              </div>
-            ) : (
+          {/* Voice Calls + Analyse */}
+          {app.voice_calls.length === 0 ? (
+            <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
+              <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">
+                KI Gesprächs-Analyse
+              </h3>
               <div className="flex flex-col items-center py-8 text-center">
                 <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center mb-3">
-                  <span className="material-symbols-outlined text-xl text-outline-variant">call_end</span>
+                  <span className="material-symbols-outlined text-xl text-outline-variant">mic_off</span>
                 </div>
-                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-3">
-                  Noch kein Call
+                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                  Noch kein Call durchgeführt
                 </p>
-                <button className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-xl font-label text-[10px] font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors">
-                  <span className="material-symbols-outlined text-xs">add_call</span>
-                  Call planen
-                </button>
               </div>
-            )}
-          </div>
+            </div>
+          ) : (
+            app.voice_calls.map((vc) => {
+              const ca = vc.call_analyses[0] ?? null;
+              const transcript = vc.transcripts[0] ?? null;
+              const rec = ca?.recommendation ? recommendationConfig[ca.recommendation] : null;
+              const isTranscriptOpen = transcriptOpen[vc.id] ?? false;
+              const segments: { index: number; speaker: string; text: string }[] =
+                Array.isArray(transcript?.segments) && transcript.segments.length > 0
+                  ? transcript.segments
+                  : transcript?.full_text
+                  ? transcript.full_text.split("\n").filter(Boolean).map((line, i) => ({
+                      index: i,
+                      speaker: line.startsWith("assistant:") ? "assistant" : "user",
+                      text: line.replace(/^(assistant|user|KI|Bewerber):\s*/i, ""),
+                    }))
+                  : [];
+
+              return (
+                <div key={vc.id} className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] space-y-5">
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                        KI Gesprächs-Analyse
+                      </h3>
+                      {vc.started_at && (
+                        <p className="font-label text-[10px] text-outline mt-0.5">
+                          {new Date(vc.started_at).toLocaleString("de-AT", {
+                            day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
+                          })} · {formatDuration(vc.duration_seconds)}
+                        </p>
+                      )}
+                    </div>
+                    <Link href={`/calls/${vc.id}`}
+                      className="flex items-center gap-1 font-label text-[10px] text-outline hover:text-primary transition-colors">
+                      Details
+                      <span className="material-symbols-outlined text-xs">open_in_new</span>
+                    </Link>
+                  </div>
+
+                  {ca ? (
+                    <>
+                      {/* Score + Recommendation */}
+                      <div className="flex items-center gap-4">
+                        <div className="relative flex-shrink-0">
+                          <svg className="-rotate-90" width="64" height="64">
+                            <circle cx="32" cy="32" r="26" fill="none" stroke="currentColor" strokeWidth="5"
+                              className="text-outline-variant/20" />
+                            <circle cx="32" cy="32" r="26" fill="none"
+                              stroke={(ca.interview_score ?? 0) >= 75 ? "#4CAF50" : (ca.interview_score ?? 0) >= 50 ? "#FF9800" : "#F44336"}
+                              strokeWidth="5"
+                              strokeDasharray={`${((ca.interview_score ?? 0) / 100) * 2 * Math.PI * 26} ${2 * Math.PI * 26}`}
+                              strokeLinecap="round" />
+                          </svg>
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <span className="font-headline text-lg text-on-surface leading-none">
+                              {ca.interview_score ?? "—"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          {rec && (
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-[10px] font-bold mb-2 ${rec.bg} ${rec.text}`}>
+                              <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>
+                                {rec.icon}
+                              </span>
+                              {rec.label}
+                            </span>
+                          )}
+                          {ca.summary && (
+                            <p className="font-body text-xs text-on-surface-variant leading-relaxed line-clamp-3">
+                              {ca.summary}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Key Insights + Red Flags */}
+                      {(ca.key_insights?.length > 0 || ca.red_flags?.length > 0) && (
+                        <div className="grid grid-cols-2 gap-3">
+                          {ca.key_insights?.length > 0 && (
+                            <div>
+                              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                                Stärken
+                              </span>
+                              <ul className="space-y-1.5">
+                                {ca.key_insights.slice(0, 3).map((insight, i) => (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <span className="material-symbols-outlined text-primary text-xs mt-0.5 flex-shrink-0"
+                                      style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+                                    <span className="font-body text-[11px] text-on-surface leading-relaxed">{insight}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {ca.red_flags?.length > 0 && (
+                            <div>
+                              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                                Warnsignale
+                              </span>
+                              <ul className="space-y-1.5">
+                                {ca.red_flags.slice(0, 3).map((flag, i) => (
+                                  <li key={i} className="flex items-start gap-1.5">
+                                    <span className="material-symbols-outlined text-error text-xs mt-0.5 flex-shrink-0"
+                                      style={{ fontVariationSettings: "'FILL' 1" }}>warning</span>
+                                    <span className="font-body text-[11px] text-on-surface leading-relaxed">{flag}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Criteria Scores */}
+                      {ca.criteria_scores?.length > 0 && (
+                        <div>
+                          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                            Kriterien-Bewertung
+                          </span>
+                          <div className="space-y-2">
+                            {ca.criteria_scores.map((c, i) => (
+                              <div key={i}>
+                                <div className="flex justify-between mb-0.5">
+                                  <span className="font-label text-[10px] text-on-surface-variant truncate pr-2">{c.criterion}</span>
+                                  <span className="font-label text-[10px] font-bold text-on-surface flex-shrink-0">{c.score}/10</span>
+                                </div>
+                                <div className="w-full bg-outline-variant/20 h-1.5 rounded-full overflow-hidden">
+                                  <div className={`h-full rounded-full ${
+                                    c.score >= 7 ? "bg-primary" : c.score >= 5 ? "bg-tertiary" : "bg-error/60"
+                                  }`} style={{ width: `${c.score * 10}%` }} />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center gap-3 py-4 text-center justify-center">
+                      <span className="material-symbols-outlined text-outline-variant text-xl">pending</span>
+                      <p className="font-body text-sm text-on-surface-variant">
+                        Analyse wird verarbeitet…
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Recording */}
+                  {vc.recording_url && (
+                    <div className="border-t border-outline-variant/10 pt-4">
+                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                        Aufnahme
+                      </span>
+                      <audio controls src={vc.recording_url} className="w-full h-8" />
+                    </div>
+                  )}
+
+                  {/* Transcript Toggle */}
+                  {(segments.length > 0 || transcript?.full_text) && (
+                    <div className="border-t border-outline-variant/10 pt-4">
+                      <button
+                        onClick={() => setTranscriptOpen((prev) => ({ ...prev, [vc.id]: !prev[vc.id] }))}
+                        className="w-full flex items-center justify-between text-left group"
+                      >
+                        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                          Transkript
+                        </span>
+                        <span className={`material-symbols-outlined text-outline group-hover:text-primary transition-all ${isTranscriptOpen ? "rotate-180" : ""}`}>
+                          expand_more
+                        </span>
+                      </button>
+
+                      {isTranscriptOpen && (
+                        <div className="mt-3 max-h-80 overflow-y-auto space-y-2 pr-1">
+                          {segments.length > 0 ? (
+                            segments.map((seg, i) => {
+                              const isAI = seg.speaker === "assistant" || seg.speaker === "KI";
+                              return (
+                                <div key={i} className={`flex gap-2 ${isAI ? "" : "flex-row-reverse"}`}>
+                                  <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[9px] font-bold mt-0.5 ${
+                                    isAI ? "bg-primary-container text-on-primary-container" : "bg-surface-container-high text-on-surface-variant"
+                                  }`}>
+                                    {isAI ? "KI" : "B"}
+                                  </div>
+                                  <div className={`max-w-[85%] px-3 py-2 rounded-xl font-body text-[11px] leading-relaxed ${
+                                    isAI
+                                      ? "bg-surface-container text-on-surface"
+                                      : "bg-primary-container/20 text-on-surface"
+                                  }`}>
+                                    {seg.text}
+                                  </div>
+                                </div>
+                              );
+                            })
+                          ) : (
+                            <p className="font-body text-xs text-on-surface-variant whitespace-pre-wrap leading-relaxed">
+                              {transcript?.full_text}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
 
           {/* Funnel Responses */}
           {Object.keys(app.funnel_responses ?? {}).length > 0 && (
