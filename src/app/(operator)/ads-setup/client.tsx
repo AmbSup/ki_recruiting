@@ -44,6 +44,7 @@ type WizardForm = {
   headline: string;
   cta_type: string;
   destination_url: string;
+  ad_image_url: string;
   // Step 6
   pixel_id: string;
   utm_campaign: string;
@@ -130,6 +131,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
     headline: "",
     cta_type: "APPLY_NOW",
     destination_url: "",
+    ad_image_url: "",
     pixel_id: "",
     utm_campaign: "",
   });
@@ -141,7 +143,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
       setLoadingFunnel(true);
       supabase
         .from("funnels")
-        .select("id, name, slug, funnel_type, external_url, job_id, job:jobs(id, title, company:companies(id, name))")
+        .select("id, name, slug, funnel_type, external_url, job_id, job:jobs(id, title, selected_ad_image_url, company:companies(id, name))")
         .eq("id", funnelId)
         .single()
         .then(({ data }) => {
@@ -155,6 +157,8 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
           const companyId = Array.isArray(rawCompany)
             ? (rawCompany as { id: string }[])[0]?.id ?? ""
             : (rawCompany as { id: string } | null)?.id ?? "";
+          const rawJob = f.job as unknown as { selected_ad_image_url?: string | null } | null;
+          const adImageUrl = rawJob?.selected_ad_image_url ?? "";
           setForm((prev) => ({
             ...prev,
             funnel_id: f.id,
@@ -163,6 +167,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
             campaign_name: campaignName,
             utm_campaign: slugify(campaignName),
             destination_url: getFunnelPublicUrl(f),
+            ad_image_url: adImageUrl,
           }));
           setLoadingFunnel(false);
         });
@@ -226,6 +231,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
         primary_text: form.primary_text || undefined,
         headline: form.headline || undefined,
         cta_type: form.cta_type,
+        ad_image_url: form.ad_image_url || undefined,
         pixel_id: form.pixel_id || undefined,
         utm_campaign: form.utm_campaign || undefined,
       }),
@@ -527,6 +533,36 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
             {/* ── Step 5: Ad Creative ──────────────────────────────────── */}
             {step === 4 && (
               <div className="space-y-5">
+
+                {/* Ad Image from job selection */}
+                {form.ad_image_url ? (
+                  <div>
+                    <Field label="Ad-Bild">
+                      <div className="relative rounded-xl overflow-hidden">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={form.ad_image_url} alt="Ad Bild" className="w-full aspect-square object-cover" />
+                        <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-primary/90 rounded-full px-2 py-0.5">
+                          <span className="material-symbols-outlined text-on-primary text-xs">check_circle</span>
+                          <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Aktiv</span>
+                        </div>
+                      </div>
+                      <p className="font-label text-[10px] text-outline mt-1.5">
+                        Aus Job-Einstellungen übernommen · <button className="text-primary underline" onClick={() => router.push(`/jobs/${form.job_id}`)}>Ändern</button>
+                      </p>
+                    </Field>
+                  </div>
+                ) : (
+                  <div className="bg-surface-container-high border border-outline-variant/20 rounded-xl px-4 py-3 flex items-center gap-3">
+                    <span className="material-symbols-outlined text-outline text-xl">image</span>
+                    <div>
+                      <p className="font-label text-xs font-bold text-on-surface-variant">Kein Ad-Bild ausgewählt</p>
+                      <button className="font-label text-[10px] text-primary underline" onClick={() => router.push(`/jobs/${form.job_id}`)}>
+                        Im Job ein Bild auswählen
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="bg-primary-container/10 border border-primary-container/30 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>

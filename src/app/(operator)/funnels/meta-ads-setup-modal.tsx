@@ -43,6 +43,7 @@ const AUSTRIAN_REGIONS = [
 
 export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [adImageUrl, setAdImageUrl] = useState<string | null>(null);
   const [form, setForm] = useState({
     job_category: "",
     daily_budget: "50",
@@ -58,13 +59,17 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
       setForm({ job_category: "", daily_budget: "50", regions: [] });
       setError(null);
       setSuccess(null);
+      setAdImageUrl(null);
       supabase
         .from("jobs")
-        .select("company_id")
+        .select("company_id, selected_ad_image_url")
         .eq("id", funnel.job_id)
         .single()
         .then(({ data }) => {
-          if (data) setCompanyId((data as { company_id: string }).company_id);
+          if (data) {
+            setCompanyId((data as { company_id: string }).company_id);
+            setAdImageUrl((data as { selected_ad_image_url: string | null }).selected_ad_image_url ?? null);
+          }
         });
     }
   }, [open, funnel?.job_id]);
@@ -101,6 +106,7 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
         daily_budget_cents: Math.round(budget * 100),
         regions: form.regions,
         funnel_id: funnel.id,
+        ad_image_url: adImageUrl ?? undefined,
       }),
     });
 
@@ -235,6 +241,22 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                 Keine Auswahl = ganz Österreich
               </p>
             </div>
+
+            {/* Ad Image Preview */}
+            {adImageUrl && (
+              <div>
+                <label className={labelClass}>Ad-Bild</label>
+                <div className="relative rounded-xl overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={adImageUrl} alt="Ad Bild" className="w-full aspect-square object-cover" />
+                  <div className="absolute bottom-2 left-2 flex items-center gap-1 bg-primary/90 rounded-full px-2 py-0.5">
+                    <span className="material-symbols-outlined text-on-primary text-xs">check_circle</span>
+                    <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Ausgewählt</span>
+                  </div>
+                </div>
+                <p className="font-label text-[10px] text-outline mt-1.5">Aus Job-Einstellungen übernommen</p>
+              </div>
+            )}
 
             {/* What the AI does */}
             <div className="bg-primary-container/10 border border-primary-container/30 rounded-xl px-4 py-3">

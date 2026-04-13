@@ -247,6 +247,7 @@ export interface CampaignCreateOptions {
   primary_text?: string;
   headline?: string;
   cta_type?: string;
+  ad_image_url?: string;
   pixel_id?: string;
   utm_campaign?: string;
 }

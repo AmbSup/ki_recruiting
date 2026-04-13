@@ -191,6 +191,7 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
       status: 'PAUSED',
       daily_budget_cents: options.daily_budget_cents,
       funnel_id: options.funnel_id ?? null,
+      ad_image_url: options.ad_image_url ?? null,
     })
     .select('id')
     .single();
@@ -289,6 +290,7 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
         variant_label: labels[i],
         generated_by_ai: true,
         ...(destinationUrl ? { destination_url: destinationUrl } : {}),
+        ...(options.ad_image_url ? { image_url: options.ad_image_url } : {}),
       });
     }
   }

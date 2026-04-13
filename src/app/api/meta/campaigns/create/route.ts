@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
     primary_text?: string;
     headline?: string;
     cta_type?: string;
+    ad_image_url?: string;
     pixel_id?: string;
     utm_campaign?: string;
   };
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
       primary_text: body.primary_text,
       headline: body.headline,
       cta_type: body.cta_type,
+      ad_image_url: body.ad_image_url,
       pixel_id: body.pixel_id,
       utm_campaign: body.utm_campaign,
     });
