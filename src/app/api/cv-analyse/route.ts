@@ -16,10 +16,10 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("applications")
     .select(`
-      id,
-      applicant:applicants(id, full_name, cv_file_url),
+      id, job_id,
+      applicant:applicants(id, full_name, email, phone, cv_file_url),
       job:jobs(
-        title, requirements, must_qualifications, nice_to_have_qualifications,
+        id, title, requirements, must_qualifications, nice_to_have_qualifications,
         ko_criteria, hard_skills, soft_skills, ideal_candidate, scoring_criteria
       )
     `)
@@ -59,6 +59,35 @@ export async function POST(req: NextRequest) {
       scoring_criteria: job.scoring_criteria ?? [],
     },
   });
+
+  // Auto-trigger Vapi call via n8n (fire-and-forget)
+  const n8nBase = process.env.N8N_BASE_URL;
+  if (n8nBase && applicant.phone) {
+    const nameParts = applicant.full_name.trim().split(' ');
+    const firstName = nameParts[0];
+    const lastName = nameParts.slice(1).join(' ') || '-';
+    void fetch(`${n8nBase}/webhook/start-booking-call-v2`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        result: 'accepted',
+        application_id,
+        candidate_id: applicant.id,
+        candidate_first_name: firstName,
+        candidate_last_name: lastName,
+        candidate_email: applicant.email ?? '',
+        candidate_phone_number: applicant.phone,
+        job_id: job.id,
+        job_title: job.title,
+      }),
+    })
+      .then((res) => {
+        if (res.ok) {
+          return supabase.from('applications').update({ pipeline_stage: 'call_scheduled' }).eq('id', application_id);
+        }
+      })
+      .catch((err) => console.error('[cv-analyse] n8n trigger failed:', err));
+  }
 
   return NextResponse.json({ success: true });
 }

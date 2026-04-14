@@ -8,7 +8,9 @@ export async function POST(req: NextRequest) {
     const supabase = createAdminClient();
 
     const body = await req.json();
-    const { funnel_id, job_id, name, email, phone, city, cv_url, answers } = body;
+    const { funnel_id, job_id, name, email, cv_url, cv_file_name, answers } = body;
+    // Normalize phone: replace leading 00 with + (e.g. 004367... → +4367...)
+    const phone = body.phone ? body.phone.replace(/^00/, '+') : body.phone;
 
     if (!funnel_id || !job_id || !name || !email) {
       return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
@@ -28,6 +30,7 @@ export async function POST(req: NextRequest) {
       await supabase.from("applicants").update({
         phone: phone || undefined,
         cv_file_url: cv_url || undefined,
+        ...(cv_file_name ? { cv_file_name } : {}),
         consent_given_at: new Date().toISOString(),
       }).eq("id", applicantId);
     } else {
@@ -38,6 +41,7 @@ export async function POST(req: NextRequest) {
           email,
           phone: phone || null,
           cv_file_url: cv_url || null,
+          cv_file_name: cv_file_name || null,
           consent_given_at: new Date().toISOString(),
         })
         .select("id")

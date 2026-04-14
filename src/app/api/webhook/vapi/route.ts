@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // POST /api/webhook/vapi
 //
 // Two purposes:
 //   1. "assistant-request" — Vapi asks which assistant to use for an incoming
-//      SIP call. We read the SIP headers (passed from Twilio) and return the
-//      assistant config with variableValues populated.
+//      SIP call. We look up call_sessions by phone number to get the candidate
+//      context (name, job, application_id) since Twilio SIP headers are not
+//      forwarded to Vapi.
 //
 //   2. "end-of-call-report" — forwarded here if n8n is not used. Currently
 //      we return 200 and let n8n handle it via its own webhook.
@@ -29,57 +31,43 @@ export async function POST(req: NextRequest) {
   if (messageType === "assistant-request") {
     const call = message?.call as Record<string, unknown> | undefined;
 
-    // Vapi passes SIP headers under call.sipHeaders (keys normalised to lowercase)
-    const sipHeaders = (call?.sipHeaders ?? {}) as Record<string, string>;
+    // Phone number of the candidate (outbound call: call.customer.number)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const phoneNumber = (call?.customer as any)?.number as string | undefined;
 
-    // Extract variables from SIP headers sent by Twilio Studio
-    const applicationId =
-      sipHeaders["x-application-id"] ??
-      sipHeaders["X-application-id"] ??
-      null;
-    const candidateId =
-      sipHeaders["x-candidate-id"] ??
-      sipHeaders["X-candidate-id"] ??
-      null;
-    const jobId =
-      sipHeaders["x-job-id"] ??
-      sipHeaders["X-job-id"] ??
-      null;
-    const firstName =
-      sipHeaders["x-first-name"] ??
-      sipHeaders["X-first-name"] ??
-      null;
-    const lastName =
-      sipHeaders["x-last-name"] ??
-      sipHeaders["X-last-name"] ??
-      null;
-    const email =
-      sipHeaders["x-email"] ??
-      sipHeaders["X-email"] ??
-      null;
-    const phone =
-      sipHeaders["x-phone"] ??
-      sipHeaders["X-phone"] ??
-      null;
-    const jobTitle =
-      sipHeaders["x-job-title"] ??
-      sipHeaders["X-job-title"] ??
-      null;
+    // Look up the active call session by phone number
+    let session: Record<string, unknown> | null = null;
+    if (phoneNumber) {
+      const supabase = createAdminClient();
+      const { data } = await supabase
+        .from("call_sessions")
+        .select("application_id, job_id, candidate_id, cached_data")
+        .eq("phone_number", phoneNumber)
+        .gt("expires_at", new Date().toISOString())
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      session = data as Record<string, unknown> | null;
+    }
 
-    console.log("[vapi-webhook] assistant-request | application_id:", applicationId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cached = session?.cached_data as any;
+    const candidate = cached?.candidate ?? {};
+
+    console.log("[vapi-webhook] assistant-request | phone:", phoneNumber, "| application_id:", session?.application_id ?? null);
 
     return NextResponse.json({
       assistant: {
         ...(VAPI_ASSISTANT_ID ? { id: VAPI_ASSISTANT_ID } : {}),
         variableValues: {
-          application_id: applicationId,
-          candidate_id: candidateId,
-          job_id: jobId,
-          candidate_first_name: firstName,
-          candidate_last_name: lastName,
-          candidate_email: email,
-          candidate_phone_number: phone,
-          job_title: jobTitle,
+          application_id: session?.application_id ?? null,
+          candidate_id: session?.candidate_id ?? null,
+          job_id: session?.job_id ?? null,
+          candidate_first_name: candidate.first_name ?? null,
+          candidate_last_name: candidate.last_name ?? null,
+          candidate_email: candidate.email ?? null,
+          candidate_phone_number: phoneNumber ?? null,
+          job_title: cached?.job?.title ?? null,
         },
       },
     });
