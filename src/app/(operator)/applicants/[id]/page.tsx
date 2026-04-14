@@ -44,6 +44,7 @@ type ApplicationDetail = {
     email: string;
     phone: string | null;
     cv_file_url: string | null;
+    cv_file_name: string | null;
     consent_given_at: string | null;
   };
   cv_analyses: {
@@ -157,6 +158,10 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
   const [analysingCv, setAnalysingCv] = useState(false);
   const [stageSaving, setStageSaving] = useState(false);
   const [transcriptOpen, setTranscriptOpen] = useState<Record<string, boolean>>({});
+  const [triggeringCall, setTriggeringCall] = useState(false);
+  const [uploadingCv, setUploadingCv] = useState(false);
+  const [deletingCv, setDeletingCv] = useState(false);
+  const [deletingCall, setDeletingCall] = useState<string | null>(null);
   const supabase = createClient();
 
   async function loadApp() {
@@ -171,7 +176,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           company:companies(name, primary_color)
         ),
         funnel:funnels(name, slug),
-        applicant:applicants(id, full_name, email, phone, cv_file_url, consent_given_at),
+        applicant:applicants(id, full_name, email, phone, cv_file_url, cv_file_name, consent_given_at),
         cv_analyses(*),
         voice_calls(*, transcripts(*), call_analyses(*))
       `)
@@ -188,7 +193,19 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
     setLoading(false);
   }
 
-  useEffect(() => { loadApp(); }, [id]);
+  useEffect(() => {
+    loadApp();
+    // Realtime: reload when a voice_call is inserted for this application
+    const channel = supabase
+      .channel("voice-calls-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "voice_calls", filter: `application_id=eq.${id}` },
+        () => loadApp()
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [id]);
 
   async function updateStage(stage: string) {
     setStageSaving(true);
@@ -210,9 +227,88 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
     setApp((prev) => prev ? { ...prev, customer_decision: "pending", pipeline_stage: "presented" } : prev);
   }
 
+  async function triggerCall() {
+    setTriggeringCall(true);
+    try {
+      const res = await fetch("/api/trigger-call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application_id: id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert("Fehler: " + (data.error ?? `HTTP ${res.status}`));
+        return;
+      }
+      await loadApp();
+    } catch (e) {
+      alert("Netzwerkfehler beim Auslösen des Calls");
+      console.error(e);
+    } finally {
+      setTriggeringCall(false);
+    }
+  }
+
   async function quickDecision(decision: "accepted" | "rejected") {
     await supabase.from("applications").update({ pipeline_stage: decision }).eq("id", id);
     setApp((prev) => prev ? { ...prev, pipeline_stage: decision } : prev);
+  }
+
+  async function uploadCv(file: File) {
+    setUploadingCv(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("funnel_id", "manual-upload");
+      const res = await fetch("/api/upload-cv", { method: "POST", body: formData });
+      const data = await res.json();
+      if (!res.ok) { alert("Upload fehlgeschlagen: " + (data.error ?? "")); return; }
+      await supabase.from("applicants").update({
+        cv_file_url: data.url,
+        cv_file_name: file.name,
+      }).eq("id", app!.applicant.id);
+      await loadApp();
+    } catch (e) {
+      console.error(e);
+      alert("Upload fehlgeschlagen");
+    } finally {
+      setUploadingCv(false);
+    }
+  }
+
+  async function deleteCv() {
+    if (!confirm("CV wirklich löschen?")) return;
+    setDeletingCv(true);
+    try {
+      // Extract storage path from URL
+      const url = app!.applicant.cv_file_url;
+      if (url) {
+        const match = url.match(/\/cvs\/(.+)$/);
+        if (match) {
+          await supabase.storage.from("cvs").remove([match[1]]);
+        }
+      }
+      await supabase.from("applicants").update({
+        cv_file_url: null,
+        cv_file_name: null,
+      }).eq("id", app!.applicant.id);
+      await loadApp();
+    } finally {
+      setDeletingCv(false);
+    }
+  }
+
+  async function deleteVoiceCall(vcId: string) {
+    if (!confirm("Call-Daten (Transkript + Analyse) wirklich löschen?")) return;
+    setDeletingCall(vcId);
+    try {
+      await supabase.from("transcripts").delete().eq("voice_call_id", vcId);
+      await supabase.from("call_analyses").delete().eq("voice_call_id", vcId);
+      await supabase.from("voice_calls").delete().eq("id", vcId);
+      await loadApp();
+    } finally {
+      setDeletingCall(null);
+    }
   }
 
   async function startCvAnalysis() {
@@ -247,7 +343,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
             Fehler: {queryError}
           </p>
         )}
-        <p className="font-label text-[10px] text-outline">ID: {id}</p>
+        <p className="font-label text-xs text-outline">ID: {id}</p>
       </div>
     );
   }
@@ -267,7 +363,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
       <Link href="/applicants"
         className="inline-flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors mb-8">
         <span className="material-symbols-outlined text-sm">arrow_back</span>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest">Bewerber-Pipeline</span>
+        <span className="font-label text-xs font-bold uppercase tracking-widest">Bewerber-Pipeline</span>
       </Link>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
@@ -291,7 +387,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   {app.applicant.full_name}
                 </h1>
                 {/* Status badge */}
-                <span className={`flex-shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-full font-label text-[10px] font-bold uppercase tracking-widest ${
+                <span className={`flex-shrink-0 inline-flex items-center gap-1 px-3 py-1 rounded-full font-label text-xs font-bold uppercase tracking-widest ${
                   isAccepted ? "bg-primary-container text-on-primary-container" :
                   isRejected ? "bg-error-container/30 text-error" :
                   "bg-surface-container text-on-surface-variant"
@@ -346,7 +442,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           {app.applicant.consent_given_at && (
             <div className="mt-4 pt-4 border-t border-outline-variant/10 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-primary text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>verified_user</span>
-              <span className="font-label text-[10px] text-outline">
+              <span className="font-label text-xs text-outline">
                 DSGVO-Einwilligung erteilt am {new Date(app.applicant.consent_given_at).toLocaleDateString("de-AT")}
               </span>
             </div>
@@ -359,7 +455,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           <div className="flex items-center gap-4">
             <ScoreRing score={app.overall_score} />
             <div>
-              <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1">
+              <div className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-1">
                 Gesamt-Score
               </div>
               {app.overall_score !== null && (
@@ -371,18 +467,61 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                    app.overall_score >= 50 ? "Geeignet" : "Schwach"}
                 </div>
               )}
-              {app.applicant.cv_file_url && (
-                <a href={app.applicant.cv_file_url} target="_blank" rel="noopener noreferrer"
-                  className="mt-2 flex items-center gap-1 font-label text-[10px] text-outline hover:text-primary transition-colors">
-                  <span className="material-symbols-outlined text-xs">download</span>
-                  CV herunterladen
-                </a>
-              )}
+              <div className="mt-2 space-y-1.5">
+                {app.applicant.cv_file_url ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); window.open(app.applicant.cv_file_url!, "_blank", "noopener,noreferrer"); }}
+                      className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-xs">download</span>
+                      CV herunterladen
+                    </button>
+                    {app.applicant.cv_file_name && (
+                      <p className="font-label text-xs text-outline-variant truncate max-w-[160px]" title={app.applicant.cv_file_name}>
+                        {app.applicant.cv_file_name}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      onClick={deleteCv}
+                      disabled={deletingCv}
+                      className="flex items-center gap-1 font-label text-xs text-error/70 hover:text-error transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      <span className="material-symbols-outlined text-xs">delete</span>
+                      {deletingCv ? "Löscht…" : "CV löschen"}
+                    </button>
+                  </>
+                ) : (
+                  <label className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors cursor-pointer">
+                    <span className="material-symbols-outlined text-xs">upload_file</span>
+                    {uploadingCv ? "Lädt hoch…" : "CV hochladen"}
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                      disabled={uploadingCv}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCv(f); e.target.value = ""; }}
+                    />
+                  </label>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Actions */}
           <div className="space-y-2 mt-auto">
+            {!["presented", "accepted", "rejected"].includes(app.pipeline_stage) &&
+              !app.voice_calls.some(c => c.status === "in_progress") && (
+              <button onClick={triggerCall} disabled={triggeringCall}
+                className="w-full flex items-center justify-center gap-2 bg-primary-container text-on-primary-container py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary/20 transition-colors disabled:opacity-60">
+                {triggeringCall
+                  ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                  : <span className="material-symbols-outlined text-sm">call</span>}
+                {triggeringCall ? "Wird gestartet…" : "KI-Call starten"}
+              </button>
+            )}
             {!isAccepted && !isRejected && (
               <button onClick={releaseToPortal}
                 className="w-full flex items-center justify-center gap-2 bg-primary text-on-primary py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors">
@@ -393,7 +532,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => quickDecision("accepted")}
                 disabled={isAccepted}
-                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest transition-colors ${
                   isAccepted
                     ? "bg-primary-container text-on-primary-container cursor-default"
                     : "border border-outline-variant/30 text-on-surface-variant hover:bg-primary-container hover:text-on-primary-container hover:border-transparent"
@@ -403,7 +542,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
               </button>
               <button onClick={() => quickDecision("rejected")}
                 disabled={isRejected}
-                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                className={`flex items-center justify-center gap-1.5 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest transition-colors ${
                   isRejected
                     ? "bg-error-container/30 text-error cursor-default"
                     : "border border-outline-variant/30 text-on-surface-variant hover:bg-error-container/30 hover:text-error hover:border-transparent"
@@ -419,9 +558,9 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
       {/* ── Pipeline Stepper ──────────────────────────────────────────────── */}
       <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] mb-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Pipeline-Status</span>
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Pipeline-Status</span>
           {stageSaving && (
-            <span className="flex items-center gap-1 font-label text-[10px] text-outline">
+            <span className="flex items-center gap-1 font-label text-xs text-outline">
               <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
               Speichert…
             </span>
@@ -486,9 +625,9 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">KI CV-Analyse</h3>
+                <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline">KI CV-Analyse</h3>
                 {cvAnalysis?.analyzed_at && (
-                  <p className="font-label text-[10px] text-outline mt-0.5">
+                  <p className="font-label text-xs text-outline mt-0.5">
                     Analysiert am {new Date(cvAnalysis.analyzed_at).toLocaleDateString("de-AT")}
                     {cvAnalysis.model_version ? ` · ${cvAnalysis.model_version}` : ""}
                   </p>
@@ -497,7 +636,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
               <button
                 onClick={startCvAnalysis}
                 disabled={analysingCv}
-                className="flex items-center gap-1.5 bg-primary text-on-primary px-3 py-1.5 rounded-xl font-label text-[10px] font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60"
+                className="flex items-center gap-1.5 bg-primary text-on-primary px-3 py-1.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60"
               >
                 {analysingCv
                   ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
@@ -525,7 +664,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                     />
                   </div>
                   {app.score_breakdown && (
-                    <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label text-[10px] font-bold ${
+                    <div className={`mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-label text-xs font-bold ${
                       app.score_breakdown.ko_criteria_passed
                         ? "bg-primary-container/40 text-on-primary-container"
                         : "bg-error-container/40 text-error"
@@ -541,7 +680,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 {/* Score Breakdown */}
                 {app.score_breakdown && (
                   <div>
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-3">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-3">
                       Score-Aufschlüsselung
                     </span>
                     <div className="grid grid-cols-2 gap-x-8 gap-y-3">
@@ -556,8 +695,8 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                         return (
                           <div key={key}>
                             <div className="flex justify-between mb-1">
-                              <span className="font-label text-[10px] text-on-surface-variant">{labels[key]}</span>
-                              <span className="font-label text-[10px] font-bold text-on-surface">{val}%</span>
+                              <span className="font-label text-xs text-on-surface-variant">{labels[key]}</span>
+                              <span className="font-label text-xs font-bold text-on-surface">{val}%</span>
                             </div>
                             <div className="w-full bg-outline-variant/20 h-1.5 rounded-full overflow-hidden">
                               <div
@@ -577,7 +716,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 {/* Summary */}
                 {cvAnalysis.summary && (
                   <div className="bg-surface-container-low rounded-xl p-4">
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                       KI-Zusammenfassung
                     </span>
                     <p className="font-body text-sm text-on-surface leading-relaxed">{cvAnalysis.summary}</p>
@@ -588,7 +727,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 <div className="grid grid-cols-2 gap-4">
                   {cvAnalysis.strengths?.length > 0 && (
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Stärken
                       </span>
                       <ul className="space-y-2">
@@ -605,7 +744,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   {cvAnalysis.gaps?.length > 0 && (
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Lücken
                       </span>
                       <ul className="space-y-2">
@@ -626,7 +765,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 {cvAnalysis.structured_data && (
                   <div className="border-t border-outline-variant/10 pt-4 grid grid-cols-3 gap-4">
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
                         Erfahrung
                       </span>
                       <span className="font-headline text-xl text-on-surface">
@@ -636,7 +775,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                       </span>
                     </div>
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
                         Ausbildung
                       </span>
                       <span className="font-body text-xs text-on-surface">
@@ -645,12 +784,12 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                     </div>
                     {cvAnalysis.structured_data.languages?.length ? (
                       <div>
-                        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
                           Sprachen
                         </span>
                         <div className="flex flex-wrap gap-1">
                           {cvAnalysis.structured_data.languages.map((l) => (
-                            <span key={l} className="bg-tertiary-container/30 text-on-tertiary-container px-2 py-0.5 rounded-full font-label text-[10px] font-bold">
+                            <span key={l} className="bg-tertiary-container/30 text-on-tertiary-container px-2 py-0.5 rounded-full font-label text-xs font-bold">
                               {l}
                             </span>
                           ))}
@@ -663,12 +802,12 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 {/* Skills */}
                 {cvAnalysis.structured_data?.skills?.length ? (
                   <div>
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                       Erkannte Skills
                     </span>
                     <div className="flex flex-wrap gap-1.5">
                       {cvAnalysis.structured_data.skills.map((s) => (
-                        <span key={s} className="bg-surface-container px-2.5 py-1 rounded-full font-label text-[10px] font-bold text-on-surface-variant">
+                        <span key={s} className="bg-surface-container px-2.5 py-1 rounded-full font-label text-xs font-bold text-on-surface-variant">
                           {s}
                         </span>
                       ))}
@@ -682,25 +821,43 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   <span className="material-symbols-outlined text-2xl text-outline-variant">psychology</span>
                 </div>
                 <div>
-                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1">
+                  <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-1">
                     Noch keine Analyse
                   </p>
                   <p className="font-body text-sm text-on-surface-variant">
                     {app.applicant.cv_file_url
                       ? "Lebenslauf liegt vor — Analyse starten."
-                      : "Kein Lebenslauf vorhanden — Analyse trotzdem möglich."}
+                      : "Kein Lebenslauf vorhanden — CV hochladen oder Analyse trotzdem starten."}
                   </p>
                 </div>
-                {app.applicant.cv_file_url && (
-                  <a
-                    href={app.applicant.cv_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors font-label text-xs font-bold"
-                  >
-                    <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
-                    Lebenslauf öffnen
-                  </a>
+                {app.applicant.cv_file_url ? (
+                  <div className="flex flex-col items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); window.open(app.applicant.cv_file_url!, "_blank", "noopener,noreferrer"); }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl border border-outline-variant/30 text-on-surface-variant hover:bg-surface-container hover:text-primary transition-colors font-label text-xs font-bold cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+                      Lebenslauf öffnen
+                    </button>
+                    {app.applicant.cv_file_name && (
+                      <p className="font-label text-xs text-outline-variant truncate max-w-[200px]" title={app.applicant.cv_file_name}>
+                        {app.applicant.cv_file_name}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <label className="flex items-center gap-2 px-4 py-2 rounded-xl border border-dashed border-outline-variant/40 text-on-surface-variant hover:bg-surface-container hover:text-primary hover:border-primary/40 transition-colors font-label text-xs font-bold cursor-pointer">
+                    <span className="material-symbols-outlined text-sm">upload_file</span>
+                    {uploadingCv ? "Lädt hoch…" : "CV hochladen"}
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx"
+                      className="hidden"
+                      disabled={uploadingCv}
+                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadCv(f); e.target.value = ""; }}
+                    />
+                  </label>
                 )}
                 <button
                   onClick={startCvAnalysis}
@@ -719,13 +876,13 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           {/* Gap Analysis: Idealprofil vs. Bewerber */}
           {(app.job.ideal_candidate || app.job.must_qualifications || app.job.ko_criteria || app.job.hard_skills) && (
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-              <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-5">
+              <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-5">
                 Profil-Anforderungen
               </h3>
               <div className="space-y-4">
                 {app.job.ideal_candidate && (
                   <div className="bg-primary-container/10 rounded-xl p-4">
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-primary block mb-2">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-primary block mb-2">
                       Idealprofil
                     </span>
                     <p className="font-body text-sm text-on-surface leading-relaxed">{app.job.ideal_candidate}</p>
@@ -734,7 +891,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 <div className="grid grid-cols-2 gap-4">
                   {app.job.must_qualifications && (
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Pflichtqualifikationen
                       </span>
                       <p className="font-body text-xs text-on-surface-variant leading-relaxed whitespace-pre-line">
@@ -744,7 +901,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   {app.job.nice_to_have_qualifications && (
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Wäre toll
                       </span>
                       <p className="font-body text-xs text-on-surface-variant leading-relaxed whitespace-pre-line">
@@ -754,7 +911,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   {app.job.hard_skills && (
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Fachliche Skills
                       </span>
                       <p className="font-body text-xs text-on-surface-variant leading-relaxed whitespace-pre-line">
@@ -764,7 +921,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   )}
                   {app.job.soft_skills && (
                     <div>
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Soft Skills
                       </span>
                       <p className="font-body text-xs text-on-surface-variant leading-relaxed whitespace-pre-line">
@@ -775,7 +932,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 </div>
                 {app.job.ko_criteria && (
                   <div className="bg-error-container/10 rounded-xl p-4">
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-error block mb-2">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-error block mb-2">
                       KO-Kriterien (Ausschlussgründe)
                     </span>
                     <p className="font-body text-sm text-on-surface leading-relaxed whitespace-pre-line">
@@ -794,17 +951,60 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           {/* Voice Calls + Analyse */}
           {app.voice_calls.length === 0 ? (
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-              <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">
+              <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">
                 KI Gesprächs-Analyse
               </h3>
-              <div className="flex flex-col items-center py-8 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center mb-3">
-                  <span className="material-symbols-outlined text-xl text-outline-variant">mic_off</span>
+              {app.pipeline_stage === "call_scheduled" ? (
+                /* Call was triggered, waiting for n8n / Twilio */
+                <div className="flex flex-col items-center py-8 text-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                    <span className="material-symbols-outlined text-xl text-primary animate-pulse">phone_forwarded</span>
+                  </div>
+                  <div>
+                    <p className="font-label text-xs font-bold uppercase tracking-widest text-primary">
+                      Anruf in Warteschlange
+                    </p>
+                    <p className="font-body text-xs text-outline-variant mt-1">
+                      n8n prüft Geschäftszeiten — Anruf folgt in Kürze
+                    </p>
+                  </div>
+                  <button
+                    onClick={loadApp}
+                    className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors mt-1"
+                  >
+                    <span className="material-symbols-outlined text-xs">refresh</span>
+                    Aktualisieren
+                  </button>
                 </div>
-                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
-                  Noch kein Call durchgeführt
-                </p>
-              </div>
+              ) : (
+                /* No call triggered at all */
+                <div className="flex flex-col items-center py-8 text-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-surface-container flex items-center justify-center">
+                    <span className="material-symbols-outlined text-xl text-outline-variant">mic_off</span>
+                  </div>
+                  <div>
+                    <p className="font-label text-xs font-bold uppercase tracking-widest text-outline">
+                      Noch kein Call ausgelöst
+                    </p>
+                    <p className="font-body text-xs text-outline-variant mt-1">
+                      CV-Analyse startet den Call automatisch — oder manuell starten:
+                    </p>
+                  </div>
+                  {!["presented", "accepted", "rejected"].includes(app.pipeline_stage) &&
+                    !app.voice_calls.some(c => c.status === "in_progress") && (
+                    <button
+                      onClick={triggerCall}
+                      disabled={triggeringCall}
+                      className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-label text-xs font-bold uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-sm">
+                        {triggeringCall ? "progress_activity" : "phone_in_talk"}
+                      </span>
+                      {triggeringCall ? "Wird ausgelöst…" : "KI-Call starten"}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           ) : (
             app.voice_calls.map((vc) => {
@@ -829,22 +1029,45 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   {/* Header */}
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                      <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline">
                         KI Gesprächs-Analyse
                       </h3>
                       {vc.started_at && (
-                        <p className="font-label text-[10px] text-outline mt-0.5">
+                        <p className="font-label text-xs text-outline mt-0.5">
                           {new Date(vc.started_at).toLocaleString("de-AT", {
                             day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit",
                           })} · {formatDuration(vc.duration_seconds)}
                         </p>
                       )}
+                      {/* Call status badge */}
+                      {vc.status === "in_progress" && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-primary/10 font-label text-xs text-primary">
+                          <span className="material-symbols-outlined text-xs animate-pulse">phone_in_talk</span>
+                          Gespräch läuft gerade
+                        </span>
+                      )}
+                      {(vc.status === "failed" || vc.status === "no_answer" || vc.status === "busy") && (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-error-container/30 font-label text-xs text-error">
+                          <span className="material-symbols-outlined text-xs">phone_missed</span>
+                          {vc.status === "no_answer" ? "Nicht abgehoben" : vc.status === "busy" ? "Besetzt" : "Fehlgeschlagen"}
+                        </span>
+                      )}
                     </div>
-                    <Link href={`/calls/${vc.id}`}
-                      className="flex items-center gap-1 font-label text-[10px] text-outline hover:text-primary transition-colors">
-                      Details
-                      <span className="material-symbols-outlined text-xs">open_in_new</span>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => deleteVoiceCall(vc.id)}
+                        disabled={deletingCall === vc.id}
+                        className="flex items-center gap-1 font-label text-xs text-error/60 hover:text-error transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-xs">delete</span>
+                        {deletingCall === vc.id ? "Löscht…" : "Löschen"}
+                      </button>
+                      <Link href={`/calls/${vc.id}`}
+                        className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors">
+                        Details
+                        <span className="material-symbols-outlined text-xs">open_in_new</span>
+                      </Link>
+                    </div>
                   </div>
 
                   {ca ? (
@@ -869,7 +1092,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                         </div>
                         <div className="flex-1 min-w-0">
                           {rec && (
-                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-[10px] font-bold mb-2 ${rec.bg} ${rec.text}`}>
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-label text-xs font-bold mb-2 ${rec.bg} ${rec.text}`}>
                               <span className="material-symbols-outlined text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>
                                 {rec.icon}
                               </span>
@@ -889,7 +1112,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                         <div className="grid grid-cols-2 gap-3">
                           {ca.key_insights?.length > 0 && (
                             <div>
-                              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                                 Stärken
                               </span>
                               <ul className="space-y-1.5">
@@ -905,7 +1128,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                           )}
                           {ca.red_flags?.length > 0 && (
                             <div>
-                              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                                 Warnsignale
                               </span>
                               <ul className="space-y-1.5">
@@ -925,15 +1148,15 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                       {/* Criteria Scores */}
                       {ca.criteria_scores?.length > 0 && (
                         <div>
-                          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                          <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                             Kriterien-Bewertung
                           </span>
                           <div className="space-y-2">
                             {ca.criteria_scores.map((c, i) => (
                               <div key={i}>
                                 <div className="flex justify-between mb-0.5">
-                                  <span className="font-label text-[10px] text-on-surface-variant truncate pr-2">{c.criterion}</span>
-                                  <span className="font-label text-[10px] font-bold text-on-surface flex-shrink-0">{c.score}/10</span>
+                                  <span className="font-label text-xs text-on-surface-variant truncate pr-2">{c.criterion}</span>
+                                  <span className="font-label text-xs font-bold text-on-surface flex-shrink-0">{c.score}/10</span>
                                 </div>
                                 <div className="w-full bg-outline-variant/20 h-1.5 rounded-full overflow-hidden">
                                   <div className={`h-full rounded-full ${
@@ -958,7 +1181,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   {/* Recording */}
                   {vc.recording_url && (
                     <div className="border-t border-outline-variant/10 pt-4">
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
                         Aufnahme
                       </span>
                       <audio controls src={vc.recording_url} className="w-full h-8" />
@@ -972,7 +1195,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                         onClick={() => setTranscriptOpen((prev) => ({ ...prev, [vc.id]: !prev[vc.id] }))}
                         className="w-full flex items-center justify-between text-left group"
                       >
-                        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
                           Transkript
                         </span>
                         <span className={`material-symbols-outlined text-outline group-hover:text-primary transition-all ${isTranscriptOpen ? "rotate-180" : ""}`}>
@@ -1019,19 +1242,19 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           {/* Funnel Responses */}
           {Object.keys(app.funnel_responses ?? {}).length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-              <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">
+              <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">
                 Funnel-Antworten
               </h3>
               <div className="space-y-4">
                 {Object.entries(app.funnel_responses).map(([question, answers]) => (
                   <div key={question}>
-                    <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-1.5">
+                    <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-1.5">
                       {question}
                     </p>
                     <div className="flex flex-wrap gap-1.5">
                       {(Array.isArray(answers) ? answers : [answers]).map((a) => (
                         <span key={a}
-                          className="bg-primary-container/30 text-on-primary-container px-2.5 py-1 rounded-full font-label text-[10px] font-bold">
+                          className="bg-primary-container/30 text-on-primary-container px-2.5 py-1 rounded-full font-label text-xs font-bold">
                           {a}
                         </span>
                       ))}
@@ -1045,13 +1268,13 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
           {/* UTM / Campaign Tracking */}
           {app.utm_params && Object.keys(app.utm_params).length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-              <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">
+              <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">
                 Kampagnen-Tracking
               </h3>
               <div className="space-y-2">
                 {Object.entries(app.utm_params).map(([k, v]) => (
                   <div key={k} className="flex justify-between items-start gap-3">
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline flex-shrink-0">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-outline flex-shrink-0">
                       {k.replace("utm_", "")}
                     </span>
                     <span className="font-body text-xs text-on-surface-variant text-right break-all">{v}</span>
@@ -1063,7 +1286,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
 
           {/* Internal Notes */}
           <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-            <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-3">
+            <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-3">
               Interne Notizen
             </h3>
             <textarea
@@ -1076,7 +1299,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
             <button
               onClick={saveNotes}
               disabled={savingNotes}
-              className="flex items-center gap-1.5 font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline disabled:opacity-60 transition-opacity"
+              className="flex items-center gap-1.5 font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline disabled:opacity-60 transition-opacity"
             >
               {savingNotes
                 ? <span className="material-symbols-outlined text-xs animate-spin">progress_activity</span>
@@ -1087,7 +1310,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
 
           {/* Application Meta */}
           <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-            <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">
+            <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">
               Bewerbungsdetails
             </h3>
             <div className="space-y-3">
@@ -1105,7 +1328,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between items-start gap-3">
-                  <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline flex-shrink-0">
+                  <span className="font-label text-xs font-bold uppercase tracking-widest text-outline flex-shrink-0">
                     {label}
                   </span>
                   <span className="font-body text-xs text-on-surface-variant text-right">{value}</span>
@@ -1114,7 +1337,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
               <div className="pt-2 mt-2 border-t border-outline-variant/10">
                 <Link href={`/jobs/${app.job.id}`}
                   className="flex items-center justify-between group">
-                  <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                  <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
                     Job öffnen
                   </span>
                   <span className="material-symbols-outlined text-outline group-hover:text-primary transition-colors text-sm">
