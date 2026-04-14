@@ -56,46 +56,55 @@ function ScoreBadge({ score }: { score: number | null }) {
     score >= 50 ? "bg-tertiary-container text-on-tertiary-container" :
     "bg-error-container/30 text-error";
   return (
-    <span className={`text-[10px] font-label font-bold px-2 py-0.5 rounded-full ${color}`}>
+    <span className={`text-xs font-label font-bold px-2 py-0.5 rounded-full ${color}`}>
       {score}%
     </span>
   );
 }
 
-function KanbanCard({ app }: { app: Application }) {
+function KanbanCard({ app, onDelete }: { app: Application; onDelete: (id: string) => void }) {
   return (
-    <Link href={`/applicants/${app.id}`} className="block bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(45,52,51,0.06)] hover:shadow-[0_8px_24px_-4px_rgba(45,52,51,0.1)] hover:-translate-y-0.5 transition-all border border-outline-variant/10 group">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-[10px] font-bold text-on-primary-container flex-shrink-0">
-            {app.applicant.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+    <div className="relative bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(45,52,51,0.06)] hover:shadow-[0_8px_24px_-4px_rgba(45,52,51,0.1)] hover:-translate-y-0.5 transition-all border border-outline-variant/10 group">
+      <button
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(app.id); }}
+        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-error-container/20 text-outline-variant hover:text-error"
+        title="Bewerbung löschen"
+      >
+        <span className="material-symbols-outlined text-sm">close</span>
+      </button>
+      <Link href={`/applicants/${app.id}`} className="block">
+        <div className="flex items-start justify-between mb-3 pr-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-xs font-bold text-on-primary-container flex-shrink-0">
+              {app.applicant.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <p className="font-label text-xs font-bold text-on-surface truncate group-hover:text-primary transition-colors">
+                {app.applicant.full_name}
+              </p>
+              <p className="font-label text-xs text-outline truncate">{app.job.company.name}</p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <p className="font-label text-xs font-bold text-on-surface truncate group-hover:text-primary transition-colors">
-              {app.applicant.full_name}
-            </p>
-            <p className="font-label text-[10px] text-outline truncate">{app.job.company.name}</p>
+          <ScoreBadge score={app.overall_score} />
+        </div>
+
+        <p className="font-body text-xs text-on-surface-variant mb-3 line-clamp-1">
+          {app.job.title}
+        </p>
+
+        <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10">
+          <span className="font-label text-xs text-outline">
+            {formatAppliedAt(app.applied_at)}
+          </span>
+          <div className="flex items-center gap-1">
+            {app.applicant.phone && (
+              <span className="material-symbols-outlined text-outline-variant text-xs">phone</span>
+            )}
+            <span className="material-symbols-outlined text-outline-variant text-xs">arrow_forward</span>
           </div>
         </div>
-        <ScoreBadge score={app.overall_score} />
-      </div>
-
-      <p className="font-body text-xs text-on-surface-variant mb-3 line-clamp-1">
-        {app.job.title}
-      </p>
-
-      <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10">
-        <span className="font-label text-[10px] text-outline">
-          {formatAppliedAt(app.applied_at)}
-        </span>
-        <div className="flex items-center gap-1">
-          {app.applicant.phone && (
-            <span className="material-symbols-outlined text-outline-variant text-xs">phone</span>
-          )}
-          <span className="material-symbols-outlined text-outline-variant text-xs">arrow_forward</span>
-        </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
@@ -137,13 +146,29 @@ export function PipelineClient() {
 
   const byStage = (stage: Stage) => applications.filter((a) => a.pipeline_stage === stage);
 
+  async function deleteApplication(id: string) {
+    if (!confirm("Bewerbung wirklich löschen? (inkl. CV-Analyse, Calls, Transkripte)")) return;
+    const supabase = createClient();
+    // Delete related records first
+    const { data: vcs } = await supabase.from("voice_calls").select("id").eq("application_id", id);
+    if (vcs?.length) {
+      const vcIds = vcs.map(v => v.id);
+      await supabase.from("transcripts").delete().in("voice_call_id", vcIds);
+      await supabase.from("call_analyses").delete().in("voice_call_id", vcIds);
+      await supabase.from("voice_calls").delete().eq("application_id", id);
+    }
+    await supabase.from("cv_analyses").delete().eq("application_id", id);
+    await supabase.from("applications").delete().eq("id", id);
+    setApplications(prev => prev.filter(a => a.id !== id));
+  }
+
   return (
     <div className="flex flex-col h-screen">
       {/* Header */}
       <div className="px-8 pt-10 pb-6 flex-shrink-0">
         <div className="flex items-end justify-between mb-6">
           <div>
-            <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">
               Operator Panel
             </p>
             <h1 className="font-headline text-5xl italic text-on-surface leading-none">
@@ -165,7 +190,7 @@ export function PipelineClient() {
             <div className="flex bg-surface-container-lowest border border-outline-variant/20 rounded-xl overflow-hidden">
               <button
                 onClick={() => setView("kanban")}
-                className={`px-4 py-2.5 flex items-center gap-1.5 font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                className={`px-4 py-2.5 flex items-center gap-1.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
                   view === "kanban"
                     ? "bg-primary-container text-on-primary-container"
                     : "text-on-surface-variant hover:bg-surface-container"
@@ -176,7 +201,7 @@ export function PipelineClient() {
               </button>
               <button
                 onClick={() => setView("list")}
-                className={`px-4 py-2.5 flex items-center gap-1.5 font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                className={`px-4 py-2.5 flex items-center gap-1.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
                   view === "list"
                     ? "bg-primary-container text-on-primary-container"
                     : "text-on-surface-variant hover:bg-surface-container"
@@ -196,7 +221,7 @@ export function PipelineClient() {
             return (
               <div key={stage.key} className="flex items-center gap-1.5 bg-surface-container-lowest px-3 py-1.5 rounded-full border border-outline-variant/20">
                 <span className="material-symbols-outlined text-outline-variant text-xs">{stage.icon}</span>
-                <span className="font-label text-[10px] font-bold text-outline uppercase tracking-widest">{stage.label}</span>
+                <span className="font-label text-xs font-bold text-outline uppercase tracking-widest">{stage.label}</span>
                 <span className="font-headline text-sm text-on-surface">{count}</span>
               </div>
             );
@@ -225,7 +250,7 @@ export function PipelineClient() {
                     <div className={`${stage.headerBg} px-4 py-3 flex items-center justify-between`}>
                       <div className="flex items-center gap-2">
                         <span className="material-symbols-outlined text-outline text-sm">{stage.icon}</span>
-                        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-on-surface-variant">
                           {stage.label}
                         </span>
                       </div>
@@ -235,11 +260,11 @@ export function PipelineClient() {
                     {/* Cards */}
                     <div className="p-3 space-y-3 min-h-[200px] bg-surface-container/30">
                       {cards.map((app) => (
-                        <KanbanCard key={app.id} app={app} />
+                        <KanbanCard key={app.id} app={app} onDelete={deleteApplication} />
                       ))}
                       {cards.length === 0 && (
                         <div className="flex items-center justify-center h-20 rounded-lg border-2 border-dashed border-outline-variant/20">
-                          <span className="font-label text-[10px] text-outline uppercase tracking-widest">Leer</span>
+                          <span className="font-label text-xs text-outline uppercase tracking-widest">Leer</span>
                         </div>
                       )}
                     </div>
@@ -258,7 +283,7 @@ export function PipelineClient() {
             {/* Table Header */}
             <div className="grid grid-cols-12 gap-4 px-5 py-3 border-b border-outline-variant/20 bg-surface-container-low">
               {["Bewerber", "Job / Firma", "Status", "Score", "Datum", ""].map((h, i) => (
-                <div key={i} className={`font-label text-[10px] font-bold uppercase tracking-widest text-outline ${i === 0 ? "col-span-3" : i === 1 ? "col-span-3" : i === 2 ? "col-span-2" : i === 3 ? "col-span-1" : i === 4 ? "col-span-2" : "col-span-1"}`}>
+                <div key={i} className={`font-label text-xs font-bold uppercase tracking-widest text-outline ${i === 0 ? "col-span-3" : i === 1 ? "col-span-3" : i === 2 ? "col-span-2" : i === 3 ? "col-span-1" : i === 4 ? "col-span-2" : "col-span-1"}`}>
                   {h}
                 </div>
               ))}
@@ -275,30 +300,37 @@ export function PipelineClient() {
                 return (
                   <div key={app.id} className="grid grid-cols-12 gap-4 px-5 py-4 border-b border-outline-variant/10 hover:bg-surface-container/50 transition-colors items-center">
                     <div className="col-span-3 flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-[10px] font-bold text-on-primary-container flex-shrink-0">
+                      <div className="w-7 h-7 rounded-full bg-primary-container flex items-center justify-center text-xs font-bold text-on-primary-container flex-shrink-0">
                         {app.applicant.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
                       </div>
                       <div>
                         <p className="font-label text-xs font-bold text-on-surface">{app.applicant.full_name}</p>
-                        <p className="font-label text-[10px] text-outline">{app.applicant.email}</p>
+                        <p className="font-label text-xs text-outline">{app.applicant.email}</p>
                       </div>
                     </div>
                     <div className="col-span-3">
                       <p className="font-body text-xs text-on-surface">{app.job.title}</p>
-                      <p className="font-label text-[10px] text-outline">{app.job.company.name}</p>
+                      <p className="font-label text-xs text-outline">{app.job.company.name}</p>
                     </div>
                     <div className="col-span-2">
-                      <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-2 py-1 rounded-full ${stage.headerBg} text-on-surface-variant`}>
+                      <span className={`text-xs font-label font-bold uppercase tracking-widest px-2 py-1 rounded-full ${stage.headerBg} text-on-surface-variant`}>
                         {stage.label}
                       </span>
                     </div>
                     <div className="col-span-1">
                       <ScoreBadge score={app.overall_score} />
                     </div>
-                    <div className="col-span-2 font-label text-[10px] text-outline">
+                    <div className="col-span-2 font-label text-xs text-outline">
                       {formatAppliedAt(app.applied_at)}
                     </div>
-                    <div className="col-span-1 flex justify-end">
+                    <div className="col-span-1 flex justify-end gap-1">
+                      <button
+                        onClick={() => deleteApplication(app.id)}
+                        className="material-symbols-outlined text-outline-variant hover:text-error transition-colors text-lg"
+                        title="Löschen"
+                      >
+                        delete
+                      </button>
                       <a href={`/applicants/${app.id}`} className="material-symbols-outlined text-outline hover:text-primary transition-colors text-lg">
                         arrow_forward
                       </a>
