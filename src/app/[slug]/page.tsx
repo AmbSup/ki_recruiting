@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { notFound, redirect } from "next/navigation";
 import Script from "next/script";
 import { FunnelPlayer } from "./funnel-player";
@@ -6,7 +7,7 @@ import type { Metadata } from "next";
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
+  const supabase = createAdminClient();
   const { data } = await supabase
     .from("funnels")
     .select("name, job:jobs(title, selected_ad_image_url, company:companies(name))")
