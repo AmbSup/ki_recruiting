@@ -130,53 +130,101 @@ const headlineSizeMap: Record<string, string> = { sm: "14px", md: "18px", lg: "2
 
 type ActiveTextField = { blockId: string; fieldKey: string; rect: DOMRect } | null;
 
-function FloatingTextToolbar({ field, content, onUpdate, onClose }: {
-  field: ActiveTextField;
+// ─── Element Properties Panel (shown in right sidebar when sub-element is selected) ──
+
+const fieldLabels: Record<string, string> = {
+  name: "Name", title: "Titel", headline: "Headline", subtext: "Beschreibung",
+  cta: "CTA Button", question: "Frage", size: "Text", content: "Text",
+};
+
+function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
+  fieldKey: string;
   content: BlockContent;
   onUpdate: (c: Partial<BlockContent>) => void;
   onClose: () => void;
 }) {
-  if (!field) return null;
-  const sKey = `${field.fieldKey}_size`;
-  const cKey = `${field.fieldKey}_color`;
-  const aKey = `${field.fieldKey}_align`;
+  const sKey = `${fieldKey}_size`;
+  const cKey = `${fieldKey}_color`;
+  const aKey = `${fieldKey}_align`;
   const curSize = (content[sKey] as string) ?? "md";
   const curColor = (content[cKey] as string) ?? "";
   const curAlign = (content[aKey] as string) ?? "center";
 
+  // Map fieldKey to the actual content field for text editing
+  const textFieldMap: Record<string, string> = {
+    name: "name", title: "title_text", headline: "headline", subtext: "subtext",
+    cta: "cta_text", question: "question", size: "content", content: "content",
+  };
+  const textKey = textFieldMap[fieldKey] ?? fieldKey;
+  const textValue = (content[textKey] as string) ?? "";
+
   return (
-    <div
-      className="absolute z-50 flex items-center gap-1 bg-white border border-gray-200 rounded-xl shadow-2xl px-2 py-1.5"
-      style={{ top: field.rect.top - 44, left: Math.max(4, field.rect.left - 10), minWidth: 280 }}
-      onClick={(e) => e.stopPropagation()}
-    >
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between pb-3 border-b border-outline-variant/10">
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-primary text-base">text_fields</span>
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-on-surface">
+            {fieldLabels[fieldKey] ?? fieldKey}
+          </span>
+        </div>
+        <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface text-sm">close</button>
+      </div>
+
+      {/* Text Content */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Text</label>
+        <textarea
+          value={textValue}
+          onChange={(e) => onUpdate({ [textKey]: e.target.value })}
+          rows={2}
+          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"
+        />
+      </div>
+
       {/* Size */}
-      {(["sm", "md", "lg", "xl"] as const).map((s) => (
-        <button key={s} onClick={() => onUpdate({ [sKey]: s })}
-          className={`px-1.5 py-1 rounded text-[10px] font-bold transition-all ${curSize === s ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-700"}`}>
-          {s.toUpperCase()}
-        </button>
-      ))}
-      <div className="w-px h-5 bg-gray-200 mx-0.5" />
-      {/* Align */}
-      {(["left", "center", "right"] as const).map((a) => (
-        <button key={a} onClick={() => onUpdate({ [aKey]: a })}
-          className={`p-1 rounded transition-all ${curAlign === a ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-700"}`}>
-          <span className="material-symbols-outlined text-sm">{a === "left" ? "format_align_left" : a === "center" ? "format_align_center" : "format_align_right"}</span>
-        </button>
-      ))}
-      <div className="w-px h-5 bg-gray-200 mx-0.5" />
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftgröße</label>
+        <div className="flex gap-1.5">
+          {(["sm", "md", "lg", "xl"] as const).map((s) => (
+            <button key={s} onClick={() => onUpdate({ [sKey]: s })}
+              className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase transition-all ${curSize === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
+              {s.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Alignment */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Ausrichtung</label>
+        <div className="flex gap-1.5">
+          {(["left", "center", "right"] as const).map((a) => (
+            <button key={a} onClick={() => onUpdate({ [aKey]: a })}
+              className={`flex-1 py-2 rounded-xl border transition-all flex items-center justify-center ${curAlign === a ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
+              <span className="material-symbols-outlined text-sm">{a === "left" ? "format_align_left" : a === "center" ? "format_align_center" : "format_align_right"}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Color */}
-      <input type="color" value={curColor || "#111827"} onChange={(e) => onUpdate({ [cKey]: e.target.value })}
-        className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0" />
-      {curColor && (
-        <button onClick={() => onUpdate({ [cKey]: "" })} className="text-gray-400 hover:text-red-500 p-0.5">
-          <span className="material-symbols-outlined text-xs">close</span>
-        </button>
-      )}
-      <div className="w-px h-5 bg-gray-200 mx-0.5" />
-      <button onClick={onClose} className="text-gray-400 hover:text-gray-700 p-0.5">
-        <span className="material-symbols-outlined text-sm">check</span>
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Farbe</label>
+        <div className="flex items-center gap-2">
+          <input type="color" value={curColor || "#111827"} onChange={(e) => onUpdate({ [cKey]: e.target.value })}
+            className="w-10 h-10 rounded-xl border border-outline-variant/20 cursor-pointer p-0.5" />
+          <input type="text" value={curColor} onChange={(e) => onUpdate({ [cKey]: e.target.value })} placeholder="#111827"
+            className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary" />
+          {curColor && <button onClick={() => onUpdate({ [cKey]: "" })} className="material-symbols-outlined text-outline text-sm hover:text-error p-1">close</button>}
+        </div>
+      </div>
+
+      {/* Back to block */}
+      <button onClick={onClose}
+        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-outline-variant/20 text-on-surface-variant font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors">
+        <span className="material-symbols-outlined text-sm">arrow_back</span>
+        Zurück zum Block
       </button>
     </div>
   );
@@ -1340,15 +1388,6 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
 
               {/* Blocks */}
               <div className="relative">
-                {/* Floating Text Toolbar */}
-                {activeTextField && currentPage?.blocks.find(b => b.id === activeTextField.blockId) && (
-                  <FloatingTextToolbar
-                    field={activeTextField}
-                    content={currentPage.blocks.find(b => b.id === activeTextField.blockId)!.content}
-                    onUpdate={(c) => updateBlock(activeTextField.blockId, c)}
-                    onClose={() => setActiveTextField(null)}
-                  />
-                )}
                 {currentPage?.blocks.map((block, i) => (
                   <BlockPreview
                     key={block.id}
@@ -1425,7 +1464,14 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
           ) : (
             /* ── PROPERTIES ── */
             <div className="p-5">
-              {selectedBlock ? (
+              {activeTextField && selectedBlock ? (
+                <ElementPropertiesPanel
+                  fieldKey={activeTextField.fieldKey}
+                  content={selectedBlock.content}
+                  onUpdate={(c) => updateBlock(selectedBlock.id, c)}
+                  onClose={() => setActiveTextField(null)}
+                />
+              ) : selectedBlock ? (
                 <PropertiesPanel block={selectedBlock} onUpdate={(c) => updateBlock(selectedBlock.id, c)} />
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
