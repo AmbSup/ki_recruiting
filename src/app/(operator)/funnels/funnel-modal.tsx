@@ -33,8 +33,8 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
     if (open) {
       supabase
         .from("jobs")
-        .select("id, title, company:companies(name)")
-        .eq("status", "active")
+        .select("id, title, status, company:companies(name)")
+        .in("status", ["active", "draft", "paused"])
         .then(({ data }) => {
           if (data) setJobs(data as unknown as Job[]);
         });
@@ -70,7 +70,7 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20">
           <div>
             <h2 className="font-headline text-2xl italic text-on-surface">Neuer Funnel</h2>
-            <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mt-0.5">
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
               Bewerbungs-Funnel erstellen
             </p>
           </div>
@@ -108,7 +108,7 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
 
           <Field label="URL-Slug">
             <div className="flex items-center gap-0 bg-surface-container-low border border-outline-variant/20 rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
-              <span className="px-3 py-2.5 font-label text-[10px] text-outline border-r border-outline-variant/20 whitespace-nowrap">
+              <span className="px-3 py-2.5 font-label text-xs text-outline border-r border-outline-variant/20 whitespace-nowrap">
                 apply.domain.com/
               </span>
               <input
@@ -179,7 +179,7 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
+      <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
       {children}
     </div>
   );
