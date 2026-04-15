@@ -158,14 +158,20 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     }
   }
 
-  function toggleChoice(blockId: string, value: string, selection: "single" | "multiple") {
+  // Use question text as key (readable in applicant detail), fall back to block ID
+  function answerKey(block: Block) {
+    return (block.content.question as string) || block.id;
+  }
+
+  function toggleChoice(blockId: string, value: string, selection: "single" | "multiple", questionKey?: string) {
+    const key = questionKey ?? blockId;
     setAnswers((prev) => {
-      const current = prev[blockId] ?? [];
+      const current = prev[key] ?? [];
       if (selection === "single") {
-        return { ...prev, [blockId]: [value] };
+        return { ...prev, [key]: [value] };
       }
       const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
-      return { ...prev, [blockId]: next };
+      return { ...prev, [key]: next };
     });
   }
 
@@ -266,8 +272,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
             color={color}
             textColor={textColor}
             branding={branding}
-            answers={answers[block.id] ?? []}
-            onToggleChoice={(value, selection) => toggleChoice(block.id, value, selection)}
+            answers={answers[answerKey(block)] ?? []}
+            onToggleChoice={(value, selection) => toggleChoice(block.id, value, selection, answerKey(block))}
             onAdvance={advance}
             form={form}
             onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
