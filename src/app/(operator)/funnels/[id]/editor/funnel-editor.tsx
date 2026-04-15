@@ -1196,10 +1196,10 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                     <p className="font-label text-xs font-bold truncate">{pageLabel(page)}</p>
                     <p className="font-label text-[9px] opacity-50 truncate">{page.blocks.length} Block{page.blocks.length !== 1 ? "s" : ""}</p>
                   </div>
-                  <div className="hidden group-hover:flex items-center gap-0.5 flex-shrink-0">
-                    <button onClick={(e) => { e.stopPropagation(); movePage(i, -1); }} className="p-0.5 text-outline hover:text-on-surface"><span className="material-symbols-outlined text-xs">arrow_upward</span></button>
-                    <button onClick={(e) => { e.stopPropagation(); movePage(i, 1); }} className="p-0.5 text-outline hover:text-on-surface"><span className="material-symbols-outlined text-xs">arrow_downward</span></button>
-                    {pages.length > 1 && <button onClick={(e) => { e.stopPropagation(); deletePage(i); }} className="p-0.5 text-outline hover:text-error"><span className="material-symbols-outlined text-xs">delete</span></button>}
+                  <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {i > 0 && <button onClick={(e) => { e.stopPropagation(); movePage(i, -1); }} className="p-1 rounded hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Nach oben"><span className="material-symbols-outlined text-sm">arrow_upward</span></button>}
+                    {i < pages.length - 1 && <button onClick={(e) => { e.stopPropagation(); movePage(i, 1); }} className="p-1 rounded hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Nach unten"><span className="material-symbols-outlined text-sm">arrow_downward</span></button>}
+                    {pages.length > 1 && <button onClick={(e) => { e.stopPropagation(); deletePage(i); }} className="p-1 rounded hover:bg-error-container/30 text-outline hover:text-error transition-colors" title="Löschen"><span className="material-symbols-outlined text-sm">delete</span></button>}
                   </div>
                 </div>
               ))}
