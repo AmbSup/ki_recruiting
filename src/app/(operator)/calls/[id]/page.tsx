@@ -15,8 +15,8 @@ type CallDetail = {
   application: {
     id: string;
     overall_score: number | null;
-    job: { title: string; company: { name: string } };
-    applicant: { full_name: string; email: string; phone: string | null };
+    job: { id: string; title: string; company: { name: string } };
+    applicant: { id: string; full_name: string; email: string; phone: string | null };
   };
   transcripts: {
     id: string;
@@ -71,8 +71,8 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
         *,
         application:applications(
           id, overall_score,
-          job:jobs(title, company:companies(name)),
-          applicant:applicants(full_name, email, phone)
+          job:jobs(id, title, company:companies(name)),
+          applicant:applicants(id, full_name, email, phone)
         ),
         transcripts(*),
         call_analyses(*)
@@ -106,7 +106,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
       {/* Back */}
       <Link href="/calls" className="flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors mb-8 w-fit">
         <span className="material-symbols-outlined text-sm">arrow_back</span>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest">Zurück zu Calls</span>
+        <span className="font-label text-xs font-bold uppercase tracking-widest">Zurück zu Calls</span>
       </Link>
 
       {/* Header */}
@@ -118,11 +118,15 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               {call.application.applicant.full_name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
             </div>
             <div className="flex-1">
-              <h1 className="font-headline text-3xl italic text-on-surface mb-1">
+              <Link href={`/applicants/${call.application.id}`}
+                className="font-headline text-3xl italic text-on-surface hover:text-primary transition-colors mb-1 block">
                 {call.application.applicant.full_name}
-              </h1>
+              </Link>
               <p className="font-label text-xs text-outline mb-3">
-                {call.application.job.title} · {call.application.job.company.name}
+                <Link href={`/jobs/${call.application.job.id}`} className="hover:text-primary transition-colors">
+                  {call.application.job.title}
+                </Link>
+                {" · "}{call.application.job.company.name}
               </p>
               <div className="flex flex-wrap gap-4">
                 {[
@@ -139,7 +143,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               </div>
             </div>
             <Link href={`/applicants/${call.application.id}`}
-              className="flex items-center gap-1.5 font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex-shrink-0">
+              className="flex items-center gap-1.5 font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex-shrink-0">
               Bewerber
               <span className="material-symbols-outlined text-xs">arrow_forward</span>
             </Link>
@@ -153,7 +157,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               <div className="font-headline text-5xl text-on-surface mb-2">
                 {analysis.interview_score ?? "—"}%
               </div>
-              <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">Interview-Score</div>
+              <div className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">Interview-Score</div>
               {rec && (
                 <div className={`flex items-center gap-2 px-4 py-2 rounded-full ${rec.bg}`}>
                   <span className={`material-symbols-outlined text-sm ${rec.color}`} style={{ fontVariationSettings: "'FILL' 1" }}>{rec.icon}</span>
@@ -164,7 +168,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
           ) : (
             <div className="flex flex-col items-center gap-2">
               <span className="material-symbols-outlined text-3xl text-outline-variant">analytics</span>
-              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Keine Analyse</p>
+              <p className="font-label text-xs font-bold uppercase tracking-widest text-outline">Keine Analyse</p>
             </div>
           )}
         </div>
@@ -210,13 +214,13 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
             <>
               {/* Summary */}
               <div className="col-span-12 md:col-span-8 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-                <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-3">Zusammenfassung</h3>
+                <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-3">Zusammenfassung</h3>
                 <p className="font-body text-sm text-on-surface leading-relaxed">{analysis.summary}</p>
               </div>
 
               {/* Criteria Scores */}
               <div className="col-span-12 md:col-span-4 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-                <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">Kriterien-Scores</h3>
+                <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">Kriterien-Scores</h3>
                 <div className="space-y-4">
                   {analysis.criteria_scores.map((c, i) => (
                     <div key={i}>
@@ -228,12 +232,12 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                         <div className={`h-full rounded-full ${c.score >= 70 ? "bg-primary" : c.score >= 40 ? "bg-tertiary" : "bg-error"}`} style={{ width: `${c.score}%` }} />
                       </div>
                       {c.reasoning && (
-                        <p className="font-label text-[10px] text-outline mt-1 line-clamp-2">{c.reasoning}</p>
+                        <p className="font-label text-xs text-outline mt-1 line-clamp-2">{c.reasoning}</p>
                       )}
                     </div>
                   ))}
                   {analysis.criteria_scores.length === 0 && (
-                    <p className="font-label text-[10px] text-outline">Keine Kriterien bewertet.</p>
+                    <p className="font-label text-xs text-outline">Keine Kriterien bewertet.</p>
                   )}
                 </div>
               </div>
@@ -241,7 +245,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               {/* Key Insights */}
               {analysis.key_insights?.length > 0 && (
                 <div className="col-span-12 md:col-span-6 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
-                  <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-3">Key Insights</h3>
+                  <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-3">Key Insights</h3>
                   <ul className="space-y-2">
                     {analysis.key_insights.map((insight, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -256,7 +260,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
               {/* Red Flags */}
               {analysis.red_flags?.length > 0 && (
                 <div className="col-span-12 md:col-span-6 bg-error-container/10 border border-error-container/30 rounded-xl p-6">
-                  <h3 className="font-label text-[10px] font-bold uppercase tracking-widest text-error mb-3">Red Flags</h3>
+                  <h3 className="font-label text-xs font-bold uppercase tracking-widest text-error mb-3">Red Flags</h3>
                   <ul className="space-y-2">
                     {analysis.red_flags.map((flag, i) => (
                       <li key={i} className="flex items-start gap-2">
@@ -290,7 +294,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                     Transkript · {transcript.language?.toUpperCase()} · {transcript.segments?.length ?? 0} Segmente
                   </span>
                 </div>
-                <span className="font-label text-[10px] text-outline">
+                <span className="font-label text-xs text-outline">
                   Transkribiert {new Date(transcript.transcribed_at).toLocaleDateString("de-AT")}
                 </span>
               </div>
@@ -298,7 +302,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                 {transcript.segments?.length > 0 ? (
                   transcript.segments.map((seg, i) => (
                     <div key={i} className={`flex gap-4 ${seg.speaker === "agent" ? "" : "flex-row-reverse"}`}>
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5 ${
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5 ${
                         seg.speaker === "agent" ? "bg-secondary-container text-on-secondary-container" : "bg-primary-container text-on-primary-container"
                       }`}>
                         {seg.speaker === "agent" ? "KI" : "BW"}
@@ -311,7 +315,7 @@ export default function CallDetailPage({ params }: { params: { id: string } }) {
                         }`}>
                           <p className="font-body text-sm text-on-surface leading-relaxed">{seg.text}</p>
                         </div>
-                        <span className="font-label text-[10px] text-outline px-1">{formatTime(seg.start)}</span>
+                        <span className="font-label text-xs text-outline px-1">{formatTime(seg.start)}</span>
                       </div>
                     </div>
                   ))

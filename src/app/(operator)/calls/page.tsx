@@ -14,8 +14,8 @@ type Call = {
   application: {
     id: string;
     overall_score: number | null;
-    job: { title: string; company: { name: string } };
-    applicant: { full_name: string; email: string };
+    job: { id: string; title: string; company: { name: string } };
+    applicant: { id: string; full_name: string; email: string };
   };
   transcript: { id: string } | null;
   call_analysis: { interview_score: number | null; recommendation: string | null } | null;
@@ -59,8 +59,8 @@ export default function CallsPage() {
         id, status, scheduled_at, started_at, duration_seconds, recording_url,
         application:applications(
           id, overall_score,
-          job:jobs(title, company:companies(name)),
-          applicant:applicants(full_name, email)
+          job:jobs(id, title, company:companies(name)),
+          applicant:applicants(id, full_name, email)
         ),
         transcript:transcripts(id),
         call_analysis:call_analyses(interview_score, recommendation)
@@ -87,7 +87,7 @@ export default function CallsPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">Voice Calls</h1>
           <p className="font-body text-on-surface-variant mt-2">
             {loading ? "Lädt…" : `${completedToday} abgeschlossen heute · ${calls.filter((c) => c.status === "scheduled").length} geplant`}
@@ -108,7 +108,7 @@ export default function CallsPage() {
         ].map((k) => (
           <div key={k.label} className="bg-surface-container-lowest rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{k.label}</span>
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{k.label}</span>
               <span className="material-symbols-outlined text-outline-variant text-xl">{k.icon}</span>
             </div>
             <div className="font-headline text-3xl text-on-surface">{k.value}</div>
@@ -156,21 +156,25 @@ export default function CallsPage() {
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-label text-sm font-bold text-on-surface">
+                      <Link href={`/applicants/${call.application.id}`}
+                        className="font-label text-sm font-bold text-on-surface hover:text-primary transition-colors">
                         {call.application.applicant.full_name}
-                      </span>
-                      <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${st.bg} ${st.text}`}>
+                      </Link>
+                      <span className={`text-xs font-label font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${st.bg} ${st.text}`}>
                         {st.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[10px] font-label text-outline">
-                      <span>{call.application.job.title}</span>
+                    <div className="flex items-center gap-2 text-xs font-label text-outline">
+                      <Link href={`/jobs/${call.application.job.id}`}
+                        className="hover:text-primary transition-colors">
+                        {call.application.job.title}
+                      </Link>
                       <span>·</span>
                       <span>{call.application.job.company.name}</span>
-                      {call.scheduled_at && (
+                      {(call.started_at || call.scheduled_at) && (
                         <>
                           <span>·</span>
-                          <span>{new Date(call.scheduled_at).toLocaleString("de-AT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+                          <span>{new Date(call.started_at ?? call.scheduled_at!).toLocaleString("de-AT", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
                         </>
                       )}
                     </div>
@@ -181,13 +185,13 @@ export default function CallsPage() {
                     {call.duration_seconds && (
                       <div className="text-center">
                         <div className="font-headline text-lg text-on-surface">{formatDuration(call.duration_seconds)}</div>
-                        <div className="font-label text-[10px] text-outline uppercase tracking-widest">Dauer</div>
+                        <div className="font-label text-xs text-outline uppercase tracking-widest">Dauer</div>
                       </div>
                     )}
                     {call.call_analysis?.interview_score !== null && call.call_analysis?.interview_score !== undefined && (
                       <div className="text-center">
                         <div className="font-headline text-lg text-on-surface">{call.call_analysis.interview_score}%</div>
-                        <div className="font-label text-[10px] text-outline uppercase tracking-widest">Score</div>
+                        <div className="font-label text-xs text-outline uppercase tracking-widest">Score</div>
                       </div>
                     )}
                     {rec && (
