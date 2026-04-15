@@ -292,7 +292,7 @@ function Screen({ children, color, textColor, branding }: {
 }) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4">
-      <div className="w-full sm:max-w-sm bg-white sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0">
+      <div className="w-full sm:max-w-md lg:max-w-lg bg-white sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0">
         {branding.logo_url && (
           <div className="px-5 pt-4 pb-2 flex justify-center flex-shrink-0">
             <img src={branding.logo_url} alt="Logo" className="h-8 object-contain" />
