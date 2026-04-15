@@ -44,11 +44,14 @@ const employmentOptions = [
   { value: "freelance", label: "Freelance" },
 ];
 
+type CompanyOption = { id: string; name: string };
 type Props = { jobId: string | null; onClose: () => void };
 
 export function JobDetailModal({ jobId, onClose }: Props) {
   const [job, setJob] = useState<JobDetail | null>(null);
   const [form, setForm] = useState<Partial<JobDetail>>({});
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
@@ -61,25 +64,32 @@ export function JobDetailModal({ jobId, onClose }: Props) {
     setDirty(false);
     setLoading(true);
     const supabase = createClient();
-    supabase
-      .from("jobs")
-      .select(`
-        id, title, category, description, location, employment_type,
-        salary_range, daily_budget, benefits,
-        main_tasks, must_qualifications, nice_to_have_qualifications,
-        ko_criteria, hard_skills, soft_skills,
-        requirements, ideal_candidate, application_process,
-        status, created_at,
-        company:companies(id, name)
-      `)
-      .eq("id", jobId)
-      .single()
-      .then(({ data }) => {
-        const j = data as unknown as JobDetail;
-        setJob(j);
-        setForm(j);
-        setLoading(false);
-      });
+    Promise.all([
+      supabase
+        .from("jobs")
+        .select(`
+          id, title, category, description, location, employment_type,
+          salary_range, daily_budget, benefits,
+          main_tasks, must_qualifications, nice_to_have_qualifications,
+          ko_criteria, hard_skills, soft_skills,
+          requirements, ideal_candidate, application_process,
+          status, created_at,
+          company:companies(id, name)
+        `)
+        .eq("id", jobId)
+        .single(),
+      supabase
+        .from("companies")
+        .select("id, name")
+        .order("name"),
+    ]).then(([{ data }, { data: companyData }]) => {
+      const j = data as unknown as JobDetail;
+      setJob(j);
+      setForm(j);
+      setSelectedCompanyId(j?.company?.id ?? "");
+      setCompanies((companyData ?? []) as CompanyOption[]);
+      setLoading(false);
+    });
   }, [jobId]);
 
   function update(field: string, value: string | number | null) {
@@ -102,6 +112,7 @@ export function JobDetailModal({ jobId, onClose }: Props) {
       benefits, main_tasks, must_qualifications, nice_to_have_qualifications,
       ko_criteria, hard_skills, soft_skills, requirements,
       ideal_candidate, application_process, status,
+      company_id: selectedCompanyId || undefined,
     }).eq("id", jobId);
     setDirty(false);
     setSaving(false);
@@ -120,8 +131,10 @@ export function JobDetailModal({ jobId, onClose }: Props) {
             <h2 className="font-headline text-2xl italic text-on-surface leading-tight">
               {loading ? "Lädt…" : form.title || "Job"}
             </h2>
-            {job?.company?.name && (
-              <p className="font-label text-xs text-outline mt-0.5">{job.company.name}</p>
+            {companies.length > 0 && (
+              <p className="font-label text-xs text-outline mt-0.5">
+                {companies.find(c => c.id === selectedCompanyId)?.name ?? job?.company?.name ?? "—"}
+              </p>
             )}
           </div>
           <div className="flex items-center gap-2">
@@ -171,6 +184,9 @@ export function JobDetailModal({ jobId, onClose }: Props) {
               <FieldGroup label="Grunddaten" icon="work">
                 <div className="grid grid-cols-2 gap-3">
                   <Field label="Jobtitel" value={form.title ?? ""} onChange={(v) => update("title", v)} className="col-span-2" />
+                  <SelectField label="Firma" value={selectedCompanyId}
+                    options={companies.map(c => ({ value: c.id, label: c.name }))}
+                    onChange={(v) => { setSelectedCompanyId(v); setDirty(true); }} />
                   <SelectField label="Status" value={form.status ?? "draft"} options={statusOptions} onChange={(v) => update("status", v)} />
                   <Field label="Kategorie" value={form.category ?? ""} onChange={(v) => update("category", v)} />
                   <Field label="Standort" value={form.location ?? ""} onChange={(v) => update("location", v)} />
