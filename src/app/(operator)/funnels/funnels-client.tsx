@@ -179,13 +179,11 @@ export function FunnelsClient() {
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => router.push(`/ads-setup?funnel_id=${funnel.id}`)}
+                    <Link href={`/ads-setup?funnel_id=${funnel.id}`}
                       className="material-symbols-outlined text-outline hover:text-[#1877F2] transition-colors text-xl p-1"
-                      title="Funnel bewerben mit Meta Ads"
-                    >
+                      title="Funnel bewerben mit Meta Ads">
                       campaign
-                    </button>
+                    </Link>
                     <a
                       href={`/funnels/${funnel.id}/editor`}
                       className="material-symbols-outlined text-outline hover:text-primary transition-colors text-xl p-1"
