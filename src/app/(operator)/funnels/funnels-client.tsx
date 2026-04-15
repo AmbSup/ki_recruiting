@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { FunnelModal } from "./funnel-modal";
+import Link from "next/link";
 import { ExternalFunnelModal } from "./external-funnel-modal";
 import { createClient } from "@/lib/supabase/client";
 import { getFunnelPublicUrl } from "@/lib/funnel-url";
@@ -29,7 +29,6 @@ const statusConfig = {
 };
 
 export function FunnelsClient() {
-  const router = useRouter();
   const [funnels, setFunnels] = useState<Funnel[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -72,7 +71,7 @@ export function FunnelsClient() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">
             Operator Panel
           </p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">Funnels</h1>
@@ -175,7 +174,7 @@ export function FunnelsClient() {
                     >
                       {st.icon}
                     </span>
-                    <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
+                    <span className={`text-xs font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
                       {st.label}
                     </span>
                   </div>
@@ -200,12 +199,22 @@ export function FunnelsClient() {
                   </div>
                 </div>
 
+                {/* Job Badge */}
+                {funnel.job && (
+                  <Link href={`/jobs/${funnel.job.id}`}
+                    className="flex items-center gap-2 bg-primary-container/20 hover:bg-primary-container/40 rounded-lg px-3 py-2 mb-3 transition-colors"
+                    onClick={(e) => e.stopPropagation()}>
+                    <span className="material-symbols-outlined text-primary text-sm">work</span>
+                    <span className="font-label text-xs font-bold text-on-surface truncate">{funnel.job.title}</span>
+                    <span className="font-label text-xs text-outline">·</span>
+                    <span className="font-label text-xs text-outline truncate">{funnel.job.company.name}</span>
+                  </Link>
+                )}
+
                 {/* Title */}
-                <h3 className="font-headline text-2xl text-on-surface mb-1 group-hover:italic transition-all">
+                <h3 className="font-headline text-2xl text-on-surface mb-4 group-hover:italic transition-all">
                   {funnel.name}
                 </h3>
-                <p className="font-label text-xs text-outline mb-1">{funnel.job?.title}</p>
-                <p className="font-label text-[10px] text-outline-variant mb-4">{funnel.job?.company.name}</p>
 
                 {/* URL */}
                 <a
@@ -216,7 +225,7 @@ export function FunnelsClient() {
                   className="flex items-center gap-2 bg-surface-container hover:bg-surface-container-high rounded-lg px-3 py-2 mb-5 transition-colors group/url"
                 >
                   <span className="material-symbols-outlined text-outline-variant text-sm">link</span>
-                  <span className="font-label text-[10px] text-outline group-hover/url:text-primary truncate transition-colors">
+                  <span className="font-label text-xs text-outline group-hover/url:text-primary truncate transition-colors">
                     {getFunnelPublicUrl(funnel)}
                   </span>
                   <span className="material-symbols-outlined text-primary text-sm ml-auto flex-shrink-0">open_in_new</span>
@@ -231,7 +240,7 @@ export function FunnelsClient() {
                   ].map((m) => (
                     <div key={m.label} className="text-center">
                       <div className="font-headline text-2xl text-on-surface">{m.value}</div>
-                      <div className="font-label text-[10px] text-outline uppercase tracking-widest">{m.label}</div>
+                      <div className="font-label text-xs text-outline uppercase tracking-widest">{m.label}</div>
                     </div>
                   ))}
                 </div>
@@ -246,14 +255,14 @@ export function FunnelsClient() {
 
                 {/* Footer */}
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-outline-variant/10">
-                  <span className="font-label text-[10px] text-outline">
+                  <span className="font-label text-xs text-outline">
                     {funnel.published_at
                       ? `Live seit ${new Date(funnel.published_at).toLocaleDateString("de-AT", { day: "2-digit", month: "short" })}`
                       : `Erstellt ${new Date(funnel.created_at).toLocaleDateString("de-AT", { day: "2-digit", month: "short" })}`}
                   </span>
                   <a
                     href={`/funnels/${funnel.id}/editor`}
-                    className="font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                    className="font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                   >
                     Editor
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>
@@ -287,7 +296,7 @@ export function FunnelsClient() {
                     <span className="w-7 h-7 rounded-lg bg-secondary-container flex items-center justify-center flex-shrink-0">
                       <span className="material-symbols-outlined text-secondary text-sm">open_in_new</span>
                     </span>
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-secondary-container/50 text-secondary">
+                    <span className="font-label text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-secondary-container/50 text-secondary">
                       Extern
                     </span>
                   </div>
@@ -313,20 +322,20 @@ export function FunnelsClient() {
 
                 <div className="flex items-center gap-2 bg-surface-container rounded-lg px-3 py-2 mt-3">
                   <span className="material-symbols-outlined text-outline-variant text-sm">link</span>
-                  <span className="font-label text-[10px] text-outline truncate flex-1">
+                  <span className="font-label text-xs text-outline truncate flex-1">
                     {funnel.external_url}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between mt-4 pt-3 border-t border-outline-variant/10">
-                  <span className="font-label text-[10px] text-outline">
+                  <span className="font-label text-xs text-outline">
                     {new Date(funnel.created_at).toLocaleDateString("de-AT", { day: "2-digit", month: "short", year: "numeric" })}
                   </span>
                   <a
                     href={funnel.external_url ?? "#"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                    className="font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                   >
                     Öffnen
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>

@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ImageUpload } from "@/components/ui/image-upload";
 
 type CompanyDetail = {
   id: string;
   name: string;
+  logo_url: string | null;
   industry: string | null;
   company_size: string | null;
   website: string | null;
@@ -64,7 +66,7 @@ export function CompanyDetailModal({ companyId, onClose, onDeleted }: Props) {
       supabase
         .from("companies")
         .select(`
-          id, name, industry, company_size, website, address, description,
+          id, name, logo_url, industry, company_size, website, address, description,
           primary_color, contact_name, contact_email, contact_phone,
           recruiting_goals, meta_ad_account_id, linkedin_ad_account_id,
           billing_plan, monthly_budget, contract_start, notes, status, created_at
@@ -99,7 +101,8 @@ export function CompanyDetailModal({ companyId, onClose, onDeleted }: Props) {
       recruiting_goals, meta_ad_account_id, linkedin_ad_account_id,
       billing_plan, monthly_budget, contract_start, notes, status } = form;
     await supabase.from("companies").update({
-      name, industry, company_size, website, address, description,
+      name, logo_url: form.logo_url || null,
+      industry, company_size, website, address, description,
       primary_color, contact_name, contact_email, contact_phone,
       recruiting_goals, meta_ad_account_id, linkedin_ad_account_id,
       billing_plan, monthly_budget: monthly_budget ? Number(monthly_budget) : null,
@@ -155,6 +158,28 @@ export function CompanyDetailModal({ companyId, onClose, onDeleted }: Props) {
             </div>
           ) : (
             <>
+              {/* Logo */}
+              <FieldGroup label="Firmenlogo" icon="image">
+                <div className="flex items-center gap-4">
+                  <ImageUpload
+                    value={form.logo_url ?? ""}
+                    onChange={(url) => update("logo_url", url || null)}
+                    aspect="circle"
+                    label="Logo hochladen"
+                  />
+                  {form.logo_url && (
+                    <button
+                      type="button"
+                      onClick={() => update("logo_url", null)}
+                      className="flex items-center gap-1 font-label text-xs text-error/70 hover:text-error transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-xs">delete</span>
+                      Logo entfernen
+                    </button>
+                  )}
+                </div>
+              </FieldGroup>
+
               {/* Status + Grunddaten */}
               <FieldGroup label="Grunddaten" icon="domain">
                 <div className="grid grid-cols-2 gap-3">

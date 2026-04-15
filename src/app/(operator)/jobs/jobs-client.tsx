@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
 import { JobModal } from "./job-modal";
+import Link from "next/link";
 import { JobDetailModal } from "./job-detail-modal";
 import { createClient } from "@/lib/supabase/client";
+
+type JobFunnel = { id: string; name: string; slug: string; status: string };
 
 type Job = {
   id: string;
@@ -15,6 +17,7 @@ type Job = {
   created_at: string;
   selected_ad_image_url: string | null;
   company: { id: string; name: string };
+  job_funnels: JobFunnel[];
   _count?: { funnels: number; applications: number };
 };
 
@@ -35,7 +38,6 @@ const employmentLabels: Record<string, string> = {
 };
 
 export function JobsClient() {
-  const router = useRouter();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -51,6 +53,7 @@ export function JobsClient() {
       .select(`
         id, title, location, employment_type, status, created_at, selected_ad_image_url,
         company:companies(id, name),
+        job_funnels:funnels(id, name, slug, status),
         funnels:funnels(count),
         applications:applications(count)
       `)
@@ -193,6 +196,19 @@ export function JobsClient() {
                     {employmentLabels[job.employment_type] ?? job.employment_type}
                   </div>
                 </div>
+
+                {/* Funnels */}
+                {job.job_funnels?.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    {job.job_funnels.map((f) => (
+                      <Link key={f.id} href={`/funnels/${f.id}/editor`}
+                        className="flex items-center gap-1 bg-primary-container/20 hover:bg-primary-container/40 text-on-surface px-2 py-1 rounded-lg font-label text-xs transition-colors">
+                        <span className="material-symbols-outlined text-primary text-xs">dynamic_feed</span>
+                        {f.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
 
                 <div className="flex items-center gap-4 pt-4 border-t border-outline-variant/10">
                   <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
