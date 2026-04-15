@@ -28,32 +28,37 @@ type JobDetail = {
   company: { id: string; name: string };
 };
 
-const employmentLabels: Record<string, string> = {
-  fulltime: "Vollzeit",
-  parttime: "Teilzeit",
-  minijob: "Minijob",
-  internship: "Praktikum",
-  freelance: "Freelance",
-};
+const statusOptions = [
+  { value: "draft", label: "Entwurf" },
+  { value: "active", label: "Aktiv" },
+  { value: "paused", label: "Pausiert" },
+  { value: "closed", label: "Geschlossen" },
+  { value: "filled", label: "Besetzt" },
+];
 
-const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  draft:  { label: "Entwurf",  bg: "bg-surface-container-high", text: "text-outline" },
-  active: { label: "Aktiv",    bg: "bg-primary-container/40",   text: "text-primary" },
-  paused: { label: "Pausiert", bg: "bg-tertiary-container/40",  text: "text-tertiary" },
-  closed: { label: "Geschl.",  bg: "bg-error-container/20",     text: "text-error" },
-  filled: { label: "Besetzt",  bg: "bg-secondary-container",    text: "text-secondary" },
-};
+const employmentOptions = [
+  { value: "fulltime", label: "Vollzeit" },
+  { value: "parttime", label: "Teilzeit" },
+  { value: "minijob", label: "Minijob" },
+  { value: "internship", label: "Praktikum" },
+  { value: "freelance", label: "Freelance" },
+];
 
 type Props = { jobId: string | null; onClose: () => void };
 
 export function JobDetailModal({ jobId, onClose }: Props) {
   const [job, setJob] = useState<JobDetail | null>(null);
+  const [form, setForm] = useState<Partial<JobDetail>>({});
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [dirty, setDirty] = useState(false);
   const [activeTab, setActiveTab] = useState<"details" | "images">("details");
 
   useEffect(() => {
     if (!jobId) return;
     setJob(null);
+    setForm({});
+    setDirty(false);
     setLoading(true);
     const supabase = createClient();
     supabase
@@ -70,14 +75,39 @@ export function JobDetailModal({ jobId, onClose }: Props) {
       .eq("id", jobId)
       .single()
       .then(({ data }) => {
-        setJob(data as unknown as JobDetail);
+        const j = data as unknown as JobDetail;
+        setJob(j);
+        setForm(j);
         setLoading(false);
       });
   }, [jobId]);
 
-  if (!jobId) return null;
+  function update(field: string, value: string | number | null) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setDirty(true);
+  }
 
-  const st = job ? (statusConfig[job.status] ?? statusConfig.draft) : null;
+  async function save() {
+    if (!jobId || !dirty) return;
+    setSaving(true);
+    const supabase = createClient();
+    const { title, category, description, location, employment_type,
+      salary_range, daily_budget, benefits, main_tasks,
+      must_qualifications, nice_to_have_qualifications, ko_criteria,
+      hard_skills, soft_skills, requirements, ideal_candidate,
+      application_process, status } = form;
+    await supabase.from("jobs").update({
+      title, category, description, location, employment_type,
+      salary_range, daily_budget: daily_budget ? Number(daily_budget) : null,
+      benefits, main_tasks, must_qualifications, nice_to_have_qualifications,
+      ko_criteria, hard_skills, soft_skills, requirements,
+      ideal_candidate, application_process, status,
+    }).eq("id", jobId);
+    setDirty(false);
+    setSaving(false);
+  }
+
+  if (!jobId) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -85,54 +115,42 @@ export function JobDetailModal({ jobId, onClose }: Props) {
       <div className="relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20 flex-shrink-0">
-          <div className="flex-1 min-w-0 pr-4">
-            {loading ? (
-              <div className="space-y-2">
-                <div className="h-4 w-16 bg-surface-container-high rounded-full animate-pulse" />
-                <div className="h-7 w-56 bg-surface-container-high rounded-lg animate-pulse" />
-                <div className="h-3 w-32 bg-surface-container-high rounded animate-pulse" />
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  {st && (
-                    <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
-                      {st.label}
-                    </span>
-                  )}
-                  {job?.category && (
-                    <span className="text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant">
-                      {job.category}
-                    </span>
-                  )}
-                </div>
-                <h2 className="font-headline text-2xl italic text-on-surface leading-tight">{job?.title}</h2>
-                <p className="font-label text-xs text-outline mt-1">{job?.company?.name}</p>
-              </>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-outline-variant/20 flex-shrink-0">
+          <div className="min-w-0">
+            <h2 className="font-headline text-2xl italic text-on-surface leading-tight">
+              {loading ? "Lädt…" : form.title || "Job"}
+            </h2>
+            {job?.company?.name && (
+              <p className="font-label text-xs text-outline mt-0.5">{job.company.name}</p>
             )}
           </div>
-          <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors flex-shrink-0">
-            close
-          </button>
+          <div className="flex items-center gap-2">
+            {dirty && (
+              <button onClick={save} disabled={saving}
+                className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60">
+                <span className="material-symbols-outlined text-xs">{saving ? "progress_activity" : "save"}</span>
+                {saving ? "Speichert…" : "Speichern"}
+              </button>
+            )}
+            <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">
+              close
+            </button>
+          </div>
         </div>
 
         {/* Tab bar */}
         <div className="flex gap-1 px-6 pb-0 pt-1 border-b border-outline-variant/20 flex-shrink-0">
           {(["details", "images"] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+            <button key={tab} onClick={() => setActiveTab(tab)}
               className={`flex items-center gap-1.5 px-4 py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors border-b-2 -mb-px ${
                 activeTab === tab
                   ? "border-primary text-primary"
                   : "border-transparent text-outline hover:text-on-surface"
-              }`}
-            >
+              }`}>
               <span className="material-symbols-outlined text-sm">
-                {tab === "details" ? "description" : "image"}
+                {tab === "details" ? "edit" : "image"}
               </span>
-              {tab === "details" ? "Details" : "Ad Bilder"}
+              {tab === "details" ? "Bearbeiten" : "Ad Bilder"}
             </button>
           ))}
         </div>
@@ -143,189 +161,136 @@ export function JobDetailModal({ jobId, onClose }: Props) {
             <JobAdImages jobId={job.id} jobTitle={job.title} jobLocation={job.location} />
           ) : loading ? (
             <div className="space-y-3">
-              {[100, 80, 60, 100, 90, 70].map((w, i) => (
-                <div key={i} className="h-4 bg-surface-container-high rounded animate-pulse" style={{ width: `${Math.min(w, 100)}%` }} />
+              {[100, 80, 60, 100, 90].map((w, i) => (
+                <div key={i} className="h-10 bg-surface-container-high rounded-xl animate-pulse" style={{ width: `${w}%` }} />
               ))}
             </div>
-          ) : job ? (
+          ) : (
             <>
-              {/* Meta chips */}
-              <div className="flex flex-wrap gap-2">
-                {job.location && (
-                  <Chip icon="location_on">{job.location}</Chip>
-                )}
-                <Chip icon="schedule">
-                  {employmentLabels[job.employment_type] ?? job.employment_type}
-                </Chip>
-                {job.salary_range && (
-                  <Chip icon="payments">{job.salary_range}</Chip>
-                )}
-                {job.daily_budget != null && (
-                  <Chip icon="campaign">{job.daily_budget} €/Tag Ads</Chip>
-                )}
-              </div>
-
-              {/* 3 – Kurzbeschreibung */}
-              {job.description && (
-                <Section icon="info" label="Kurzbeschreibung">
-                  <Body>{job.description}</Body>
-                </Section>
-              )}
-
-              {/* 4 – Hauptaufgaben */}
-              {job.main_tasks && (
-                <Section icon="task_alt" label="Hauptaufgaben">
-                  <BulletList text={job.main_tasks} />
-                </Section>
-              )}
-
-              {/* 5 + 6 – Qualifikationen */}
-              {(job.must_qualifications || job.nice_to_have_qualifications) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {job.must_qualifications && (
-                    <Section icon="verified" label="Muss-Qualifikationen">
-                      <BulletList text={job.must_qualifications} />
-                    </Section>
-                  )}
-                  {job.nice_to_have_qualifications && (
-                    <Section icon="thumb_up" label="Nice-to-Have">
-                      <BulletList text={job.nice_to_have_qualifications} />
-                    </Section>
-                  )}
+              {/* Grunddaten */}
+              <FieldGroup label="Grunddaten" icon="work">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Jobtitel" value={form.title ?? ""} onChange={(v) => update("title", v)} className="col-span-2" />
+                  <SelectField label="Status" value={form.status ?? "draft"} options={statusOptions} onChange={(v) => update("status", v)} />
+                  <Field label="Kategorie" value={form.category ?? ""} onChange={(v) => update("category", v)} />
+                  <Field label="Standort" value={form.location ?? ""} onChange={(v) => update("location", v)} />
+                  <SelectField label="Anstellungsart" value={form.employment_type ?? "fulltime"} options={employmentOptions} onChange={(v) => update("employment_type", v)} />
+                  <Field label="Gehalt" value={form.salary_range ?? ""} onChange={(v) => update("salary_range", v)} />
+                  <Field label="Ads-Budget/Tag (€)" value={form.daily_budget != null ? String(form.daily_budget) : ""} onChange={(v) => update("daily_budget", v ? Number(v) : null)} type="number" />
                 </div>
-              )}
+                <TextArea label="Kurzbeschreibung" value={form.description ?? ""} onChange={(v) => update("description", v)} rows={3} />
+              </FieldGroup>
 
-              {/* 7 – KO-Kriterien */}
-              {job.ko_criteria && (
-                <Section icon="block" label="KO-Kriterien">
-                  <BulletList text={job.ko_criteria} className="text-error" />
-                </Section>
-              )}
-
-              {/* 8 + 9 – Skills */}
-              {(job.hard_skills || job.soft_skills) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {job.hard_skills && (
-                    <Section icon="build" label="Hard Skills">
-                      <BulletList text={job.hard_skills} />
-                    </Section>
-                  )}
-                  {job.soft_skills && (
-                    <Section icon="psychology" label="Soft Skills">
-                      <BulletList text={job.soft_skills} />
-                    </Section>
-                  )}
+              {/* Aufgaben & Qualifikationen */}
+              <FieldGroup label="Aufgaben & Qualifikationen" icon="task_alt">
+                <TextArea label="Hauptaufgaben" value={form.main_tasks ?? ""} onChange={(v) => update("main_tasks", v)} rows={3} placeholder="Eine Aufgabe pro Zeile" />
+                <div className="grid grid-cols-2 gap-3">
+                  <TextArea label="Muss-Qualifikationen" value={form.must_qualifications ?? ""} onChange={(v) => update("must_qualifications", v)} rows={3} />
+                  <TextArea label="Nice-to-Have" value={form.nice_to_have_qualifications ?? ""} onChange={(v) => update("nice_to_have_qualifications", v)} rows={3} />
                 </div>
-              )}
+                <TextArea label="KO-Kriterien" value={form.ko_criteria ?? ""} onChange={(v) => update("ko_criteria", v)} rows={2} placeholder="Ausschlussgründe, eine pro Zeile" />
+              </FieldGroup>
 
-              {/* 13 – Benefits */}
-              {job.benefits && (
-                <Section icon="card_giftcard" label="Benefits">
-                  <BulletList text={job.benefits} />
-                </Section>
-              )}
-
-              {/* 14 – Zielkandidatenprofil */}
-              {job.ideal_candidate && (
-                <Section icon="person_search" label="Zielkandidatenprofil">
-                  <BulletList text={job.ideal_candidate} />
-                </Section>
-              )}
-
-              {/* KI-Anforderungen */}
-              {job.requirements && (
-                <Section icon="psychology_alt" label="KI-Scoring Anforderungen">
-                  <Body>{job.requirements}</Body>
-                </Section>
-              )}
-
-              {/* 15 – Bewerbungsprozess */}
-              {job.application_process && (
-                <Section icon="linear_scale" label="Bewerbungsprozess">
-                  <ProcessSteps text={job.application_process} />
-                </Section>
-              )}
-
-              {/* Empty state */}
-              {!job.description && !job.main_tasks && !job.must_qualifications &&
-               !job.hard_skills && !job.ideal_candidate && !job.application_process && (
-                <div className="flex flex-col items-center py-8 text-center text-on-surface-variant">
-                  <span className="material-symbols-outlined text-3xl text-outline-variant mb-2">description</span>
-                  <p className="font-body text-sm">Noch keine Beschreibungen hinterlegt.</p>
+              {/* Skills */}
+              <FieldGroup label="Skills" icon="build">
+                <div className="grid grid-cols-2 gap-3">
+                  <TextArea label="Hard Skills" value={form.hard_skills ?? ""} onChange={(v) => update("hard_skills", v)} rows={3} />
+                  <TextArea label="Soft Skills" value={form.soft_skills ?? ""} onChange={(v) => update("soft_skills", v)} rows={3} />
                 </div>
-              )}
+              </FieldGroup>
+
+              {/* Benefits & Profil */}
+              <FieldGroup label="Benefits & Kandidatenprofil" icon="person_search">
+                <TextArea label="Benefits" value={form.benefits ?? ""} onChange={(v) => update("benefits", v)} rows={3} />
+                <TextArea label="Ideales Kandidatenprofil" value={form.ideal_candidate ?? ""} onChange={(v) => update("ideal_candidate", v)} rows={3} />
+              </FieldGroup>
+
+              {/* KI & Prozess */}
+              <FieldGroup label="KI-Scoring & Prozess" icon="psychology">
+                <TextArea label="KI-Scoring Anforderungen" value={form.requirements ?? ""} onChange={(v) => update("requirements", v)} rows={3} placeholder="Spezifische Anweisungen für die KI-Bewertung" />
+                <TextArea label="Bewerbungsprozess" value={form.application_process ?? ""} onChange={(v) => update("application_process", v)} rows={3} placeholder="Schritte des Bewerbungsprozesses, einer pro Zeile" />
+              </FieldGroup>
 
               {/* Footer */}
               <div className="pt-4 border-t border-outline-variant/10">
-                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
-                  Erstellt am {new Date(job.created_at).toLocaleDateString("de-AT", {
-                    day: "2-digit", month: "long", year: "numeric",
-                  })}
+                <p className="font-label text-xs text-outline">
+                  Erstellt am {job?.created_at ? new Date(job.created_at).toLocaleDateString("de-AT", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
                 </p>
               </div>
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ── Sub-components ── */
+/* ── Form Sub-components ── */
 
-function Chip({ icon, children }: { icon: string; children: React.ReactNode }) {
+function FieldGroup({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-1.5 text-sm text-on-surface-variant bg-surface-container-low px-3 py-1.5 rounded-lg">
-      <span className="material-symbols-outlined text-outline-variant text-sm">{icon}</span>
-      {children}
-    </div>
-  );
-}
-
-function Section({ icon, label, children }: { icon: string; label: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-surface-container-low rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-surface-container-low rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
         <span className="material-symbols-outlined text-primary text-sm">{icon}</span>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</span>
+        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{label}</span>
       </div>
       {children}
     </div>
   );
 }
 
-function Body({ children }: { children: React.ReactNode }) {
+function Field({ label, value, onChange, type = "text", placeholder, className = "" }: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; className?: string;
+}) {
   return (
-    <p className="font-body text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{children}</p>
+    <div className={className}>
+      {label && <label className="font-label text-xs text-outline block mb-1">{label}</label>}
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+      />
+    </div>
   );
 }
 
-function BulletList({ text, className = "" }: { text: string; className?: string }) {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+function TextArea({ label, value, onChange, rows = 3, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void;
+  rows?: number; placeholder?: string;
+}) {
   return (
-    <ul className="space-y-1">
-      {lines.map((line, i) => (
-        <li key={i} className={`flex items-start gap-2 font-body text-sm leading-relaxed ${className || "text-on-surface"}`}>
-          <span className="mt-1.5 w-1 h-1 rounded-full bg-current flex-shrink-0 opacity-50" />
-          {line}
-        </li>
-      ))}
-    </ul>
+    <div>
+      {label && <label className="font-label text-xs text-outline block mb-1">{label}</label>}
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"
+      />
+    </div>
   );
 }
 
-function ProcessSteps({ text }: { text: string }) {
-  const steps = text.split("\n").map((l) => l.trim()).filter(Boolean);
+function SelectField({ label, value, options, onChange }: {
+  label: string; value: string; options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+}) {
   return (
-    <ol className="space-y-2">
-      {steps.map((step, i) => (
-        <li key={i} className="flex items-center gap-3 font-body text-sm text-on-surface">
-          <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">
-            {i + 1}
-          </span>
-          {step}
-        </li>
-      ))}
-    </ol>
+    <div>
+      <label className="font-label text-xs text-outline block mb-1">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
   );
 }

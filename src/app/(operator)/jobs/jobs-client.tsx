@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { JobModal } from "./job-modal";
+import { JobDetailModal } from "./job-detail-modal";
 import { createClient } from "@/lib/supabase/client";
 
 type Job = {
@@ -38,6 +39,7 @@ export function JobsClient() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editJobId, setEditJobId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -83,7 +85,7 @@ export function JobsClient() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">
             Operator Panel
           </p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">Jobs</h1>
@@ -166,7 +168,7 @@ export function JobsClient() {
 
                 <div className="p-6">
                 <div className="flex items-start justify-between mb-4">
-                  <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
+                  <span className={`text-xs font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
                     {st.label}
                   </span>
                   <button className="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-xl">
@@ -202,11 +204,11 @@ export function JobsClient() {
                     <span>{job._count?.applications ?? 0} Bewerber</span>
                   </div>
                   <button
-                    onClick={() => router.push(`/jobs/${job.id}`)}
-                    className="ml-auto font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                    onClick={() => setEditJobId(job.id)}
+                    className="ml-auto font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                   >
-                    Details
-                    <span className="material-symbols-outlined text-xs">arrow_forward</span>
+                    Bearbeiten
+                    <span className="material-symbols-outlined text-xs">edit</span>
                   </button>
                 </div>
                 </div>{/* /p-6 */}
@@ -217,6 +219,7 @@ export function JobsClient() {
       )}
 
       <JobModal open={modalOpen} onClose={() => setModalOpen(false)} onSuccess={load} />
+      <JobDetailModal jobId={editJobId} onClose={() => { setEditJobId(null); load(); }} />
     </div>
   );
 }

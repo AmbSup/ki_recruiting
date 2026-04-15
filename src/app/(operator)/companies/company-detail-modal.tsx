@@ -27,27 +27,37 @@ type CompanyDetail = {
   _count?: { jobs: number };
 };
 
-const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
-  active:  { label: "Aktiv",    bg: "bg-primary-container/30",  text: "text-primary" },
-  paused:  { label: "Pausiert", bg: "bg-tertiary-container/30", text: "text-tertiary" },
-  churned: { label: "Inaktiv",  bg: "bg-error-container/20",    text: "text-error" },
+const statusOptions = [
+  { value: "active", label: "Aktiv" },
+  { value: "paused", label: "Pausiert" },
+  { value: "churned", label: "Inaktiv" },
+];
+
+const planOptions = [
+  { value: "per_job", label: "Pro Job" },
+  { value: "monthly", label: "Monatlich" },
+  { value: "custom", label: "Custom" },
+];
+
+type Props = {
+  companyId: string | null;
+  onClose: () => void;
+  onDeleted?: () => void;
 };
 
-const planLabels: Record<string, string> = {
-  per_job: "Pro Job",
-  monthly: "Monatlich",
-  custom:  "Custom",
-};
-
-type Props = { companyId: string | null; onClose: () => void };
-
-export function CompanyDetailModal({ companyId, onClose }: Props) {
+export function CompanyDetailModal({ companyId, onClose, onDeleted }: Props) {
   const [company, setCompany] = useState<CompanyDetail | null>(null);
+  const [form, setForm] = useState<Partial<CompanyDetail>>({});
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     if (!companyId) return;
     setCompany(null);
+    setForm({});
+    setDirty(false);
     setLoading(true);
     const supabase = createClient();
     Promise.all([
@@ -67,17 +77,49 @@ export function CompanyDetailModal({ companyId, onClose }: Props) {
         .eq("company_id", companyId),
     ]).then(([{ data }, { count }]) => {
       if (data) {
-        setCompany({ ...(data as unknown as CompanyDetail), _count: { jobs: count ?? 0 } });
+        const c = { ...(data as unknown as CompanyDetail), _count: { jobs: count ?? 0 } };
+        setCompany(c);
+        setForm(c);
       }
       setLoading(false);
     });
   }, [companyId]);
 
-  if (!companyId) return null;
+  function update(field: string, value: string | number | null) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+    setDirty(true);
+  }
 
-  const st = company ? (statusConfig[company.status] ?? statusConfig.active) : null;
-  const initials = company?.name.slice(0, 2).toUpperCase() ?? "??";
-  const accentColor = company?.primary_color ?? "#9a442d";
+  async function save() {
+    if (!companyId || !dirty) return;
+    setSaving(true);
+    const supabase = createClient();
+    const { name, industry, company_size, website, address, description,
+      primary_color, contact_name, contact_email, contact_phone,
+      recruiting_goals, meta_ad_account_id, linkedin_ad_account_id,
+      billing_plan, monthly_budget, contract_start, notes, status } = form;
+    await supabase.from("companies").update({
+      name, industry, company_size, website, address, description,
+      primary_color, contact_name, contact_email, contact_phone,
+      recruiting_goals, meta_ad_account_id, linkedin_ad_account_id,
+      billing_plan, monthly_budget: monthly_budget ? Number(monthly_budget) : null,
+      contract_start: contract_start || null, notes, status,
+    }).eq("id", companyId);
+    setDirty(false);
+    setSaving(false);
+  }
+
+  async function deleteCompany() {
+    if (!companyId || !confirm("Firma wirklich löschen? Alle zugehörigen Jobs bleiben erhalten.")) return;
+    setDeleting(true);
+    const supabase = createClient();
+    await supabase.from("companies").delete().eq("id", companyId);
+    setDeleting(false);
+    onDeleted?.();
+    onClose();
+  }
+
+  if (!companyId) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -85,46 +127,22 @@ export function CompanyDetailModal({ companyId, onClose }: Props) {
       <div className="relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-start justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20 flex-shrink-0">
-          <div className="flex items-center gap-4 flex-1 min-w-0 pr-4">
-            {/* Avatar */}
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-base font-bold text-white flex-shrink-0"
-              style={{ backgroundColor: accentColor }}
-            >
-              {loading ? "…" : initials}
-            </div>
-            <div className="min-w-0">
-              {loading ? (
-                <div className="space-y-2">
-                  <div className="h-5 w-40 bg-surface-container-high rounded-lg animate-pulse" />
-                  <div className="h-3 w-24 bg-surface-container-high rounded animate-pulse" />
-                </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-2 mb-1 flex-wrap">
-                    {st && (
-                      <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${st.bg} ${st.text}`}>
-                        {st.label}
-                      </span>
-                    )}
-                    {company?.industry && (
-                      <span className="text-[10px] font-label font-bold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant">
-                        {company.industry}
-                      </span>
-                    )}
-                  </div>
-                  <h2 className="font-headline text-2xl italic text-on-surface leading-tight">{company?.name}</h2>
-                  {company?.company_size && (
-                    <p className="font-label text-xs text-outline mt-0.5">{company.company_size} Mitarbeitende</p>
-                  )}
-                </>
-              )}
-            </div>
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-outline-variant/20 flex-shrink-0">
+          <h2 className="font-headline text-2xl italic text-on-surface">
+            {loading ? "Lädt…" : form.name || "Firma"}
+          </h2>
+          <div className="flex items-center gap-2">
+            {dirty && (
+              <button onClick={save} disabled={saving}
+                className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60">
+                <span className="material-symbols-outlined text-xs">{saving ? "progress_activity" : "save"}</span>
+                {saving ? "Speichert…" : "Speichern"}
+              </button>
+            )}
+            <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">
+              close
+            </button>
           </div>
-          <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors flex-shrink-0">
-            close
-          </button>
         </div>
 
         {/* Scrollable Content */}
@@ -132,166 +150,142 @@ export function CompanyDetailModal({ companyId, onClose }: Props) {
           {loading ? (
             <div className="space-y-3">
               {[100, 80, 60, 100, 70].map((w, i) => (
-                <div key={i} className="h-4 bg-surface-container-high rounded animate-pulse" style={{ width: `${w}%` }} />
+                <div key={i} className="h-10 bg-surface-container-high rounded-xl animate-pulse" style={{ width: `${w}%` }} />
               ))}
             </div>
-          ) : company ? (
+          ) : (
             <>
-              {/* Quick Stats */}
-              <div className="grid grid-cols-3 gap-3">
-                <StatCard icon="work" label="Jobs" value={String(company._count?.jobs ?? 0)} />
-                <StatCard icon="payments" label="Budget/Monat" value={company.monthly_budget ? `€${company.monthly_budget.toLocaleString("de-AT")}` : "–"} />
-                <StatCard icon="receipt_long" label="Abrechnung" value={planLabels[company.billing_plan] ?? company.billing_plan} />
-              </div>
-
-              {/* Beschreibung */}
-              {company.description && (
-                <Section icon="info" label="Über das Unternehmen">
-                  <p className="font-body text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{company.description}</p>
-                </Section>
-              )}
+              {/* Status + Grunddaten */}
+              <FieldGroup label="Grunddaten" icon="domain">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Firmenname" value={form.name ?? ""} onChange={(v) => update("name", v)} />
+                  <SelectField label="Status" value={form.status ?? "active"} options={statusOptions} onChange={(v) => update("status", v)} />
+                  <Field label="Branche" value={form.industry ?? ""} onChange={(v) => update("industry", v)} />
+                  <Field label="Größe" value={form.company_size ?? ""} onChange={(v) => update("company_size", v)} placeholder="z.B. 51–200" />
+                  <Field label="Website" value={form.website ?? ""} onChange={(v) => update("website", v)} />
+                  <Field label="Adresse" value={form.address ?? ""} onChange={(v) => update("address", v)} />
+                  <Field label="Markenfarbe" value={form.primary_color ?? ""} onChange={(v) => update("primary_color", v)} placeholder="#9a442d" className="col-span-1" />
+                </div>
+                <TextArea label="Beschreibung" value={form.description ?? ""} onChange={(v) => update("description", v)} rows={3} />
+              </FieldGroup>
 
               {/* Kontakt */}
-              <Section icon="contacts" label="Ansprechpartner">
-                <div className="space-y-2">
-                  {company.contact_name && (
-                    <Row icon="person">{company.contact_name}</Row>
-                  )}
-                  {company.contact_email && (
-                    <Row icon="mail">
-                      <a href={`mailto:${company.contact_email}`} className="text-primary hover:underline">
-                        {company.contact_email}
-                      </a>
-                    </Row>
-                  )}
-                  {company.contact_phone && (
-                    <Row icon="phone">
-                      <a href={`tel:${company.contact_phone}`} className="hover:underline">
-                        {company.contact_phone}
-                      </a>
-                    </Row>
-                  )}
-                  {company.website && (
-                    <Row icon="language">
-                      <a href={company.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                        {company.website.replace(/^https?:\/\//, "")}
-                      </a>
-                    </Row>
-                  )}
-                  {company.address && (
-                    <Row icon="location_on">{company.address}</Row>
-                  )}
+              <FieldGroup label="Ansprechpartner" icon="contacts">
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Name" value={form.contact_name ?? ""} onChange={(v) => update("contact_name", v)} />
+                  <Field label="E-Mail" value={form.contact_email ?? ""} onChange={(v) => update("contact_email", v)} type="email" />
+                  <Field label="Telefon" value={form.contact_phone ?? ""} onChange={(v) => update("contact_phone", v)} type="tel" />
                 </div>
-              </Section>
+              </FieldGroup>
 
-              {/* Recruiting-Ziele */}
-              {company.recruiting_goals && (
-                <Section icon="flag" label="Recruiting-Ziele">
-                  <BulletList text={company.recruiting_goals} />
-                </Section>
-              )}
-
-              {/* Ad Accounts */}
-              {(company.meta_ad_account_id || company.linkedin_ad_account_id) && (
-                <Section icon="campaign" label="Ad Accounts">
-                  <div className="space-y-2">
-                    {company.meta_ad_account_id && (
-                      <Row icon="ads_click">
-                        <span className="text-outline mr-1">Meta:</span> {company.meta_ad_account_id}
-                      </Row>
-                    )}
-                    {company.linkedin_ad_account_id && (
-                      <Row icon="ads_click">
-                        <span className="text-outline mr-1">LinkedIn:</span> {company.linkedin_ad_account_id}
-                      </Row>
-                    )}
-                  </div>
-                </Section>
-              )}
+              {/* Recruiting */}
+              <FieldGroup label="Recruiting" icon="flag">
+                <TextArea label="Recruiting-Ziele" value={form.recruiting_goals ?? ""} onChange={(v) => update("recruiting_goals", v)} rows={3} />
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Meta Ad Account ID" value={form.meta_ad_account_id ?? ""} onChange={(v) => update("meta_ad_account_id", v)} />
+                  <Field label="LinkedIn Ad Account ID" value={form.linkedin_ad_account_id ?? ""} onChange={(v) => update("linkedin_ad_account_id", v)} />
+                </div>
+              </FieldGroup>
 
               {/* Vertrag */}
-              <Section icon="handshake" label="Vertrag & Abrechnung">
-                <div className="space-y-2">
-                  <Row icon="receipt_long">{planLabels[company.billing_plan] ?? company.billing_plan}</Row>
-                  {company.monthly_budget != null && (
-                    <Row icon="payments">€{company.monthly_budget.toLocaleString("de-AT")} / Monat</Row>
-                  )}
-                  {company.contract_start && (
-                    <Row icon="calendar_today">
-                      Vertragsstart: {new Date(company.contract_start).toLocaleDateString("de-AT", {
-                        day: "2-digit", month: "long", year: "numeric",
-                      })}
-                    </Row>
-                  )}
+              <FieldGroup label="Vertrag & Abrechnung" icon="handshake">
+                <div className="grid grid-cols-3 gap-3">
+                  <SelectField label="Abrechnungsmodell" value={form.billing_plan ?? "per_job"} options={planOptions} onChange={(v) => update("billing_plan", v)} />
+                  <Field label="Budget/Monat (€)" value={form.monthly_budget != null ? String(form.monthly_budget) : ""} onChange={(v) => update("monthly_budget", v ? Number(v) : null)} type="number" />
+                  <Field label="Vertragsstart" value={form.contract_start ?? ""} onChange={(v) => update("contract_start", v)} type="date" />
                 </div>
-              </Section>
+              </FieldGroup>
 
               {/* Notizen */}
-              {company.notes && (
-                <Section icon="sticky_note_2" label="Interne Notizen">
-                  <p className="font-body text-sm text-on-surface leading-relaxed whitespace-pre-wrap">{company.notes}</p>
-                </Section>
-              )}
+              <FieldGroup label="Interne Notizen" icon="sticky_note_2">
+                <TextArea label="" value={form.notes ?? ""} onChange={(v) => update("notes", v)} rows={4} placeholder="Notizen zu dieser Firma…" />
+              </FieldGroup>
 
-              {/* Footer */}
-              <div className="pt-4 border-t border-outline-variant/10">
-                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
-                  Kunde seit {new Date(company.created_at).toLocaleDateString("de-AT", {
-                    day: "2-digit", month: "long", year: "numeric",
-                  })}
+              {/* Footer: Meta + Delete */}
+              <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
+                <p className="font-label text-xs text-outline">
+                  {company?._count?.jobs ?? 0} Jobs · Kunde seit {company?.created_at ? new Date(company.created_at).toLocaleDateString("de-AT", { day: "2-digit", month: "long", year: "numeric" }) : "—"}
                 </p>
+                <button onClick={deleteCompany} disabled={deleting}
+                  className="flex items-center gap-1.5 text-error/70 hover:text-error font-label text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50">
+                  <span className="material-symbols-outlined text-xs">delete</span>
+                  {deleting ? "Löscht…" : "Firma löschen"}
+                </button>
               </div>
             </>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
   );
 }
 
-/* ── Sub-components ── */
+/* ── Form Sub-components ── */
 
-function StatCard({ icon, label, value }: { icon: string; label: string; value: string }) {
+function FieldGroup({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface-container-low rounded-xl p-3 text-center">
-      <span className="material-symbols-outlined text-primary text-base block mb-1">{icon}</span>
-      <p className="font-headline text-lg text-on-surface leading-none mb-0.5">{value}</p>
-      <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</p>
-    </div>
-  );
-}
-
-function Section({ icon, label, children }: { icon: string; label: string; children: React.ReactNode }) {
-  return (
-    <div className="bg-surface-container-low rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-3">
+    <div className="bg-surface-container-low rounded-xl p-4 space-y-3">
+      <div className="flex items-center gap-2 mb-1">
         <span className="material-symbols-outlined text-primary text-sm">{icon}</span>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</span>
+        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{label}</span>
       </div>
       {children}
     </div>
   );
 }
 
-function Row({ icon, children }: { icon: string; children: React.ReactNode }) {
+function Field({ label, value, onChange, type = "text", placeholder, className = "" }: {
+  label: string; value: string; onChange: (v: string) => void;
+  type?: string; placeholder?: string; className?: string;
+}) {
   return (
-    <div className="flex items-start gap-2 font-body text-sm text-on-surface">
-      <span className="material-symbols-outlined text-outline-variant text-sm mt-0.5 flex-shrink-0">{icon}</span>
-      <span>{children}</span>
+    <div className={className}>
+      {label && <label className="font-label text-xs text-outline block mb-1">{label}</label>}
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+      />
     </div>
   );
 }
 
-function BulletList({ text }: { text: string }) {
-  const lines = text.split("\n").map((l) => l.trim()).filter(Boolean);
+function TextArea({ label, value, onChange, rows = 3, placeholder }: {
+  label: string; value: string; onChange: (v: string) => void;
+  rows?: number; placeholder?: string;
+}) {
   return (
-    <ul className="space-y-1">
-      {lines.map((line, i) => (
-        <li key={i} className="flex items-start gap-2 font-body text-sm text-on-surface leading-relaxed">
-          <span className="mt-2 w-1 h-1 rounded-full bg-primary flex-shrink-0" />
-          {line}
-        </li>
-      ))}
-    </ul>
+    <div>
+      {label && <label className="font-label text-xs text-outline block mb-1">{label}</label>}
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={rows}
+        placeholder={placeholder}
+        className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"
+      />
+    </div>
+  );
+}
+
+function SelectField({ label, value, options, onChange }: {
+  label: string; value: string; options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <div>
+      <label className="font-label text-xs text-outline block mb-1">{label}</label>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>{o.label}</option>
+        ))}
+      </select>
+    </div>
   );
 }

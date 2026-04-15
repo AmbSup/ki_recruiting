@@ -119,7 +119,7 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, selectedUrl, onSelec
       {/* Action bar */}
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Szene</span>
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Szene</span>
           <div className="flex gap-1">
             {STYLE_OPTIONS.map((s) => (
               <button
@@ -226,7 +226,7 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, selectedUrl, onSelec
                   <button
                     onClick={(e) => selectForAds(e, isSelected ? null : img.url)}
                     disabled={savingSelect === img.url}
-                    className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 ${
+                    className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg font-label text-xs font-bold uppercase tracking-widest transition-colors disabled:opacity-50 ${
                       isSelected
                         ? "bg-primary text-on-primary"
                         : "bg-surface-container-high text-on-surface-variant hover:bg-primary hover:text-on-primary"
@@ -252,7 +252,7 @@ export function JobAdImages({ jobId, jobTitle, jobLocation, selectedUrl, onSelec
       )}
 
       {images.length > 0 && (
-        <p className="font-label text-[10px] text-outline text-center">
+        <p className="font-label text-xs text-outline text-center">
           {images.length} {images.length === 1 ? "Bild" : "Bilder"} · Hover: auswählen oder löschen
         </p>
       )}

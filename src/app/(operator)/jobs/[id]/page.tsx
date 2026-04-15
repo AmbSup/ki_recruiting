@@ -153,11 +153,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       <div className="flex items-start justify-between mb-8">
         <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
+            <span className={`text-xs font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
               {st.label}
             </span>
             {job.category && (
-              <span className="text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant">
+              <span className="text-xs font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant">
                 {job.category}
               </span>
             )}
@@ -184,12 +184,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-primary text-sm">star</span>
-                <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Benefits</span>
+                <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Benefits</span>
               </div>
               {!editingBenefits && (
                 <button
                   onClick={() => setEditingBenefits(true)}
-                  className="font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                  className="font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-xs">edit</span>
                   Bearbeiten
@@ -206,7 +206,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   placeholder={"Firmenauto\nWeiterbildungsbudget\nFlexible Arbeitszeiten\nHomeoffice\nBonus"}
                   className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 font-body text-sm text-on-surface focus:outline-none focus:border-primary resize-none"
                 />
-                <p className="font-label text-[10px] text-outline">Ein Benefit pro Zeile</p>
+                <p className="font-label text-xs text-outline">Ein Benefit pro Zeile</p>
                 <div className="flex gap-2">
                   <button
                     onClick={saveBenefits}
@@ -296,8 +296,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-primary text-sm">business</span>
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Firmenlogo</span>
-              {savingLogo && <span className="ml-auto font-label text-[10px] text-outline animate-pulse">Speichert…</span>}
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Firmenlogo</span>
+              {savingLogo && <span className="ml-auto font-label text-xs text-outline animate-pulse">Speichert…</span>}
             </div>
             <ImageUpload
               value={logoUrl}
@@ -311,7 +311,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
             <div className="flex items-center gap-2 mb-4">
               <span className="material-symbols-outlined text-primary text-sm">image</span>
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Ad Bilder</span>
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Ad Bilder</span>
             </div>
             <JobAdImages
               jobId={job.id}
@@ -329,7 +329,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-primary text-sm">preview</span>
-                  <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Vorschau</span>
+                  <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Vorschau</span>
                 </div>
                 <button onClick={() => setPreviewUrl(null)} className="material-symbols-outlined text-outline text-base hover:text-on-surface">close</button>
               </div>
@@ -340,7 +340,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 {benefitLines.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {benefitLines.slice(0, 3).map((b, i) => (
-                      <span key={i} className="text-[10px] font-label font-bold px-2 py-0.5 bg-primary-container/30 text-primary rounded-full">
+                      <span key={i} className="text-xs font-label font-bold px-2 py-0.5 bg-primary-container/30 text-primary rounded-full">
                         ✓ {b}
                       </span>
                     ))}
@@ -350,7 +350,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   // eslint-disable-next-line @next/next/no-img-element
                   <div className="flex items-center gap-2 mt-2">
                     <img src={logoUrl} alt="Logo" className="w-6 h-6 rounded object-contain" />
-                    <span className="font-label text-[10px] text-outline">{job.company.name}</span>
+                    <span className="font-label text-xs text-outline">{job.company.name}</span>
                   </div>
                 )}
               </div>
@@ -377,7 +377,7 @@ function Section({ icon, label, children }: { icon: string; label: string; child
     <div className="bg-surface-container-lowest rounded-2xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
       <div className="flex items-center gap-2 mb-3">
         <span className="material-symbols-outlined text-primary text-sm">{icon}</span>
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</span>
+        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{label}</span>
       </div>
       {children}
     </div>
@@ -408,7 +408,7 @@ function ProcessSteps({ text }: { text: string }) {
     <ol className="space-y-2">
       {steps.map((step, i) => (
         <li key={i} className="flex items-center gap-3 font-body text-sm text-on-surface">
-          <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-[10px] font-bold flex-shrink-0">{i + 1}</span>
+          <span className="w-5 h-5 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold flex-shrink-0">{i + 1}</span>
           {step}
         </li>
       ))}

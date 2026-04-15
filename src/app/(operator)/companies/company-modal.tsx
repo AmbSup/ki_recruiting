@@ -77,7 +77,7 @@ export function CompanyModal({ open, onClose, onSuccess }: Props) {
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20 flex-shrink-0">
           <div>
             <h2 className="font-headline text-2xl italic text-on-surface">Neue Firma</h2>
-            <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mt-0.5">
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
               Kunden-Account anlegen
             </p>
           </div>
@@ -93,7 +93,7 @@ export function CompanyModal({ open, onClose, onSuccess }: Props) {
               <button
                 type="button"
                 onClick={() => setStep(i)}
-                className={`flex items-center gap-2 text-[10px] font-label font-bold uppercase tracking-widest transition-colors ${
+                className={`flex items-center gap-2 text-xs font-label font-bold uppercase tracking-widest transition-colors ${
                   i === step ? "text-primary" : i < step ? "text-secondary" : "text-outline"
                 }`}
               >
@@ -364,7 +364,7 @@ export function CompanyModal({ open, onClose, onSuccess }: Props) {
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline pt-2 border-t border-outline-variant/10 first:border-0 first:pt-0">
+    <p className="font-label text-xs font-bold uppercase tracking-widest text-outline pt-2 border-t border-outline-variant/10 first:border-0 first:pt-0">
       {children}
     </p>
   );
@@ -373,7 +373,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
+      <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
       {children}
     </div>
   );

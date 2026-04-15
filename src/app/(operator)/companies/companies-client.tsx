@@ -60,7 +60,7 @@ export function CompaniesClient() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">
             Operator Panel
           </p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">
@@ -142,7 +142,7 @@ export function CompaniesClient() {
                       <h3 className="font-label text-sm font-bold text-on-surface group-hover:text-primary transition-colors">
                         {company.name}
                       </h3>
-                      <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}>
+                      <span className={`text-xs font-label font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${status.bg} ${status.text}`}>
                         {status.label}
                       </span>
                     </div>
@@ -170,12 +170,12 @@ export function CompaniesClient() {
 
                 {/* Footer */}
                 <div className="pt-4 border-t border-outline-variant/10 flex items-center justify-between">
-                  <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+                  <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
                     {planConfig[company.billing_plan]}
                   </span>
                   <button
                     onClick={() => setDetailCompanyId(company.id)}
-                    className="font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
+                    className="font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
                   >
                     Details
                     <span className="material-symbols-outlined text-xs">arrow_forward</span>
@@ -188,7 +188,7 @@ export function CompaniesClient() {
       )}
 
       <CompanyModal open={modalOpen} onClose={() => setModalOpen(false)} onSuccess={load} />
-      <CompanyDetailModal companyId={detailCompanyId} onClose={() => setDetailCompanyId(null)} />
+      <CompanyDetailModal companyId={detailCompanyId} onClose={() => { setDetailCompanyId(null); load(); }} onDeleted={load} />
     </div>
   );
 }
