@@ -46,13 +46,15 @@ type BlockContent = {
   align?: "left" | "center" | "right";
   bold?: boolean;
   color?: string;
-  // text styling for headline/subtext in any block
-  headline_size?: "sm" | "md" | "lg" | "xl";
-  headline_color?: string;
-  headline_align?: "left" | "center" | "right";
-  subtext_size?: "sm" | "md" | "lg";
-  subtext_color?: string;
-  subtext_align?: "left" | "center" | "right";
+  // text styling — dynamic per-field: {fieldKey}_size, {fieldKey}_color, {fieldKey}_align
+  headline_size?: string; headline_color?: string; headline_align?: string;
+  subtext_size?: string; subtext_color?: string; subtext_align?: string;
+  name_size?: string; name_color?: string; name_align?: string;
+  title_size?: string; title_color?: string; title_align?: string;
+  cta_size?: string; cta_color?: string;
+  question_size?: string; question_color?: string; question_align?: string;
+  // generic dynamic style access
+  [key: string]: unknown;
   // button
   label?: string;
   style?: "primary" | "outline";
@@ -123,6 +125,62 @@ const defaultBranding: FunnelBranding = {
 
 const sizeMap: Record<string, string> = { sm: "12px", md: "14px", lg: "18px", xl: "24px" };
 const headlineSizeMap: Record<string, string> = { sm: "14px", md: "18px", lg: "24px", xl: "32px" };
+
+// ─── Floating Text Toolbar ──────────────────────────────────────────────────
+
+type ActiveTextField = { blockId: string; fieldKey: string; rect: DOMRect } | null;
+
+function FloatingTextToolbar({ field, content, onUpdate, onClose }: {
+  field: ActiveTextField;
+  content: BlockContent;
+  onUpdate: (c: Partial<BlockContent>) => void;
+  onClose: () => void;
+}) {
+  if (!field) return null;
+  const sKey = `${field.fieldKey}_size`;
+  const cKey = `${field.fieldKey}_color`;
+  const aKey = `${field.fieldKey}_align`;
+  const curSize = (content[sKey] as string) ?? "md";
+  const curColor = (content[cKey] as string) ?? "";
+  const curAlign = (content[aKey] as string) ?? "center";
+
+  return (
+    <div
+      className="absolute z-50 flex items-center gap-1 bg-white border border-gray-200 rounded-xl shadow-2xl px-2 py-1.5"
+      style={{ top: field.rect.top - 44, left: Math.max(4, field.rect.left - 10), minWidth: 280 }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Size */}
+      {(["sm", "md", "lg", "xl"] as const).map((s) => (
+        <button key={s} onClick={() => onUpdate({ [sKey]: s })}
+          className={`px-1.5 py-1 rounded text-[10px] font-bold transition-all ${curSize === s ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-700"}`}>
+          {s.toUpperCase()}
+        </button>
+      ))}
+      <div className="w-px h-5 bg-gray-200 mx-0.5" />
+      {/* Align */}
+      {(["left", "center", "right"] as const).map((a) => (
+        <button key={a} onClick={() => onUpdate({ [aKey]: a })}
+          className={`p-1 rounded transition-all ${curAlign === a ? "bg-blue-100 text-blue-600" : "text-gray-400 hover:text-gray-700"}`}>
+          <span className="material-symbols-outlined text-sm">{a === "left" ? "format_align_left" : a === "center" ? "format_align_center" : "format_align_right"}</span>
+        </button>
+      ))}
+      <div className="w-px h-5 bg-gray-200 mx-0.5" />
+      {/* Color */}
+      <input type="color" value={curColor || "#111827"} onChange={(e) => onUpdate({ [cKey]: e.target.value })}
+        className="w-6 h-6 rounded border border-gray-200 cursor-pointer p-0" />
+      {curColor && (
+        <button onClick={() => onUpdate({ [cKey]: "" })} className="text-gray-400 hover:text-red-500 p-0.5">
+          <span className="material-symbols-outlined text-xs">close</span>
+        </button>
+      )}
+      <div className="w-px h-5 bg-gray-200 mx-0.5" />
+      <button onClick={onClose} className="text-gray-400 hover:text-gray-700 p-0.5">
+        <span className="material-symbols-outlined text-sm">check</span>
+      </button>
+    </div>
+  );
+}
 
 function blockDefaults(type: BlockType): Block {
   const id = uid();
@@ -209,6 +267,8 @@ function BlockPreview({
   onDelete,
   isFirst,
   isLast,
+  activeFieldKey,
+  onTextClick,
 }: {
   block: Block;
   branding: FunnelBranding;
@@ -220,11 +280,25 @@ function BlockPreview({
   onDelete: () => void;
   isFirst: boolean;
   isLast: boolean;
+  activeFieldKey: string | null;
+  onTextClick: (fieldKey: string, e: React.MouseEvent) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const c = block.content;
   const color = branding.primary_color;
   const textColor = branding.button_text_color;
+
+  // Helper: get style for a text field
+  const ts = (fieldKey: string, defaults: { size?: string; color?: string; align?: string }) => ({
+    fontSize: (fieldKey === "headline" ? headlineSizeMap : sizeMap)[(c[`${fieldKey}_size`] as string) ?? defaults.size ?? "md"],
+    color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
+    textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "center") as "left" | "center" | "right",
+  });
+  // Helper: click handler + active ring for text
+  const tp = (fieldKey: string) => ({
+    onClick: (e: React.MouseEvent) => { e.stopPropagation(); onTextClick(fieldKey, e); },
+    className: `cursor-pointer transition-all rounded-sm ${activeFieldKey === fieldKey ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`,
+  });
 
   const wrapperClass = `relative cursor-pointer transition-all ${isSelected ? "ring-2 ring-blue-500 ring-offset-1 rounded-lg" : hovered ? "ring-1 ring-blue-300 ring-offset-1 rounded-lg" : ""}`;
 
@@ -256,13 +330,13 @@ function BlockPreview({
           )}
           {(c.name || c.title_text) && (
             <div className="mb-2">
-              {c.name && <div className="font-bold text-xs text-gray-900">{c.name}</div>}
-              {c.title_text && <div className="text-xs" style={{ color }}>{c.title_text}</div>}
+              {c.name && <div {...tp("name")} style={ts("name", { size: "sm", color: "#111827" })}><span className="font-bold">{c.name}</span></div>}
+              {c.title_text && <div {...tp("title")} style={ts("title", { size: "sm", color })}>{c.title_text}</div>}
             </div>
           )}
           <h2
-            className="font-black leading-tight mb-1 outline-none"
-            style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color ?? "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}
+            {...tp("headline")}
+            style={{ ...ts("headline", { size: "lg", color: "#111827" }), fontWeight: 900, lineHeight: 1.1 }}
             contentEditable
             suppressContentEditableWarning
             onBlur={(e) => onUpdate({ headline: e.currentTarget.innerText })}
@@ -271,8 +345,8 @@ function BlockPreview({
           </h2>
           {c.subtext && (
             <p
-              className="mb-3 leading-relaxed outline-none"
-              style={{ fontSize: sizeMap[c.subtext_size ?? "sm"], color: c.subtext_color ?? "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}
+              {...tp("subtext")}
+              style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), lineHeight: 1.6, marginBottom: 12 }}
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdate({ subtext: e.currentTarget.innerText })}
@@ -291,16 +365,16 @@ function BlockPreview({
         <div className="flex flex-col items-center text-center px-4 py-5">
           <div className="text-3xl mb-3">{c.emoji || "👋"}</div>
           <h3
-            className="font-black mb-2 outline-none"
-            style={{ fontSize: headlineSizeMap[c.headline_size ?? "md"], color: c.headline_color ?? "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}
+            {...tp("headline")}
+            style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900 }}
             contentEditable suppressContentEditableWarning
             onBlur={(e) => onUpdate({ headline: e.currentTarget.innerText })}
           >
             {c.headline}
           </h3>
           <p
-            className="leading-relaxed outline-none"
-            style={{ fontSize: sizeMap[c.subtext_size ?? "sm"], color: c.subtext_color ?? "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}
+            {...tp("subtext")}
+            style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), lineHeight: 1.6 }}
             contentEditable suppressContentEditableWarning
             onBlur={(e) => onUpdate({ subtext: e.currentTarget.innerText })}
           >
@@ -312,7 +386,7 @@ function BlockPreview({
       {/* ── MULTIPLE CHOICE ── */}
       {block.type === "multiple_choice" && (
         <div className="px-4 py-3">
-          <h3 className="font-black text-sm text-gray-900 mb-1 leading-tight">{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{c.question || "Frage"}</h3>
           {c.selection === "multiple" && <p className="text-[9px] text-gray-400 mb-2">(Wähle so viele Antworten, wie du möchtest)</p>}
           <div className="grid grid-cols-2 gap-1.5 mb-3">
             {(c.items ?? []).slice(0, 6).map((item, i) => (
@@ -332,7 +406,7 @@ function BlockPreview({
       {/* ── IMAGE CHOICE ── */}
       {block.type === "image_choice" && (
         <div className="px-4 py-3">
-          <h3 className="font-black text-sm text-gray-900 mb-2 leading-tight">{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{c.question || "Frage"}</h3>
           <div className="grid grid-cols-2 gap-1.5">
             {(c.items ?? []).slice(0, 4).map((item, i) => (
               <div key={item.id} className="relative rounded-xl overflow-hidden border-2 cursor-pointer" style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}>
@@ -355,7 +429,7 @@ function BlockPreview({
       {/* ── LIST CHOICE ── */}
       {block.type === "list_choice" && (
         <div className="px-4 py-3">
-          <h3 className="font-black text-sm text-gray-900 mb-2 leading-tight">{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{c.question || "Frage"}</h3>
           <div className="space-y-1.5">
             {(c.items ?? []).slice(0, 5).map((item, i) => (
               <div key={item.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 cursor-pointer"
@@ -409,8 +483,9 @@ function BlockPreview({
       {block.type === "text" && (
         <div className="px-4 py-2">
           <p
-            className={`outline-none leading-relaxed ${c.bold ? "font-bold" : ""}`}
-            style={{ fontSize: sizeMap[c.size ?? "md"], color: c.color ?? "#374151", textAlign: (c.align ?? "left") as "left" | "center" | "right" }}
+            {...tp("size")}
+            className={`outline-none leading-relaxed ${c.bold ? "font-bold" : ""} cursor-pointer transition-all rounded-sm ${activeFieldKey === "size" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{ fontSize: sizeMap[(c.size as string) ?? "md"], color: (c.color as string) || "#374151", textAlign: ((c.align as string) || "left") as "left" | "center" | "right" }}
             contentEditable suppressContentEditableWarning
             onBlur={(e) => onUpdate({ content: e.currentTarget.innerText })}
           >
@@ -916,6 +991,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   const [showBlockPicker, setShowBlockPicker] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
+  const [activeTextField, setActiveTextField] = useState<ActiveTextField>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -1221,7 +1297,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
         </div>
 
         {/* Canvas */}
-        <div className="flex-1 overflow-y-auto flex items-start justify-center py-8 px-6 bg-surface-container/50" onClick={() => { setSelectedBlockId(null); setShowBlockPicker(false); }}>
+        <div className="flex-1 overflow-y-auto flex items-start justify-center py-8 px-6 bg-surface-container/50" onClick={() => { setSelectedBlockId(null); setShowBlockPicker(false); setActiveTextField(null); }}>
           {/* Device frame */}
           <div className="relative origin-top" style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }} onClick={(e) => e.stopPropagation()}>
             <div className={`bg-white shadow-2xl overflow-hidden border border-gray-200 ${previewMode === "mobile" ? "w-[320px] rounded-[2.5rem]" : "w-[768px] rounded-xl"}`}>
@@ -1263,7 +1339,16 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               </div>
 
               {/* Blocks */}
-              <div>
+              <div className="relative">
+                {/* Floating Text Toolbar */}
+                {activeTextField && currentPage?.blocks.find(b => b.id === activeTextField.blockId) && (
+                  <FloatingTextToolbar
+                    field={activeTextField}
+                    content={currentPage.blocks.find(b => b.id === activeTextField.blockId)!.content}
+                    onUpdate={(c) => updateBlock(activeTextField.blockId, c)}
+                    onClose={() => setActiveTextField(null)}
+                  />
+                )}
                 {currentPage?.blocks.map((block, i) => (
                   <BlockPreview
                     key={block.id}
@@ -1277,6 +1362,14 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                     onDelete={() => deleteBlock(block.id)}
                     isFirst={i === 0}
                     isLast={i === currentPage.blocks.length - 1}
+                    activeFieldKey={activeTextField?.blockId === block.id ? activeTextField.fieldKey : null}
+                    onTextClick={(fieldKey, e) => {
+                      const rect = (e.target as HTMLElement).getBoundingClientRect();
+                      const container = (e.target as HTMLElement).closest(".relative");
+                      const containerRect = container?.getBoundingClientRect() ?? rect;
+                      setActiveTextField({ blockId: block.id, fieldKey, rect: new DOMRect(rect.left - containerRect.left, rect.top - containerRect.top, rect.width, rect.height) });
+                      setSelectedBlockId(block.id);
+                    }}
                   />
                 ))}
 

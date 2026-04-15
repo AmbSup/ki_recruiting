@@ -20,12 +20,13 @@ type BlockContent = {
   content?: string; size?: "sm" | "md" | "lg" | "xl";
   align?: "left" | "center" | "right"; bold?: boolean;
   color?: string;
-  headline_size?: "sm" | "md" | "lg" | "xl";
-  headline_color?: string;
-  headline_align?: "left" | "center" | "right";
-  subtext_size?: "sm" | "md" | "lg";
-  subtext_color?: string;
-  subtext_align?: "left" | "center" | "right";
+  headline_size?: string; headline_color?: string; headline_align?: string;
+  subtext_size?: string; subtext_color?: string; subtext_align?: string;
+  name_size?: string; name_color?: string; name_align?: string;
+  title_size?: string; title_color?: string; title_align?: string;
+  cta_size?: string; cta_color?: string;
+  question_size?: string; question_color?: string; question_align?: string;
+  [key: string]: unknown;
   label?: string; style?: "primary" | "outline";
   url?: string; alt?: string; rounded?: boolean;
   stars?: number; count?: string; source_text?: string;
@@ -339,8 +340,8 @@ function BlockRenderer({
         )}
         {(c.name || c.title_text) && (
           <div className="mb-3">
-            {c.name && <div className="font-bold text-sm text-gray-900">{c.name}</div>}
-            {c.title_text && <div className="text-xs" style={{ color }}>{c.title_text}</div>}
+            {c.name && <div className="font-bold" style={{ fontSize: sizeMap[(c.name_size as string) ?? "md"], color: (c.name_color as string) || "#111827" }}>{c.name}</div>}
+            {c.title_text && <div style={{ fontSize: sizeMap[(c.title_size as string) ?? "sm"], color: (c.title_color as string) || color }}>{c.title_text}</div>}
           </div>
         )}
         <h1 className="font-black leading-tight mb-2" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{c.headline}</h1>
@@ -372,7 +373,7 @@ function BlockRenderer({
     const hasSelection = answers.length > 0;
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-1 leading-tight">{c.question || "Frage"}</h2>
+        <h2 className="font-black mb-1 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{c.question || "Frage"}</h2>
         {sel === "multiple" && <p className="text-xs text-gray-400 mb-3">Mehrere Antworten möglich</p>}
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
@@ -407,7 +408,7 @@ function BlockRenderer({
   if (block.type === "image_choice") {
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-3 leading-tight">{c.question || "Frage"}</h2>
+        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{c.question || "Frage"}</h2>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
@@ -440,7 +441,7 @@ function BlockRenderer({
   if (block.type === "list_choice") {
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-3 leading-tight">{c.question || "Frage"}</h2>
+        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{c.question || "Frage"}</h2>
         <div className="space-y-2">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
