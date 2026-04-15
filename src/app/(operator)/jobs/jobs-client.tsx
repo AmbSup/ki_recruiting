@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { JobModal } from "./job-modal";
 import Link from "next/link";
-import { JobDetailModal } from "./job-detail-modal";
 import { createClient } from "@/lib/supabase/client";
 
 type JobFunnel = { id: string; name: string; slug: string; status: string };
@@ -41,7 +40,6 @@ export function JobsClient() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editJobId, setEditJobId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -219,13 +217,11 @@ export function JobsClient() {
                     <span className="material-symbols-outlined text-outline-variant text-sm">people</span>
                     <span>{job._count?.applications ?? 0} Bewerber</span>
                   </div>
-                  <button
-                    onClick={() => setEditJobId(job.id)}
-                    className="ml-auto font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1"
-                  >
+                  <Link href={`/jobs/${job.id}`}
+                    className="ml-auto font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline flex items-center gap-1">
                     Bearbeiten
                     <span className="material-symbols-outlined text-xs">edit</span>
-                  </button>
+                  </Link>
                 </div>
                 </div>{/* /p-6 */}
               </div>
@@ -235,7 +231,6 @@ export function JobsClient() {
       )}
 
       <JobModal open={modalOpen} onClose={() => setModalOpen(false)} onSuccess={load} />
-      <JobDetailModal jobId={editJobId} onClose={() => { setEditJobId(null); load(); }} />
     </div>
   );
 }
