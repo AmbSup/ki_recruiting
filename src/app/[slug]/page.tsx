@@ -2,6 +2,39 @@ import { createClient } from "@/lib/supabase/server";
 import { notFound, redirect } from "next/navigation";
 import Script from "next/script";
 import { FunnelPlayer } from "./funnel-player";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("funnels")
+    .select("name, job:jobs(title, selected_ad_image_url, company:companies(name))")
+    .eq("slug", slug)
+    .single();
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const d = data as any;
+  const job = Array.isArray(d?.job) ? d.job[0] : d?.job;
+  const company = Array.isArray(job?.company) ? job.company[0] : job?.company;
+  const title = job?.title ? `${job.title} — ${company?.name ?? ""}` : d?.name ?? "Bewerbung";
+  const imageUrl = job?.selected_ad_image_url ?? undefined;
+
+  return {
+    title,
+    description: `Jetzt bewerben: ${job?.title ?? d?.name ?? "Offene Stelle"}`,
+    openGraph: {
+      title,
+      description: `Jetzt bewerben: ${job?.title ?? d?.name ?? "Offene Stelle"}`,
+      ...(imageUrl ? { images: [{ url: imageUrl, width: 1200, height: 630 }] } : {}),
+    },
+    twitter: {
+      card: imageUrl ? "summary_large_image" : "summary",
+      title,
+      ...(imageUrl ? { images: [imageUrl] } : {}),
+    },
+  };
+}
 
 export default async function FunnelPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -9,7 +42,7 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
 
   const { data: funnel } = await supabase
     .from("funnels")
-    .select("id, name, slug, status, funnel_type, external_url, branding, consent_text, job_id, views, job:jobs(title, company:companies(name))")
+    .select("id, name, slug, status, funnel_type, external_url, branding, consent_text, job_id, views, job:jobs(title, selected_ad_image_url, company:companies(name))")
     .eq("slug", slug)
     .single();
 
