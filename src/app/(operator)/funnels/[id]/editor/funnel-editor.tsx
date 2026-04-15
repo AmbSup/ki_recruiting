@@ -43,8 +43,16 @@ type BlockContent = {
   // text
   content?: string;
   size?: "sm" | "md" | "lg" | "xl";
-  align?: "left" | "center";
+  align?: "left" | "center" | "right";
   bold?: boolean;
+  color?: string;
+  // text styling for headline/subtext in any block
+  headline_size?: "sm" | "md" | "lg" | "xl";
+  headline_color?: string;
+  headline_align?: "left" | "center" | "right";
+  subtext_size?: "sm" | "md" | "lg";
+  subtext_color?: string;
+  subtext_align?: "left" | "center" | "right";
   // button
   label?: string;
   style?: "primary" | "outline";
@@ -112,6 +120,9 @@ const defaultBranding: FunnelBranding = {
   button_text_color: "#1A1A1A",
   logo_url: "",
 };
+
+const sizeMap: Record<string, string> = { sm: "12px", md: "14px", lg: "18px", xl: "24px" };
+const headlineSizeMap: Record<string, string> = { sm: "14px", md: "18px", lg: "24px", xl: "32px" };
 
 function blockDefaults(type: BlockType): Block {
   const id = uid();
@@ -246,11 +257,12 @@ function BlockPreview({
           {(c.name || c.title_text) && (
             <div className="mb-2">
               {c.name && <div className="font-bold text-xs text-gray-900">{c.name}</div>}
-              {c.title_text && <div className="text-[10px]" style={{ color }}>{c.title_text}</div>}
+              {c.title_text && <div className="text-xs" style={{ color }}>{c.title_text}</div>}
             </div>
           )}
           <h2
-            className="font-black text-lg text-gray-900 leading-tight mb-1 outline-none"
+            className="font-black leading-tight mb-1 outline-none"
+            style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color ?? "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}
             contentEditable
             suppressContentEditableWarning
             onBlur={(e) => onUpdate({ headline: e.currentTarget.innerText })}
@@ -259,7 +271,8 @@ function BlockPreview({
           </h2>
           {c.subtext && (
             <p
-              className="text-[10px] text-gray-500 mb-3 leading-relaxed outline-none"
+              className="mb-3 leading-relaxed outline-none"
+              style={{ fontSize: sizeMap[c.subtext_size ?? "sm"], color: c.subtext_color ?? "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}
               contentEditable
               suppressContentEditableWarning
               onBlur={(e) => onUpdate({ subtext: e.currentTarget.innerText })}
@@ -278,14 +291,16 @@ function BlockPreview({
         <div className="flex flex-col items-center text-center px-4 py-5">
           <div className="text-3xl mb-3">{c.emoji || "👋"}</div>
           <h3
-            className="font-black text-base text-gray-900 mb-2 outline-none"
+            className="font-black mb-2 outline-none"
+            style={{ fontSize: headlineSizeMap[c.headline_size ?? "md"], color: c.headline_color ?? "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}
             contentEditable suppressContentEditableWarning
             onBlur={(e) => onUpdate({ headline: e.currentTarget.innerText })}
           >
             {c.headline}
           </h3>
           <p
-            className="text-xs text-gray-500 leading-relaxed outline-none"
+            className="leading-relaxed outline-none"
+            style={{ fontSize: sizeMap[c.subtext_size ?? "sm"], color: c.subtext_color ?? "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}
             contentEditable suppressContentEditableWarning
             onBlur={(e) => onUpdate({ subtext: e.currentTarget.innerText })}
           >
@@ -304,7 +319,7 @@ function BlockPreview({
               <div key={item.id} className="flex items-center gap-2 rounded-xl px-3 py-2.5 border-2 cursor-pointer"
                 style={{ borderColor: i === 0 ? color : "#E5E7EB", background: i === 0 ? color + "15" : "white" }}>
                 <span className="material-symbols-outlined text-sm text-gray-700">{item.icon || "check"}</span>
-                <span className="text-[10px] font-semibold text-gray-900 leading-tight">{item.label}</span>
+                <span className="text-xs font-semibold text-gray-900 leading-tight">{item.label}</span>
               </div>
             ))}
           </div>
@@ -361,20 +376,20 @@ function BlockPreview({
             {[{ emoji: "👋", ph: "Dein vollständiger Name" }, { emoji: "📧", ph: "Deine E-Mailadresse" }, { emoji: "📱", ph: "Deine Telefonnummer" }].map((f) => (
               <div key={f.ph} className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2">
                 <span className="text-sm">{f.emoji}</span>
-                <span className="text-[10px] text-gray-400">{f.ph}</span>
+                <span className="text-xs text-gray-400">{f.ph}</span>
               </div>
             ))}
             {c.show_city && (
               <div className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2">
                 <span className="text-sm">📍</span>
-                <span className="text-[10px] text-gray-400">Deine Stadt</span>
+                <span className="text-xs text-gray-400">Deine Stadt</span>
               </div>
             )}
             {c.show_cv_upload && (
               <div className="flex items-center gap-2 border border-dashed border-gray-200 rounded-xl px-3 py-2.5">
                 <span className="material-symbols-outlined text-gray-300 text-base">upload_file</span>
                 <div>
-                  <div className="text-[10px] text-gray-500 font-medium">Lebenslauf hochladen (optional)</div>
+                  <div className="text-xs text-gray-500 font-medium">Lebenslauf hochladen (optional)</div>
                   <div className="text-[9px] text-gray-400">max. 5MB, .pdf, .jpg, .png</div>
                 </div>
               </div>
@@ -392,11 +407,10 @@ function BlockPreview({
 
       {/* ── TEXT ── */}
       {block.type === "text" && (
-        <div className={`px-4 py-2 ${c.align === "center" ? "text-center" : "text-left"}`}>
+        <div className="px-4 py-2">
           <p
-            className={`outline-none leading-relaxed ${c.bold ? "font-bold" : ""} ${
-              c.size === "xl" ? "text-lg" : c.size === "lg" ? "text-base" : c.size === "sm" ? "text-[10px]" : "text-xs"
-            } text-gray-700`}
+            className={`outline-none leading-relaxed ${c.bold ? "font-bold" : ""}`}
+            style={{ fontSize: sizeMap[c.size ?? "md"], color: c.color ?? "#374151", textAlign: (c.align ?? "left") as "left" | "center" | "right" }}
             contentEditable suppressContentEditableWarning
             onBlur={(e) => onUpdate({ content: e.currentTarget.innerText })}
           >
@@ -445,7 +459,7 @@ function BlockPreview({
               <span key={i} className="text-sm" style={{ color }}>★</span>
             ))}
           </div>
-          <div className="text-[10px] text-gray-500">
+          <div className="text-xs text-gray-500">
             {c.count && <span className="font-bold text-gray-900">{c.count} von </span>}
             {c.source_text}
           </div>
@@ -458,8 +472,8 @@ function BlockPreview({
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: (branding.primary_color) + "20" }}>
             <span className="material-symbols-outlined text-xl animate-spin" style={{ color: branding.primary_color }}>progress_activity</span>
           </div>
-          <h3 className="font-black text-sm text-gray-900">{c.headline}</h3>
-          {c.subtext && <p className="text-[10px] text-gray-500 mt-1">{c.subtext}</p>}
+          <h3 className="font-black text-sm" style={{ color: c.headline_color ?? "#111827" }}>{c.headline}</h3>
+          {c.subtext && <p className="text-xs mt-1" style={{ color: c.subtext_color ?? "#6B7280" }}>{c.subtext}</p>}
         </div>
       )}
 
@@ -469,9 +483,9 @@ function BlockPreview({
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: branding.primary_color }}>
             <span className="material-symbols-outlined text-xl font-bold" style={{ color: branding.button_text_color, fontVariationSettings: "'FILL' 1" }}>check</span>
           </div>
-          <p className="text-[10px] font-bold mb-1" style={{ color: branding.primary_color }}>Großartige Neuigkeiten!</p>
-          <h3 className="font-black text-sm text-gray-900 leading-tight mb-2">{c.headline}</h3>
-          {c.subtext && <p className="text-[10px] text-gray-500 leading-relaxed">{c.subtext}</p>}
+          <p className="text-xs font-bold mb-1" style={{ color: branding.primary_color }}>Großartige Neuigkeiten!</p>
+          <h3 className="font-black text-sm leading-tight mb-2" style={{ color: c.headline_color ?? "#111827" }}>{c.headline}</h3>
+          {c.subtext && <p className="text-xs leading-relaxed" style={{ color: c.subtext_color ?? "#6B7280" }}>{c.subtext}</p>}
         </div>
       )}
     </div>
@@ -499,7 +513,7 @@ function BlockPicker({ onAdd, onClose }: { onAdd: (type: BlockType) => void; onC
             <button key={type} onClick={() => { onAdd(type); onClose(); }}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 hover:border-blue-200 border border-gray-100 transition-colors text-left">
               <span className="material-symbols-outlined text-sm text-gray-500">{cfg.icon}</span>
-              <span className="text-[10px] font-semibold text-gray-700">{cfg.label}</span>
+              <span className="text-xs font-semibold text-gray-700">{cfg.label}</span>
             </button>
           ))}
         </div>
@@ -509,7 +523,7 @@ function BlockPicker({ onAdd, onClose }: { onAdd: (type: BlockType) => void; onC
             <button key={type} onClick={() => { onAdd(type); onClose(); }}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 hover:border-blue-200 border border-gray-100 transition-colors text-left">
               <span className="material-symbols-outlined text-sm text-gray-500">{cfg.icon}</span>
-              <span className="text-[10px] font-semibold text-gray-700">{cfg.label}</span>
+              <span className="text-xs font-semibold text-gray-700">{cfg.label}</span>
             </button>
           ))}
         </div>
@@ -529,28 +543,73 @@ function BlockPickerInline({ onAdd }: { onAdd: (type: BlockType) => void }) {
   return (
     <div className="space-y-4">
       <div>
-        <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2 px-1">Interaktive Blöcke</div>
+        <div className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2 px-1">Interaktive Blöcke</div>
         <div className="grid grid-cols-2 gap-1.5">
           {interactiveTypes.map(([type, cfg]) => (
             <button key={type} onClick={() => onAdd(type)}
               className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-surface-container-low hover:bg-primary-container/20 hover:border-primary border border-outline-variant/20 transition-colors text-center">
               <span className="material-symbols-outlined text-xl text-outline">{cfg.icon}</span>
-              <span className="font-label text-[10px] font-bold text-on-surface-variant leading-tight">{cfg.label}</span>
+              <span className="font-label text-xs font-bold text-on-surface-variant leading-tight">{cfg.label}</span>
             </button>
           ))}
         </div>
       </div>
       <div>
-        <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2 px-1">Einfache Blöcke</div>
+        <div className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2 px-1">Einfache Blöcke</div>
         <div className="grid grid-cols-2 gap-1.5">
           {simpleTypes.map(([type, cfg]) => (
             <button key={type} onClick={() => onAdd(type)}
               className="flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl bg-surface-container-low hover:bg-primary-container/20 hover:border-primary border border-outline-variant/20 transition-colors text-center">
               <span className="material-symbols-outlined text-xl text-outline">{cfg.icon}</span>
-              <span className="font-label text-[10px] font-bold text-on-surface-variant leading-tight">{cfg.label}</span>
+              <span className="font-label text-xs font-bold text-on-surface-variant leading-tight">{cfg.label}</span>
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Text Style Controls ────────────────────────────────────────────────────────
+
+function TextStyleControls({ label, sizeKey, colorKey, alignKey, content, onUpdate, sizes = ["sm", "md", "lg", "xl"] as const }: {
+  label: string;
+  sizeKey: string; colorKey: string; alignKey: string;
+  content: BlockContent;
+  onUpdate: (c: Partial<BlockContent>) => void;
+  sizes?: readonly string[];
+}) {
+  const currentSize = (content as Record<string, unknown>)[sizeKey] as string ?? "md";
+  const currentColor = (content as Record<string, unknown>)[colorKey] as string ?? "";
+  const currentAlign = (content as Record<string, unknown>)[alignKey] as string ?? "center";
+  return (
+    <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</span>
+      {/* Size */}
+      <div className="flex gap-1">
+        {sizes.map((s) => (
+          <button key={s} onClick={() => onUpdate({ [sizeKey]: s })}
+            className={`flex-1 py-1 rounded-lg border font-label text-[10px] font-bold uppercase transition-all ${currentSize === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            {s.toUpperCase()}
+          </button>
+        ))}
+      </div>
+      {/* Align */}
+      <div className="flex gap-1">
+        {(["left", "center", "right"] as const).map((a) => (
+          <button key={a} onClick={() => onUpdate({ [alignKey]: a })}
+            className={`flex-1 py-1.5 rounded-lg border transition-all flex items-center justify-center ${currentAlign === a ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            <span className="material-symbols-outlined text-sm">{a === "left" ? "format_align_left" : a === "center" ? "format_align_center" : "format_align_right"}</span>
+          </button>
+        ))}
+      </div>
+      {/* Color */}
+      <div className="flex items-center gap-2">
+        <input type="color" value={currentColor || "#111827"} onChange={(e) => onUpdate({ [colorKey]: e.target.value })}
+          className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+        <input type="text" value={currentColor} onChange={(e) => onUpdate({ [colorKey]: e.target.value })} placeholder="#111827"
+          className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+        {currentColor && <button onClick={() => onUpdate({ [colorKey]: "" })} className="material-symbols-outlined text-outline text-sm hover:text-error">close</button>}
       </div>
     </div>
   );
@@ -563,7 +622,7 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
 
   const field = (label: string, value: string, onChange: (v: string) => void, placeholder = "") => (
     <div key={label}>
-      <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
+      <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
       <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
         className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" />
     </div>
@@ -571,7 +630,7 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
 
   const textarea = (label: string, value: string, onChange: (v: string) => void, rows = 2) => (
     <div key={label}>
-      <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
+      <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
       <textarea value={value} onChange={(e) => onChange(e.target.value)} rows={rows}
         className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none" />
     </div>
@@ -581,7 +640,7 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
     <div key={label} className="flex items-center justify-between py-2.5 px-3 border border-outline-variant/10 rounded-xl">
       <div>
         <div className="font-label text-xs font-bold text-on-surface">{label}</div>
-        <div className="font-label text-[10px] text-outline">{desc}</div>
+        <div className="font-label text-xs text-outline">{desc}</div>
       </div>
       <button onClick={() => onChange(!value)}
         className={`w-10 h-5 rounded-full flex items-center px-0.5 transition-colors ${value ? "bg-primary" : "bg-outline-variant/40"}`}>
@@ -617,6 +676,8 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           {field("Headline", c.headline ?? "", (v) => onUpdate({ headline: v }), "Werde Teil unseres Teams!")}
           {textarea("Beschreibung", c.subtext ?? "", (v) => onUpdate({ subtext: v }))}
           {field("CTA Button", c.cta_text ?? "", (v) => onUpdate({ cta_text: v }), "Jetzt bewerben →")}
+          <TextStyleControls label="Headline-Stil" sizeKey="headline_size" colorKey="headline_color" alignKey="headline_align" content={c} onUpdate={onUpdate} />
+          <TextStyleControls label="Beschreibung-Stil" sizeKey="subtext_size" colorKey="subtext_color" alignKey="subtext_align" content={c} onUpdate={onUpdate} sizes={["sm", "md", "lg"]} />
         </>
       )}
 
@@ -626,11 +687,11 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           {field("Fragetext", c.question ?? "", (v) => onUpdate({ question: v }))}
           {block.type === "multiple_choice" && (
             <div>
-              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Auswahl</label>
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Auswahl</label>
               <div className="flex gap-2">
                 {(["single", "multiple"] as const).map((t) => (
                   <button key={t} onClick={() => onUpdate({ selection: t })}
-                    className={`flex-1 py-2 rounded-xl border font-label text-[10px] font-bold uppercase tracking-widest transition-all ${c.selection === t ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
+                    className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase tracking-widest transition-all ${c.selection === t ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
                     {t === "single" ? "Einfach" : "Mehrfach"}
                   </button>
                 ))}
@@ -639,8 +700,8 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           )}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Antworten ({(c.items ?? []).length})</label>
-              <button onClick={addItem} className="flex items-center gap-1 font-label text-[10px] font-bold text-primary hover:underline">
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline">Antworten ({(c.items ?? []).length})</label>
+              <button onClick={addItem} className="flex items-center gap-1 font-label text-xs font-bold text-primary hover:underline">
                 <span className="material-symbols-outlined text-xs">add</span> Hinzufügen
               </button>
             </div>
@@ -655,7 +716,7 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
                   <div className="flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-outline text-sm w-5 text-center">{item.icon || "check"}</span>
                     <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} placeholder="Icon (z.B. check)"
-                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-[10px] focus:outline-none focus:border-primary" />
+                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
                   </div>
                 </div>
               ))}
@@ -671,8 +732,8 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           {field("Fragetext", c.question ?? "", (v) => onUpdate({ question: v }))}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Bilder ({(c.items ?? []).length})</label>
-              <button onClick={addItem} className="flex items-center gap-1 font-label text-[10px] font-bold text-primary hover:underline">
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline">Bilder ({(c.items ?? []).length})</label>
+              <button onClick={addItem} className="flex items-center gap-1 font-label text-xs font-bold text-primary hover:underline">
                 <span className="material-symbols-outlined text-xs">add</span> Hinzufügen
               </button>
             </div>
@@ -706,20 +767,8 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
       {block.type === "text" && (
         <>
           {textarea("Text", c.content ?? "", (v) => onUpdate({ content: v }), 3)}
-          <div>
-            <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Größe</label>
-            <div className="flex gap-1.5">
-              {(["sm", "md", "lg", "xl"] as const).map((s) => (
-                <button key={s} onClick={() => onUpdate({ size: s })}
-                  className={`flex-1 py-1.5 rounded-lg border font-label text-[10px] font-bold uppercase transition-all ${c.size === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
-                  {s.toUpperCase()}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {toggle("Fett", "", c.bold ?? false, (v) => onUpdate({ bold: v }))}
-          </div>
+          <TextStyleControls label="Text-Stil" sizeKey="size" colorKey="color" alignKey="align" content={c} onUpdate={onUpdate} />
+          {toggle("Fett", "", c.bold ?? false, (v) => onUpdate({ bold: v }))}
         </>
       )}
 
@@ -728,11 +777,11 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
         <>
           {field("Button Text", c.label ?? "", (v) => onUpdate({ label: v }))}
           <div>
-            <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Stil</label>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Stil</label>
             <div className="flex gap-2">
               {(["primary", "outline"] as const).map((s) => (
                 <button key={s} onClick={() => onUpdate({ style: s })}
-                  className={`flex-1 py-2 rounded-xl border font-label text-[10px] font-bold uppercase transition-all ${c.style === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+                  className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase transition-all ${c.style === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
                   {s === "primary" ? "Gefüllt" : "Umriss"}
                 </button>
               ))}
@@ -754,11 +803,11 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
       {block.type === "rating" && (
         <>
           <div>
-            <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Sterne (1–5)</label>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Sterne (1–5)</label>
             <div className="flex gap-1.5">
               {[1, 2, 3, 4, 5].map((n) => (
                 <button key={n} onClick={() => onUpdate({ stars: n })}
-                  className={`flex-1 py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${c.stars === n ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+                  className={`flex-1 py-1.5 rounded-lg border font-label text-xs font-bold transition-all ${c.stars === n ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
                   {n}
                 </button>
               ))}
@@ -775,6 +824,8 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           {field("Emoji", c.emoji ?? "", (v) => onUpdate({ emoji: v }), "👋")}
           {field("Headline", c.headline ?? "", (v) => onUpdate({ headline: v }))}
           {textarea("Beschreibung", c.subtext ?? "", (v) => onUpdate({ subtext: v }))}
+          <TextStyleControls label="Headline-Stil" sizeKey="headline_size" colorKey="headline_color" alignKey="headline_align" content={c} onUpdate={onUpdate} />
+          <TextStyleControls label="Beschreibung-Stil" sizeKey="subtext_size" colorKey="subtext_color" alignKey="subtext_align" content={c} onUpdate={onUpdate} sizes={["sm", "md", "lg"]} />
         </>
       )}
 
@@ -783,17 +834,19 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
         <>
           {field("Überschrift", c.headline ?? "", (v) => onUpdate({ headline: v }))}
           {textarea("Beschreibung", c.subtext ?? "", (v) => onUpdate({ subtext: v }))}
+          <TextStyleControls label="Headline-Stil" sizeKey="headline_size" colorKey="headline_color" alignKey="headline_align" content={c} onUpdate={onUpdate} />
+          <TextStyleControls label="Beschreibung-Stil" sizeKey="subtext_size" colorKey="subtext_color" alignKey="subtext_align" content={c} onUpdate={onUpdate} sizes={["sm", "md", "lg"]} />
         </>
       )}
 
       {/* DIVIDER */}
       {block.type === "divider" && (
         <div>
-          <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Abstand</label>
+          <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Abstand</label>
           <div className="flex gap-2">
             {(["sm", "md", "lg"] as const).map((s) => (
               <button key={s} onClick={() => onUpdate({ spacing: s })}
-                className={`flex-1 py-2 rounded-xl border font-label text-[10px] font-bold uppercase transition-all ${c.spacing === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+                className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase transition-all ${c.spacing === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
                 {s === "sm" ? "Klein" : s === "md" ? "Mittel" : "Groß"}
               </button>
             ))}
@@ -811,7 +864,7 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
   return (
     <div className="space-y-5">
       <div>
-        <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-3">Hauptfarbe</label>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-3">Hauptfarbe</label>
         <div className="flex flex-wrap gap-2 mb-3">
           {presets.map((c) => (
             <button key={c} onClick={() => onChange({ primary_color: c })}
@@ -827,7 +880,7 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
         </div>
       </div>
       <div>
-        <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Button-Textfarbe</label>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Button-Textfarbe</label>
         <div className="flex gap-2">
           {["#1A1A1A", "#FFFFFF"].map((c) => (
             <button key={c} onClick={() => onChange({ button_text_color: c })}
@@ -838,12 +891,12 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
         </div>
       </div>
       <div>
-        <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-2">Logo URL</label>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Logo URL</label>
         <input value={branding.logo_url ?? ""} onChange={(e) => onChange({ logo_url: e.target.value })} placeholder="https://…"
           className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary" />
       </div>
       <div className="border border-outline-variant/10 rounded-xl p-4 bg-surface-container-low">
-        <p className="font-label text-[10px] text-outline uppercase tracking-widest mb-3">Vorschau</p>
+        <p className="font-label text-xs text-outline uppercase tracking-widest mb-3">Vorschau</p>
         <button className="w-full py-3 rounded-2xl font-black text-sm" style={{ background: branding.primary_color, color: branding.button_text_color }}>
           Jetzt bewerben →
         </button>
@@ -862,6 +915,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   const [sidebarTab, setSidebarTab] = useState<"seiten" | "design">("seiten");
   const [showBlockPicker, setShowBlockPicker] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -985,18 +1039,18 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
       {/* ── LEFT SIDEBAR ── */}
       <aside className="w-56 flex-shrink-0 bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-10">
         <div className="px-4 py-4 border-b border-outline-variant/20">
-          <a href="/funnels" className="inline-flex items-center gap-1 text-outline hover:text-on-surface transition-colors mb-3 font-label text-[10px] font-bold uppercase tracking-widest">
+          <a href="/funnels" className="inline-flex items-center gap-1 text-outline hover:text-on-surface transition-colors mb-3 font-label text-xs font-bold uppercase tracking-widest">
             <span className="material-symbols-outlined text-sm">arrow_back</span> Zurück
           </a>
           <h2 className="font-headline text-base italic text-on-surface leading-tight truncate">{funnel?.name ?? "Funnel"}</h2>
-          {funnel?.job && <p className="font-label text-[10px] text-outline mt-0.5 truncate">{funnel.job.title} · {funnel.job.company.name}</p>}
+          {funnel?.job && <p className="font-label text-xs text-outline mt-0.5 truncate">{funnel.job.title} · {funnel.job.company.name}</p>}
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-outline-variant/20">
           {(["seiten", "design"] as const).map((tab) => (
             <button key={tab} onClick={() => setSidebarTab(tab)}
-              className={`flex-1 py-2.5 font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${sidebarTab === tab ? "text-primary border-b-2 border-primary" : "text-outline hover:text-on-surface"}`}>
+              className={`flex-1 py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${sidebarTab === tab ? "text-primary border-b-2 border-primary" : "text-outline hover:text-on-surface"}`}>
               {tab === "seiten" ? "Übersicht" : "Design"}
             </button>
           ))}
@@ -1006,13 +1060,13 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
           {sidebarTab === "seiten" ? (
             <div className="py-2 px-2">
               <div className="px-2 mb-1.5 flex items-center justify-between">
-                <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Seiten</span>
+                <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Seiten</span>
               </div>
               {pages.map((page, i) => (
                 <div key={i}
                   className={`group flex items-center gap-2 px-2 py-2 rounded-lg mb-0.5 cursor-pointer transition-all ${selectedPageIdx === i ? "bg-primary-container text-on-primary-container" : "hover:bg-surface-container text-on-surface-variant hover:text-on-surface"}`}
                   onClick={() => setSelectedPageIdx(i)}>
-                  <span className="font-label text-[10px] font-bold text-outline w-4 flex-shrink-0">{i + 1}</span>
+                  <span className="font-label text-xs font-bold text-outline w-4 flex-shrink-0">{i + 1}</span>
                   <span className={`material-symbols-outlined text-base flex-shrink-0 ${selectedPageIdx === i ? "" : "text-outline"}`}>{pageIcon(page)}</span>
                   <div className="flex-1 min-w-0">
                     <p className="font-label text-xs font-bold truncate">{pageLabel(page)}</p>
@@ -1027,15 +1081,15 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               ))}
 
               {/* Ergebnisse */}
-              <div className="px-2 mt-4 mb-1.5"><span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Ergebnisse</span></div>
+              <div className="px-2 mt-4 mb-1.5"><span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Ergebnisse</span></div>
               <div className="flex items-center gap-2 px-2 py-2 rounded-lg text-on-surface-variant opacity-50 cursor-default">
-                <span className="font-label text-[10px] font-bold text-outline w-4">A</span>
+                <span className="font-label text-xs font-bold text-outline w-4">A</span>
                 <span className="material-symbols-outlined text-base text-outline">celebration</span>
                 <span className="font-label text-xs font-bold">Bestätigung</span>
               </div>
 
               {/* Nachrichten */}
-              <div className="px-2 mt-4 mb-1.5"><span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Nachrichten</span></div>
+              <div className="px-2 mt-4 mb-1.5"><span className="font-label text-xs font-bold uppercase tracking-widest text-outline">Nachrichten</span></div>
               <div className="flex items-center gap-2 px-2 py-2 rounded-lg text-on-surface-variant opacity-50 cursor-default">
                 <span className="material-symbols-outlined text-base text-outline">mail</span>
                 <span className="font-label text-xs font-bold">Bewerbungsbestätigung</span>
@@ -1050,18 +1104,18 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
             <div className="p-4 space-y-4">
               {funnel && (
                 <div className="bg-surface-container rounded-xl p-3 space-y-1.5">
-                  <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Job-Info</p>
+                  <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">Job-Info</p>
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-label text-[10px] text-outline">Job</span>
+                    <span className="font-label text-xs text-outline">Job</span>
                     <span className="font-label text-xs text-on-surface text-right">{funnel.job?.title ?? "–"}</span>
                   </div>
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-label text-[10px] text-outline">Firma</span>
+                    <span className="font-label text-xs text-outline">Firma</span>
                     <span className="font-label text-xs text-on-surface text-right">{funnel.job?.company.name ?? "–"}</span>
                   </div>
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-label text-[10px] text-outline">Job-ID</span>
-                    <span className="font-label text-[10px] text-outline font-mono text-right break-all">{funnel.job_id}</span>
+                    <span className="font-label text-xs text-outline">Job-ID</span>
+                    <span className="font-label text-xs text-outline font-mono text-right break-all">{funnel.job_id}</span>
                   </div>
                 </div>
               )}
@@ -1073,8 +1127,8 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
         {/* Stats */}
         {funnel && (
           <div className="px-4 py-3 border-t border-outline-variant/20 grid grid-cols-2 gap-2">
-            <div className="text-center"><div className="font-headline text-xl text-on-surface">{funnel.views}</div><div className="font-label text-[10px] text-outline uppercase tracking-widest">Views</div></div>
-            <div className="text-center"><div className="font-headline text-xl text-on-surface">{funnel.submissions}</div><div className="font-label text-[10px] text-outline uppercase tracking-widest">Leads</div></div>
+            <div className="text-center"><div className="font-headline text-xl text-on-surface">{funnel.views}</div><div className="font-label text-xs text-outline uppercase tracking-widest">Views</div></div>
+            <div className="text-center"><div className="font-headline text-xl text-on-surface">{funnel.submissions}</div><div className="font-label text-xs text-outline uppercase tracking-widest">Leads</div></div>
           </div>
         )}
       </aside>
@@ -1084,8 +1138,8 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
         {/* Toolbar */}
         <div className="flex items-center justify-between px-5 py-2.5 border-b border-outline-variant/20 bg-surface-container-lowest flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className={`text-[10px] font-label font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1 ${funnel?.status === "active" ? "bg-primary-container/30 text-primary" : "bg-surface-container text-outline"}`}>
-              <span className="material-symbols-outlined text-[10px]">{funnel?.status === "active" ? "wifi_tethering" : "edit"}</span>
+            <div className={`text-xs font-label font-bold uppercase tracking-widest px-2.5 py-1 rounded-full flex items-center gap-1 ${funnel?.status === "active" ? "bg-primary-container/30 text-primary" : "bg-surface-container text-outline"}`}>
+              <span className="material-symbols-outlined text-xs">{funnel?.status === "active" ? "wifi_tethering" : "edit"}</span>
               {funnel?.status === "active" ? "Live" : "Entwurf"}
             </div>
             {funnel?.status === "active" && (
@@ -1093,23 +1147,34 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                 href={getFunnelPublicUrl(funnel)}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 font-label text-[10px] text-primary hover:underline truncate max-w-[260px]"
+                className="flex items-center gap-1 font-label text-xs text-primary hover:underline truncate max-w-[260px]"
                 title={getFunnelPublicUrl(funnel)}
               >
-                <span className="material-symbols-outlined text-[10px]">open_in_new</span>
+                <span className="material-symbols-outlined text-xs">open_in_new</span>
                 {getFunnelPublicUrl(funnel)}
               </a>
             )}
             <span className="font-label text-xs text-outline">Seite {selectedPageIdx + 1} / {pages.length} · {currentPage?.blocks.length ?? 0} Blöcke</span>
           </div>
           <div className="flex items-center gap-2">
+            {/* Device toggle */}
+            <div className="flex items-center bg-surface-container rounded-lg border border-outline-variant/20 overflow-hidden">
+              <button onClick={() => setPreviewMode("mobile")}
+                className={`p-1.5 transition-colors ${previewMode === "mobile" ? "bg-primary-container text-primary" : "text-outline hover:text-on-surface"}`} title="Mobile">
+                <span className="material-symbols-outlined text-sm">smartphone</span>
+              </button>
+              <button onClick={() => setPreviewMode("desktop")}
+                className={`p-1.5 transition-colors ${previewMode === "desktop" ? "bg-primary-container text-primary" : "text-outline hover:text-on-surface"}`} title="Desktop">
+                <span className="material-symbols-outlined text-sm">monitor</span>
+              </button>
+            </div>
             {/* Zoom controls */}
             <div className="flex items-center gap-1 bg-surface-container rounded-lg border border-outline-variant/20 px-1">
               <button onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(1)))}
                 className="p-1.5 text-outline hover:text-on-surface transition-colors" title="Verkleinern">
                 <span className="material-symbols-outlined text-sm">remove</span>
               </button>
-              <span className="font-label text-[10px] font-bold text-on-surface-variant w-8 text-center">{Math.round(zoom * 100)}%</span>
+              <span className="font-label text-xs font-bold text-on-surface-variant w-8 text-center">{Math.round(zoom * 100)}%</span>
               <button onClick={() => setZoom((z) => Math.min(1.5, +(z + 0.1).toFixed(1)))}
                 className="p-1.5 text-outline hover:text-on-surface transition-colors" title="Vergrößern">
                 <span className="material-symbols-outlined text-sm">add</span>
@@ -1121,19 +1186,19 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
             </div>
 
             {saveError && (
-              <span className="font-label text-[10px] text-error max-w-[200px] truncate" title={saveError}>
+              <span className="font-label text-xs text-error max-w-[200px] truncate" title={saveError}>
                 <span className="material-symbols-outlined text-xs align-middle">error</span> {saveError}
               </span>
             )}
             <button onClick={save} disabled={saving}
-              className="flex items-center gap-1.5 bg-surface-container px-4 py-2 rounded-lg font-label text-[10px] font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-high transition-colors">
+              className="flex items-center gap-1.5 bg-surface-container px-4 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-widest text-on-surface hover:bg-surface-container-high transition-colors">
               {saving ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
                : saved ? <span className="material-symbols-outlined text-sm text-primary">check</span>
                : <span className="material-symbols-outlined text-sm">save</span>}
               {saved ? "Gespeichert" : "Speichern"}
             </button>
             <button onClick={publish} disabled={funnel?.status === "active"}
-              className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-lg font-label text-[10px] font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-50">
+              className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-50">
               <span className="material-symbols-outlined text-sm">wifi_tethering</span>
               {funnel?.status === "active" ? "Live" : "Publizieren"}
             </button>
@@ -1157,17 +1222,34 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
 
         {/* Canvas */}
         <div className="flex-1 overflow-y-auto flex items-start justify-center py-8 px-6 bg-surface-container/50" onClick={() => { setSelectedBlockId(null); setShowBlockPicker(false); }}>
-          {/* Phone frame */}
+          {/* Device frame */}
           <div className="relative origin-top" style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }} onClick={(e) => e.stopPropagation()}>
-            <div className="w-[320px] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-gray-200">
-              {/* Status bar */}
-              <div className="h-7 bg-gray-900 flex items-center justify-between px-6 rounded-t-[2.5rem] flex-shrink-0">
-                <span className="text-white text-[9px] font-bold">9:41</span>
-                <div className="w-14 h-2.5 bg-gray-700 rounded-full" />
-                <div className="flex items-center gap-1">
-                  <div className="w-3 h-2 bg-white/60 rounded-sm" /><div className="w-2 h-2 bg-white/60 rounded-full" />
+            <div className={`bg-white shadow-2xl overflow-hidden border border-gray-200 ${previewMode === "mobile" ? "w-[320px] rounded-[2.5rem]" : "w-[768px] rounded-xl"}`}>
+              {/* Status bar / Browser chrome */}
+              {previewMode === "mobile" ? (
+                <div className="h-7 bg-gray-900 flex items-center justify-between px-6 rounded-t-[2.5rem] flex-shrink-0">
+                  <span className="text-white text-[9px] font-bold">9:41</span>
+                  <div className="w-14 h-2.5 bg-gray-700 rounded-full" />
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-2 bg-white/60 rounded-sm" /><div className="w-2 h-2 bg-white/60 rounded-full" />
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="h-9 bg-gray-100 border-b border-gray-200 flex items-center px-3 gap-2 rounded-t-xl flex-shrink-0">
+                  <div className="flex gap-1.5">
+                    <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                    <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                  </div>
+                  <div className="flex-1 bg-white border border-gray-200 rounded-md px-3 py-1 mx-8">
+                    <span className="text-[10px] text-gray-400 font-mono">{funnel ? getFunnelPublicUrl(funnel) : "funnel.example.com"}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Content wrapper — centered card on desktop, full-width on mobile */}
+              <div className={`overflow-y-auto bg-white ${previewMode === "desktop" ? "flex justify-center bg-gray-50" : ""}`} style={{ maxHeight: previewMode === "desktop" ? 640 : 580 }}>
+              <div className={previewMode === "desktop" ? "w-full max-w-[400px] bg-white min-h-full shadow-sm" : ""}>
 
               {/* Logo */}
               <div className="flex items-center justify-center px-5 pt-3 pb-1 bg-white">
@@ -1181,7 +1263,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               </div>
 
               {/* Blocks */}
-              <div className="overflow-y-auto bg-white" style={{ maxHeight: 580 }}>
+              <div>
                 {currentPage?.blocks.map((block, i) => (
                   <BlockPreview
                     key={block.id}
@@ -1205,7 +1287,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                     className={`w-full flex items-center justify-center gap-1.5 py-2.5 rounded-2xl border-2 border-dashed transition-colors ${showBlockPicker ? "border-blue-400 bg-blue-50 text-blue-500" : "border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-400 hover:text-blue-500"}`}
                   >
                     <span className="material-symbols-outlined text-base">add</span>
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Block hinzufügen</span>
+                    <span className="text-xs font-bold uppercase tracking-widest">Block hinzufügen</span>
                   </button>
                 </div>
 
@@ -1214,6 +1296,8 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                   <span className="text-[9px] text-gray-300">Impressum · Datenschutz · Cookies</span>
                 </div>
               </div>
+              </div>{/* /desktop inner card */}
+              </div>{/* /content wrapper */}
             </div>
           </div>
         </div>
@@ -1225,14 +1309,14 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
         <div className="flex border-b border-outline-variant/20 flex-shrink-0">
           <button
             onClick={() => { setShowBlockPicker(false); }}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-3 font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${!showBlockPicker ? "text-primary border-b-2 border-primary" : "text-outline hover:text-on-surface"}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 font-label text-xs font-bold uppercase tracking-widest transition-colors ${!showBlockPicker ? "text-primary border-b-2 border-primary" : "text-outline hover:text-on-surface"}`}
           >
             <span className="material-symbols-outlined text-sm">tune</span>
             Eigenschaften
           </button>
           <button
             onClick={() => { setShowBlockPicker(true); setSelectedBlockId(null); }}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-3 font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${showBlockPicker ? "text-primary border-b-2 border-primary" : "text-outline hover:text-on-surface"}`}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-3 font-label text-xs font-bold uppercase tracking-widest transition-colors ${showBlockPicker ? "text-primary border-b-2 border-primary" : "text-outline hover:text-on-surface"}`}
           >
             <span className="material-symbols-outlined text-sm">add_box</span>
             Blöcke

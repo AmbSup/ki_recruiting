@@ -18,12 +18,22 @@ type BlockContent = {
   items?: ChoiceItem[]; cta?: string;
   show_cv_upload?: boolean; show_city?: boolean;
   content?: string; size?: "sm" | "md" | "lg" | "xl";
-  align?: "left" | "center"; bold?: boolean;
+  align?: "left" | "center" | "right"; bold?: boolean;
+  color?: string;
+  headline_size?: "sm" | "md" | "lg" | "xl";
+  headline_color?: string;
+  headline_align?: "left" | "center" | "right";
+  subtext_size?: "sm" | "md" | "lg";
+  subtext_color?: string;
+  subtext_align?: "left" | "center" | "right";
   label?: string; style?: "primary" | "outline";
   url?: string; alt?: string; rounded?: boolean;
   stars?: number; count?: string; source_text?: string;
   emoji?: string; spacing?: "sm" | "md" | "lg";
 };
+
+const sizeMap: Record<string, string> = { sm: "0.75rem", md: "0.875rem", lg: "1.125rem", xl: "1.5rem" };
+const headlineSizeMap: Record<string, string> = { sm: "0.875rem", md: "1.125rem", lg: "1.5rem", xl: "2rem" };
 
 type Block = { id: string; type: BlockType; content: BlockContent };
 
@@ -196,6 +206,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           phone: form.phone || null,
           city: form.city || null,
           cv_url,
+          cv_file_name: cvFile?.name ?? null,
           answers,
         }),
       }).then(async (r) => {
@@ -332,8 +343,8 @@ function BlockRenderer({
             {c.title_text && <div className="text-xs" style={{ color }}>{c.title_text}</div>}
           </div>
         )}
-        <h1 className="font-black text-xl text-gray-900 leading-tight mb-2">{c.headline}</h1>
-        {c.subtext && <p className="text-sm text-gray-500 mb-5 leading-relaxed">{c.subtext}</p>}
+        <h1 className="font-black leading-tight mb-2" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{c.headline}</h1>
+        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: sizeMap[c.subtext_size ?? "md"], color: c.subtext_color || "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}>{c.subtext}</p>}
         <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm shadow-sm active:scale-95 transition-transform" style={{ background: color, color: textColor }}>
           {c.cta_text || "Jetzt bewerben →"}
         </button>
@@ -346,8 +357,8 @@ function BlockRenderer({
     return (
       <div className="flex flex-col items-center text-center px-6 py-10">
         <div className="text-5xl mb-4">{c.emoji || "👋"}</div>
-        <h2 className="font-black text-xl text-gray-900 mb-3">{c.headline}</h2>
-        {c.subtext && <p className="text-sm text-gray-500 leading-relaxed mb-6">{c.subtext}</p>}
+        <h2 className="font-black mb-3" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{c.headline}</h2>
+        {c.subtext && <p className="leading-relaxed mb-6" style={{ fontSize: sizeMap[c.subtext_size ?? "md"], color: c.subtext_color || "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}>{c.subtext}</p>}
         <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm" style={{ background: color, color: textColor }}>
           Weiter →
         </button>
@@ -537,10 +548,9 @@ function BlockRenderer({
   // ── TEXT ──
   if (block.type === "text") {
     return (
-      <div className={`px-5 py-3 ${c.align === "center" ? "text-center" : "text-left"}`}>
-        <p className={`leading-relaxed text-gray-700 ${c.bold ? "font-bold" : ""} ${
-          c.size === "xl" ? "text-xl" : c.size === "lg" ? "text-base" : c.size === "sm" ? "text-xs" : "text-sm"
-        }`}>
+      <div className="px-5 py-3">
+        <p className={`leading-relaxed ${c.bold ? "font-bold" : ""}`}
+          style={{ fontSize: sizeMap[c.size ?? "md"], color: c.color || "#374151", textAlign: (c.align ?? "left") as "left" | "center" | "right" }}>
           {c.content}
         </p>
       </div>
@@ -606,8 +616,8 @@ function BlockRenderer({
         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: color + "20" }}>
           <span className="material-symbols-outlined text-2xl animate-spin" style={{ color }}>progress_activity</span>
         </div>
-        <h2 className="font-black text-lg text-gray-900 mb-2">{c.headline || "Einen Moment…"}</h2>
-        {c.subtext && <p className="text-sm text-gray-500">{c.subtext}</p>}
+        <h2 className="font-black text-lg mb-2" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Einen Moment…"}</h2>
+        {c.subtext && <p className="text-sm" style={{ color: c.subtext_color || "#6B7280" }}>{c.subtext}</p>}
       </div>
     );
   }
@@ -620,8 +630,8 @@ function BlockRenderer({
           <span className="font-black text-2xl" style={{ color: textColor }}>✓</span>
         </div>
         <p className="text-xs font-bold mb-2" style={{ color }}>Großartige Neuigkeiten!</p>
-        <h2 className="font-black text-xl text-gray-900 leading-tight mb-3">{c.headline || "Vielen Dank!"}</h2>
-        {c.subtext && <p className="text-sm text-gray-500 leading-relaxed">{c.subtext}</p>}
+        <h2 className="font-black text-xl leading-tight mb-3" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Vielen Dank!"}</h2>
+        {c.subtext && <p className="text-sm leading-relaxed" style={{ color: c.subtext_color || "#6B7280" }}>{c.subtext}</p>}
       </div>
     );
   }
