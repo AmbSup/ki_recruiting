@@ -1161,7 +1161,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
       {/* ── LEFT SIDEBAR ── */}
-      <aside className="w-56 flex-shrink-0 bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-10">
+      <aside className="w-72 flex-shrink-0 bg-surface-container-lowest border-r border-outline-variant/20 flex flex-col z-10">
         <div className="px-4 py-4 border-b border-outline-variant/20">
           <a href="/funnels" className="inline-flex items-center gap-1 text-outline hover:text-on-surface transition-colors mb-3 font-label text-xs font-bold uppercase tracking-widest">
             <span className="material-symbols-outlined text-sm">arrow_back</span> Zurück
@@ -1196,10 +1196,10 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                     <p className="font-label text-xs font-bold truncate">{pageLabel(page)}</p>
                     <p className="font-label text-[9px] opacity-50 truncate">{page.blocks.length} Block{page.blocks.length !== 1 ? "s" : ""}</p>
                   </div>
-                  <div className="flex items-center gap-0.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {i > 0 && <button onClick={(e) => { e.stopPropagation(); movePage(i, -1); }} className="p-1 rounded hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Nach oben"><span className="material-symbols-outlined text-sm">arrow_upward</span></button>}
-                    {i < pages.length - 1 && <button onClick={(e) => { e.stopPropagation(); movePage(i, 1); }} className="p-1 rounded hover:bg-surface-container-high text-outline hover:text-on-surface transition-colors" title="Nach unten"><span className="material-symbols-outlined text-sm">arrow_downward</span></button>}
-                    {pages.length > 1 && <button onClick={(e) => { e.stopPropagation(); deletePage(i); }} className="p-1 rounded hover:bg-error-container/30 text-outline hover:text-error transition-colors" title="Löschen"><span className="material-symbols-outlined text-sm">delete</span></button>}
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    {i > 0 && <button onClick={(e) => { e.stopPropagation(); movePage(i, -1); }} className="p-1 rounded hover:bg-surface-container-high text-on-surface transition-colors" title="Nach oben"><span className="material-symbols-outlined text-sm">arrow_upward</span></button>}
+                    {i < pages.length - 1 && <button onClick={(e) => { e.stopPropagation(); movePage(i, 1); }} className="p-1 rounded hover:bg-surface-container-high text-on-surface transition-colors" title="Nach unten"><span className="material-symbols-outlined text-sm">arrow_downward</span></button>}
+                    {pages.length > 1 && <button onClick={(e) => { e.stopPropagation(); deletePage(i); }} className="p-1 rounded hover:bg-error-container/30 text-on-surface hover:text-error transition-colors" title="Löschen"><span className="material-symbols-outlined text-sm">delete</span></button>}
                   </div>
                 </div>
               ))}
