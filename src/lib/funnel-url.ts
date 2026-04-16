@@ -6,6 +6,6 @@ export function getFunnelPublicUrl(funnel: {
   if (funnel.funnel_type === "external" && funnel.external_url) {
     return funnel.external_url;
   }
-  const base = process.env.NEXT_PUBLIC_FUNNEL_BASE_URL ?? "https://apply.domain.com";
+  const base = process.env.NEXT_PUBLIC_FUNNEL_BASE_URL ?? "https://ki-recruiting.vercel.app";
   return `${base}/${funnel.slug}`;
 }
