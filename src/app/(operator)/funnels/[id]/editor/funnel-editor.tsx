@@ -95,7 +95,32 @@ type FunnelBranding = {
   primary_color: string;
   button_text_color: string;
   logo_url?: string;
+  font_pair?: string;
 };
+
+const fontPairs: { key: string; label: string; headline: string; body: string; headlineVar: string; bodyVar: string }[] = [
+  { key: "default", label: "Newsreader + Manrope", headline: "Newsreader", body: "Manrope", headlineVar: "var(--font-newsreader)", bodyVar: "var(--font-manrope)" },
+  { key: "syne-inter", label: "Syne + Inter", headline: "Syne", body: "Inter", headlineVar: "var(--font-syne)", bodyVar: "var(--font-inter)" },
+  { key: "playfair-montserrat", label: "Playfair + Montserrat", headline: "Playfair Display", body: "Montserrat", headlineVar: "var(--font-playfair)", bodyVar: "var(--font-montserrat)" },
+  { key: "bebas-inter", label: "Bebas Neue + Inter", headline: "Bebas Neue", body: "Inter", headlineVar: "var(--font-bebas)", bodyVar: "var(--font-inter)" },
+];
+
+const gradientPresets = [
+  { label: "Rosa → Gelb", value: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)" },
+  { label: "Rosa → Rot", value: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)" },
+  { label: "Blau → Lila", value: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" },
+  { label: "Grün → Cyan", value: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" },
+  { label: "Orange → Gelb", value: "linear-gradient(135deg, #f5a623 0%, #f7dc6f 100%)" },
+  { label: "Blau → Cyan", value: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" },
+];
+
+const popularIcons = [
+  "check", "star", "favorite", "rocket_launch", "work", "school", "trending_up", "bolt",
+  "diamond", "groups", "payments", "schedule", "verified", "thumb_up", "emoji_events",
+  "psychology", "local_fire_department", "auto_awesome", "celebration", "lightbulb",
+  "workspace_premium", "eco", "spa", "fitness_center", "restaurant", "flight",
+  "code", "brush", "music_note", "camera_alt",
+];
 
 type Funnel = {
   id: string;
@@ -182,16 +207,24 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
         />
       </div>
 
-      {/* Size */}
+      {/* Size — presets + custom px */}
       <div>
         <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftgröße</label>
-        <div className="flex gap-1.5">
+        <div className="flex gap-1.5 mb-2">
           {(["sm", "md", "lg", "xl"] as const).map((s) => (
-            <button key={s} onClick={() => onUpdate({ [sKey]: s })}
-              className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase transition-all ${curSize === s ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
+            <button key={s} onClick={() => { onUpdate({ [sKey]: s, [`${fieldKey}_font_size`]: undefined }); }}
+              className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase transition-all ${curSize === s && !content[`${fieldKey}_font_size`] ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
               {s.toUpperCase()}
             </button>
           ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input type="number" min={8} max={120}
+            value={(content[`${fieldKey}_font_size`] as number) ?? ""}
+            onChange={(e) => onUpdate({ [`${fieldKey}_font_size`]: e.target.value ? Number(e.target.value) : undefined })}
+            placeholder="px"
+            className="w-20 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+          <span className="font-label text-xs text-outline">px (überschreibt Preset)</span>
         </div>
       </div>
 
@@ -219,6 +252,23 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
           {curColor && <button onClick={() => onUpdate({ [cKey]: "" })} className="material-symbols-outlined text-outline text-sm hover:text-error p-1">close</button>}
         </div>
       </div>
+
+      {/* Icon Picker */}
+      {(fieldKey === "content" || fieldKey === "size") && (
+        <div>
+          <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Icon einfügen</label>
+          <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
+            {popularIcons.map((icon) => (
+              <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
+                className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
+                title={icon}>
+                <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
+              </button>
+            ))}
+          </div>
+          <p className="font-label text-[9px] text-outline mt-1">Klick fügt Icon-Code in den Text ein</p>
+        </div>
+      )}
 
       {/* Back to block */}
       <button onClick={onClose}
@@ -336,12 +386,15 @@ function BlockPreview({
   const color = branding.primary_color;
   const textColor = branding.button_text_color;
 
-  // Helper: get style for a text field
-  const ts = (fieldKey: string, defaults: { size?: string; color?: string; align?: string }) => ({
-    fontSize: (fieldKey === "headline" ? headlineSizeMap : sizeMap)[(c[`${fieldKey}_size`] as string) ?? defaults.size ?? "md"],
-    color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
-    textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "center") as "left" | "center" | "right",
-  });
+  // Helper: get style for a text field (supports px override via {field}_font_size)
+  const ts = (fieldKey: string, defaults: { size?: string; color?: string; align?: string }) => {
+    const pxSize = c[`${fieldKey}_font_size`] as number | undefined;
+    return {
+      fontSize: pxSize ? `${pxSize}px` : (fieldKey === "headline" ? headlineSizeMap : sizeMap)[(c[`${fieldKey}_size`] as string) ?? defaults.size ?? "md"],
+      color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
+      textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "center") as "left" | "center" | "right",
+    };
+  };
   // Helper: click handler + active ring for text
   const tp = (fieldKey: string) => ({
     onClick: (e: React.MouseEvent) => { e.stopPropagation(); onTextClick(fieldKey, e); },
@@ -353,6 +406,7 @@ function BlockPreview({
   return (
     <div
       className={wrapperClass}
+      style={{ background: (c.bg_gradient as string) ?? (c.bg_color as string) ?? undefined }}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -790,6 +844,42 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
         <span className="font-label text-xs font-bold uppercase tracking-widest text-on-surface">{blockConfig[block.type]?.label}</span>
       </div>
 
+      {/* Background — available for all blocks */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Hintergrund</label>
+        <div className="grid grid-cols-3 gap-1.5 mb-2">
+          <button onClick={() => onUpdate({ bg_color: undefined, bg_gradient: undefined })}
+            className={`py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${!(c.bg_color as string) && !(c.bg_gradient as string) ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            Ohne
+          </button>
+          <button onClick={() => onUpdate({ bg_gradient: undefined, bg_color: (c.bg_color as string) || "#f3f4f6" })}
+            className={`py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${(c.bg_color as string) && !(c.bg_gradient as string) ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            Farbe
+          </button>
+          <button onClick={() => onUpdate({ bg_color: undefined, bg_gradient: (c.bg_gradient as string) || gradientPresets[0].value })}
+            className={`py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${(c.bg_gradient as string) ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            Verlauf
+          </button>
+        </div>
+        {(c.bg_color as string) && !(c.bg_gradient as string) && (
+          <div className="flex items-center gap-2">
+            <input type="color" value={c.bg_color as string} onChange={(e) => onUpdate({ bg_color: e.target.value })}
+              className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+            <input type="text" value={c.bg_color as string} onChange={(e) => onUpdate({ bg_color: e.target.value })} placeholder="#f3f4f6"
+              className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+          </div>
+        )}
+        {(c.bg_gradient as string) && (
+          <div className="grid grid-cols-3 gap-1.5">
+            {gradientPresets.map((g) => (
+              <button key={g.label} onClick={() => onUpdate({ bg_gradient: g.value })}
+                className={`h-8 rounded-lg border-2 transition-all ${c.bg_gradient === g.value ? "border-primary scale-105" : "border-transparent"}`}
+                style={{ background: g.value }} title={g.label} />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* PROFILE HEADER */}
       {block.type === "profile_header" && (
         <>
@@ -1017,6 +1107,19 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
         <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Logo URL</label>
         <input value={branding.logo_url ?? ""} onChange={(e) => onChange({ logo_url: e.target.value })} placeholder="https://…"
           className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary" />
+      </div>
+      {/* Font Pair */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftart</label>
+        <div className="space-y-1.5">
+          {fontPairs.map((fp) => (
+            <button key={fp.key} onClick={() => onChange({ font_pair: fp.key })}
+              className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${(branding.font_pair ?? "default") === fp.key ? "border-primary bg-primary-container/20" : "border-outline-variant/20 hover:border-outline"}`}>
+              <span className="block text-base font-bold text-on-surface" style={{ fontFamily: fp.headlineVar }}>{fp.headline}</span>
+              <span className="block text-xs text-outline" style={{ fontFamily: fp.bodyVar }}>{fp.body} — {fp.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
       <div className="border border-outline-variant/10 rounded-xl p-4 bg-surface-container-low">
         <p className="font-label text-xs text-outline uppercase tracking-widest mb-3">Vorschau</p>
@@ -1375,8 +1478,8 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               <div className={`overflow-y-auto bg-white ${previewMode === "desktop" ? "flex justify-center bg-gray-50" : ""}`} style={{ maxHeight: previewMode === "desktop" ? 640 : 580 }}>
               <div className={previewMode === "desktop" ? "w-full max-w-[400px] bg-white min-h-full shadow-sm" : ""}>
 
-              {/* Logo */}
-              <div className="flex items-center justify-center px-5 pt-3 pb-1 bg-white">
+              {/* Logo + Font */}
+              <div className="flex items-center justify-center px-5 pt-3 pb-1 bg-white" style={{ fontFamily: (fontPairs.find(f => f.key === (branding.font_pair ?? "default"))?.bodyVar ?? "inherit") }}>
                 {branding.logo_url ? (
                   <img src={branding.logo_url} alt="Logo" className="h-5 object-contain" />
                 ) : (

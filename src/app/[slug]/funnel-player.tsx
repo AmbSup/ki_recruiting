@@ -45,7 +45,14 @@ type FunnelPage = {
   settings?: Record<string, unknown>;
 };
 
-type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string };
+type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string };
+
+const fontFamilyMap: Record<string, { headline: string; body: string }> = {
+  default: { headline: "var(--font-newsreader), serif", body: "var(--font-manrope), sans-serif" },
+  "syne-inter": { headline: "var(--font-syne), sans-serif", body: "var(--font-inter), sans-serif" },
+  "playfair-montserrat": { headline: "var(--font-playfair), serif", body: "var(--font-montserrat), sans-serif" },
+  "bebas-inter": { headline: "var(--font-bebas), sans-serif", body: "var(--font-inter), sans-serif" },
+};
 
 type Funnel = {
   id: string; name: string; slug: string; status: string;
@@ -266,8 +273,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
       <div ref={containerRef} className="flex-1 overflow-y-auto">
         {currentPage.blocks.map((block) => (
+          <div key={block.id} style={{ background: (block.content.bg_gradient as string) ?? (block.content.bg_color as string) ?? undefined }}>
           <BlockRenderer
-            key={block.id}
             block={block}
             color={color}
             textColor={textColor}
@@ -286,6 +293,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
             onSubmit={handleSubmit}
             submitted={submitted}
           />
+          </div>
         ))}
       </div>
     </Screen>
@@ -299,7 +307,8 @@ function Screen({ children, color, textColor, branding }: {
 }) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4">
-      <div className="w-full sm:max-w-md lg:max-w-lg bg-white sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0">
+      <div className="w-full sm:max-w-md lg:max-w-lg bg-white sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0"
+        style={{ fontFamily: (fontFamilyMap[branding.font_pair ?? "default"] ?? fontFamilyMap.default).body }}>
         {branding.logo_url && (
           <div className="px-5 pt-4 pb-2 flex justify-center flex-shrink-0">
             <img src={branding.logo_url} alt="Logo" className="h-8 object-contain" />
@@ -350,8 +359,8 @@ function BlockRenderer({
             {c.title_text && <div style={{ fontSize: sizeMap[(c.title_size as string) ?? "sm"], color: (c.title_color as string) || color }}>{c.title_text}</div>}
           </div>
         )}
-        <h1 className="font-black leading-tight mb-2" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{c.headline}</h1>
-        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: sizeMap[c.subtext_size ?? "md"], color: c.subtext_color || "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}>{c.subtext}</p>}
+        <h1 className="font-black leading-tight mb-2" style={{ fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "lg"], color: (c.headline_color as string) || "#111827", textAlign: ((c.headline_align as string) ?? "center") as "left" | "center" | "right" }}>{c.headline}</h1>
+        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: (c.subtext_font_size as number) ? `${c.subtext_font_size}px` : sizeMap[(c.subtext_size as string) ?? "md"], color: (c.subtext_color as string) || "#6B7280", textAlign: ((c.subtext_align as string) ?? "center") as "left" | "center" | "right" }}>{c.subtext}</p>}
         <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm shadow-sm active:scale-95 transition-transform" style={{ background: color, color: textColor }}>
           {c.cta_text || "Jetzt bewerben →"}
         </button>
