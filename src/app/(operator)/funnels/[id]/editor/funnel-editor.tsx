@@ -167,6 +167,17 @@ type ActiveTextField = { blockId: string; fieldKey: string; rect: DOMRect } | nu
 
 // ─── Element Properties Panel (shown in right sidebar when sub-element is selected) ──
 
+const availableFonts = [
+  { key: "", label: "Standard (Funnel-Font)", var: "inherit" },
+  { key: "newsreader", label: "Newsreader", var: "var(--font-newsreader)" },
+  { key: "manrope", label: "Manrope", var: "var(--font-manrope)" },
+  { key: "syne", label: "Syne", var: "var(--font-syne)" },
+  { key: "inter", label: "Inter", var: "var(--font-inter)" },
+  { key: "playfair", label: "Playfair Display", var: "var(--font-playfair)" },
+  { key: "montserrat", label: "Montserrat", var: "var(--font-montserrat)" },
+  { key: "bebas", label: "Bebas Neue", var: "var(--font-bebas)" },
+];
+
 const fieldLabels: Record<string, string> = {
   name: "Name", title: "Titel", headline: "Headline", subtext: "Beschreibung",
   cta: "CTA Button", question: "Frage", size: "Text", content: "Text",
@@ -181,9 +192,11 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
   const sKey = `${fieldKey}_size`;
   const cKey = `${fieldKey}_color`;
   const aKey = `${fieldKey}_align`;
+  const fKey = `${fieldKey}_font`;
   const curSize = (content[sKey] as string) ?? "md";
   const curColor = (content[cKey] as string) ?? "";
   const curAlign = (content[aKey] as string) ?? "center";
+  const curFont = (content[fKey] as string) ?? "";
 
   // Map fieldKey to the actual content field for text editing
   const textFieldMap: Record<string, string> = {
@@ -260,6 +273,19 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
           <input type="text" value={curColor} onChange={(e) => onUpdate({ [cKey]: e.target.value })} placeholder="#111827"
             className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary" />
           {curColor && <button onClick={() => onUpdate({ [cKey]: "" })} className="material-symbols-outlined text-outline text-sm hover:text-error p-1">close</button>}
+        </div>
+      </div>
+
+      {/* Font */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftart</label>
+        <div className="space-y-1">
+          {availableFonts.map((f) => (
+            <button key={f.key} onClick={() => onUpdate({ [fKey]: f.key || undefined })}
+              className={`w-full text-left px-3 py-2 rounded-xl border transition-all ${curFont === f.key ? "border-primary bg-primary-container/20" : "border-outline-variant/10 hover:border-outline"}`}>
+              <span className="block text-sm font-bold text-on-surface" style={{ fontFamily: f.var }}>{f.label}</span>
+            </button>
+          ))}
         </div>
       </div>
 
@@ -396,13 +422,16 @@ function BlockPreview({
   const color = branding.primary_color;
   const textColor = branding.button_text_color;
 
-  // Helper: get style for a text field (supports px override via {field}_font_size)
+  // Helper: get style for a text field (supports px override + per-element font)
   const ts = (fieldKey: string, defaults: { size?: string; color?: string; align?: string }) => {
     const pxSize = c[`${fieldKey}_font_size`] as number | undefined;
+    const fontKey = c[`${fieldKey}_font`] as string | undefined;
+    const fontVar = fontKey ? availableFonts.find(f => f.key === fontKey)?.var : undefined;
     return {
       fontSize: pxSize ? `${pxSize}px` : (fieldKey === "headline" ? headlineSizeMap : sizeMap)[(c[`${fieldKey}_size`] as string) ?? defaults.size ?? "md"],
       color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
       textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "center") as "left" | "center" | "right",
+      ...(fontVar ? { fontFamily: fontVar } : {}),
     };
   };
   // Helper: click handler + active ring for text

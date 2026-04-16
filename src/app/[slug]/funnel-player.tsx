@@ -44,6 +44,12 @@ function renderTextWithIcons(text: string) {
 
 const sizeMap: Record<string, string> = { sm: "0.75rem", md: "0.875rem", lg: "1.125rem", xl: "1.5rem" };
 const headlineSizeMap: Record<string, string> = { sm: "0.875rem", md: "1.125rem", lg: "1.5rem", xl: "2rem" };
+const fontVarMap: Record<string, string> = {
+  newsreader: "var(--font-newsreader)", manrope: "var(--font-manrope)",
+  syne: "var(--font-syne)", inter: "var(--font-inter)",
+  playfair: "var(--font-playfair)", montserrat: "var(--font-montserrat)",
+  bebas: "var(--font-bebas)",
+};
 
 type Block = { id: string; type: BlockType; content: BlockContent };
 
@@ -368,8 +374,8 @@ function BlockRenderer({
             {c.title_text && <div style={{ fontSize: sizeMap[(c.title_size as string) ?? "sm"], color: (c.title_color as string) || color }}>{c.title_text}</div>}
           </div>
         )}
-        <h1 className="font-black leading-tight mb-2" style={{ fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "lg"], color: (c.headline_color as string) || "#111827", textAlign: ((c.headline_align as string) ?? "center") as "left" | "center" | "right" }}>{c.headline}</h1>
-        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: (c.subtext_font_size as number) ? `${c.subtext_font_size}px` : sizeMap[(c.subtext_size as string) ?? "md"], color: (c.subtext_color as string) || "#6B7280", textAlign: ((c.subtext_align as string) ?? "center") as "left" | "center" | "right" }}>{c.subtext}</p>}
+        <h1 className="font-black leading-tight mb-2" style={{ fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "lg"], color: (c.headline_color as string) || "#111827", textAlign: ((c.headline_align as string) ?? "center") as "left" | "center" | "right", ...((c.headline_font as string) ? { fontFamily: fontVarMap[c.headline_font as string] } : {}) }}>{c.headline}</h1>
+        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: (c.subtext_font_size as number) ? `${c.subtext_font_size}px` : sizeMap[(c.subtext_size as string) ?? "md"], color: (c.subtext_color as string) || "#6B7280", textAlign: ((c.subtext_align as string) ?? "center") as "left" | "center" | "right", ...((c.subtext_font as string) ? { fontFamily: fontVarMap[c.subtext_font as string] } : {}) }}>{c.subtext}</p>}
         <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm shadow-sm active:scale-95 transition-transform" style={{ background: color, color: textColor }}>
           {c.cta_text || "Jetzt bewerben →"}
         </button>
@@ -575,7 +581,7 @@ function BlockRenderer({
     return (
       <div className="px-5 py-3">
         <p className={`leading-relaxed ${c.bold ? "font-bold" : ""}`}
-          style={{ fontSize: sizeMap[c.size ?? "md"], color: c.color || "#374151", textAlign: (c.align ?? "left") as "left" | "center" | "right" }}>
+          style={{ fontSize: (c.size_font_size as number) ? `${c.size_font_size}px` : sizeMap[(c.size as string) ?? "md"], color: (c.color as string) || "#374151", textAlign: ((c.align as string) ?? "left") as "left" | "center" | "right", ...((c.size_font as string) ? { fontFamily: fontVarMap[c.size_font as string] } : {}) }}>
           {renderTextWithIcons((c.content as string) ?? "")}
         </p>
       </div>
