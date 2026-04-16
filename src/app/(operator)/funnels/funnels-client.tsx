@@ -52,6 +52,14 @@ export function FunnelsClient() {
 
   useEffect(() => { load(); }, [load]);
 
+  async function deleteFunnel(id: string) {
+    if (!confirm("Funnel wirklich löschen?")) return;
+    const supabase = createClient();
+    await supabase.from("funnel_pages").delete().eq("funnel_id", id);
+    await supabase.from("funnels").delete().eq("id", id);
+    setFunnels((prev) => prev.filter((f) => f.id !== id));
+  }
+
   const internalFunnels = funnels.filter((f) => f.funnel_type !== "external");
   const externalFunnels = funnels.filter((f) => f.funnel_type === "external");
 
@@ -191,8 +199,12 @@ export function FunnelsClient() {
                     >
                       edit
                     </a>
-                    <button className="material-symbols-outlined text-outline hover:text-on-surface transition-colors text-xl p-1">
-                      more_horiz
+                    <button
+                      onClick={(e) => { e.stopPropagation(); deleteFunnel(funnel.id); }}
+                      className="material-symbols-outlined text-outline hover:text-error transition-colors text-xl p-1"
+                      title="Funnel löschen"
+                    >
+                      delete
                     </button>
                   </div>
                 </div>
