@@ -148,6 +148,16 @@ const defaultBranding: FunnelBranding = {
   logo_url: "",
 };
 
+// Render {{icon_name}} as Material Symbol inline icons
+function renderTextWithIcons(text: string) {
+  const parts = text.split(/(\{\{[a-z_]+\}\})/g);
+  return parts.map((part, i) => {
+    const match = part.match(/^\{\{([a-z_]+)\}\}$/);
+    if (match) return <span key={i} className="material-symbols-outlined align-middle" style={{ fontSize: "1.2em" }}>{match[1]}</span>;
+    return part;
+  });
+}
+
 const sizeMap: Record<string, string> = { sm: "12px", md: "14px", lg: "18px", xl: "24px" };
 const headlineSizeMap: Record<string, string> = { sm: "14px", md: "18px", lg: "24px", xl: "32px" };
 
@@ -586,12 +596,10 @@ function BlockPreview({
         <div className="px-4 py-2">
           <p
             {...tp("size")}
-            className={`outline-none leading-relaxed ${c.bold ? "font-bold" : ""} cursor-pointer transition-all rounded-sm ${activeFieldKey === "size" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            className={`leading-relaxed ${c.bold ? "font-bold" : ""} cursor-pointer transition-all rounded-sm ${activeFieldKey === "size" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
             style={{ fontSize: sizeMap[(c.size as string) ?? "md"], color: (c.color as string) || "#374151", textAlign: ((c.align as string) || "left") as "left" | "center" | "right" }}
-            contentEditable suppressContentEditableWarning
-            onBlur={(e) => onUpdate({ content: e.currentTarget.innerText })}
           >
-            {c.content}
+            {renderTextWithIcons((c.content as string) ?? "")}
           </p>
         </div>
       )}

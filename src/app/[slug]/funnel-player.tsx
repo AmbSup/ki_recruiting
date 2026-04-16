@@ -33,6 +33,15 @@ type BlockContent = {
   emoji?: string; spacing?: "sm" | "md" | "lg";
 };
 
+function renderTextWithIcons(text: string) {
+  const parts = text.split(/(\{\{[a-z_]+\}\})/g);
+  return parts.map((part, i) => {
+    const match = part.match(/^\{\{([a-z_]+)\}\}$/);
+    if (match) return <span key={i} className="material-symbols-outlined align-middle" style={{ fontSize: "1.2em" }}>{match[1]}</span>;
+    return part;
+  });
+}
+
 const sizeMap: Record<string, string> = { sm: "0.75rem", md: "0.875rem", lg: "1.125rem", xl: "1.5rem" };
 const headlineSizeMap: Record<string, string> = { sm: "0.875rem", md: "1.125rem", lg: "1.5rem", xl: "2rem" };
 
@@ -567,7 +576,7 @@ function BlockRenderer({
       <div className="px-5 py-3">
         <p className={`leading-relaxed ${c.bold ? "font-bold" : ""}`}
           style={{ fontSize: sizeMap[c.size ?? "md"], color: c.color || "#374151", textAlign: (c.align ?? "left") as "left" | "center" | "right" }}>
-          {c.content}
+          {renderTextWithIcons((c.content as string) ?? "")}
         </p>
       </div>
     );
