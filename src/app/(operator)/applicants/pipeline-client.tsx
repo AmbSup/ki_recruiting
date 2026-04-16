@@ -16,8 +16,9 @@ type Application = {
     phone: string | null;
   };
   job: {
+    id: string;
     title: string;
-    company: { name: string };
+    company: { id: string; name: string };
   };
 };
 
@@ -67,7 +68,7 @@ function KanbanCard({ app, onDelete }: { app: Application; onDelete: (id: string
     <div className="relative bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_16px_-2px_rgba(45,52,51,0.06)] hover:shadow-[0_8px_24px_-4px_rgba(45,52,51,0.1)] hover:-translate-y-0.5 transition-all border border-outline-variant/10 group">
       <button
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); onDelete(app.id); }}
-        className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-error-container/20 text-outline-variant hover:text-error"
+        className="absolute top-2 right-2 p-1 rounded-lg hover:bg-error-container/20 text-on-surface-variant hover:text-error transition-colors"
         title="Bewerbung löschen"
       >
         <span className="material-symbols-outlined text-sm">close</span>
@@ -112,6 +113,8 @@ export function PipelineClient() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"kanban" | "list">("kanban");
+  const [companyFilter, setCompanyFilter] = useState("");
+  const [jobFilter, setJobFilter] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -121,7 +124,7 @@ export function PipelineClient() {
       .select(`
         id, pipeline_stage, overall_score, customer_decision, applied_at,
         applicant:applicants(full_name, email, phone),
-        job:jobs(title, company:companies(name))
+        job:jobs(id, title, company:companies(id, name))
       `)
       .order("applied_at", { ascending: false });
     if (error) console.error("[pipeline] load error:", error);
@@ -144,7 +147,15 @@ export function PipelineClient() {
     return () => { supabase.removeChannel(channel); };
   }, [load]);
 
-  const byStage = (stage: Stage) => applications.filter((a) => a.pipeline_stage === stage);
+  // Derived filter options
+  const companies = [...new Map(applications.map(a => [a.job.company.id, a.job.company.name])).entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  const jobsForFilter = applications
+    .filter(a => !companyFilter || a.job.company.id === companyFilter)
+    .reduce((acc, a) => { acc.set(a.job.id, a.job.title); return acc; }, new Map<string, string>());
+  const filteredApps = applications
+    .filter(a => !companyFilter || a.job.company.id === companyFilter)
+    .filter(a => !jobFilter || a.job.id === jobFilter);
+  const byStage = (stage: Stage) => filteredApps.filter((a) => a.pipeline_stage === stage);
 
   async function deleteApplication(id: string) {
     if (!confirm("Bewerbung wirklich löschen? (inkl. CV-Analyse, Calls, Transkripte)")) return;
@@ -214,6 +225,27 @@ export function PipelineClient() {
           </div>
         </div>
 
+        {/* Filters */}
+        <div className="flex items-center gap-3 mb-4">
+          <select value={companyFilter} onChange={(e) => { setCompanyFilter(e.target.value); setJobFilter(""); }}
+            className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-2 font-label text-xs text-on-surface focus:outline-none focus:border-primary">
+            <option value="">Alle Firmen</option>
+            {companies.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </select>
+          <select value={jobFilter} onChange={(e) => setJobFilter(e.target.value)}
+            className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-2 font-label text-xs text-on-surface focus:outline-none focus:border-primary">
+            <option value="">Alle Jobs</option>
+            {[...jobsForFilter.entries()].map(([id, title]) => <option key={id} value={id}>{title}</option>)}
+          </select>
+          {(companyFilter || jobFilter) && (
+            <button onClick={() => { setCompanyFilter(""); setJobFilter(""); }}
+              className="flex items-center gap-1 font-label text-xs text-outline hover:text-on-surface transition-colors">
+              <span className="material-symbols-outlined text-xs">close</span>
+              Filter zurücksetzen
+            </button>
+          )}
+        </div>
+
         {/* Quick Stats */}
         <div className="flex gap-3 flex-wrap">
           {stages.slice(0, 6).map((stage) => {
@@ -231,7 +263,7 @@ export function PipelineClient() {
 
       {/* Kanban Board */}
       {view === "kanban" && (
-        <div className="flex-1 overflow-x-auto px-8 pb-8">
+        <div className="flex-1 overflow-x-auto overflow-y-auto px-8 pb-8">
           {applications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center">
               <span className="material-symbols-outlined text-5xl text-outline-variant mb-4">people</span>

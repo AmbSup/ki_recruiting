@@ -176,7 +176,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   }
 
   async function handleSubmit() {
-    if (!form.name || !form.email || !form.phone) return;
+    if (!form.name || !form.email) return;
     if (!consent) return;
     setSubmitting(true);
 
