@@ -209,12 +209,14 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
   const textKey = textFieldMap[fieldKey] ?? fieldKey;
   const textValue = (content[textKey] as string) ?? "";
 
+  const [showIcons, setShowIcons] = useState(false);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-outline-variant/10">
+      <div className="flex items-center justify-between pb-2 border-b border-outline-variant/10">
         <div className="flex items-center gap-2">
-          <span className="material-symbols-outlined text-primary text-base">text_fields</span>
+          <span className="material-symbols-outlined text-primary text-sm">text_fields</span>
           <span className="font-label text-xs font-bold uppercase tracking-widest text-on-surface">
             {fieldLabels[fieldKey] ?? fieldKey}
           </span>
@@ -222,94 +224,93 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
         <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface text-sm">close</button>
       </div>
 
-      {/* Text Content */}
+      {/* Text Content — larger textarea */}
       <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Text</label>
         <textarea
           value={textValue}
           onChange={(e) => onUpdate({ [textKey]: e.target.value })}
-          rows={2}
-          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-none"
+          rows={4}
+          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y min-h-[80px]"
+          placeholder="Text eingeben…"
         />
       </div>
 
-      {/* Size — presets + custom px */}
-      <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftgröße</label>
-        <div className="flex gap-1.5 mb-2">
+      {/* Compact toolbar row: Size presets + px + alignment */}
+      <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+        {/* Size row */}
+        <div className="flex items-center gap-1.5">
           {(["sm", "md", "lg", "xl"] as const).map((s) => (
             <button key={s} onClick={() => { onUpdate({ [sKey]: s, [`${fieldKey}_font_size`]: undefined }); }}
-              className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold uppercase transition-all ${curSize === s && !content[`${fieldKey}_font_size`] ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
+              className={`px-2 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase transition-all ${curSize === s && !content[`${fieldKey}_font_size`] ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}>
               {s.toUpperCase()}
             </button>
           ))}
-        </div>
-        <div className="flex items-center gap-2">
           <input type="number" min={8} max={120}
             value={(content[`${fieldKey}_font_size`] as number) ?? ""}
             onChange={(e) => onUpdate({ [`${fieldKey}_font_size`]: e.target.value ? Number(e.target.value) : undefined })}
             placeholder="px"
-            className="w-20 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
-          <span className="font-label text-xs text-outline">px (überschreibt Preset)</span>
+            className="w-14 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-[10px] font-mono text-center focus:outline-none focus:border-primary" />
         </div>
-      </div>
 
-      {/* Alignment */}
-      <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Ausrichtung</label>
-        <div className="flex gap-1.5">
+        {/* Alignment + Bold row */}
+        <div className="flex items-center gap-1.5">
           {(["left", "center", "right"] as const).map((a) => (
             <button key={a} onClick={() => onUpdate({ [aKey]: a })}
-              className={`flex-1 py-2 rounded-xl border transition-all flex items-center justify-center ${curAlign === a ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant hover:border-outline"}`}>
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center justify-center ${curAlign === a ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}>
               <span className="material-symbols-outlined text-sm">{a === "left" ? "format_align_left" : a === "center" ? "format_align_center" : "format_align_right"}</span>
             </button>
           ))}
-        </div>
-      </div>
-
-      {/* Color */}
-      <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Farbe</label>
-        <div className="flex items-center gap-2">
+          <div className="flex-1" />
+          {/* Color inline */}
           <input type="color" value={curColor || "#111827"} onChange={(e) => onUpdate({ [cKey]: e.target.value })}
-            className="w-10 h-10 rounded-xl border border-outline-variant/20 cursor-pointer p-0.5" />
+            className="w-7 h-7 rounded-lg border border-outline-variant/20 cursor-pointer p-0" />
           <input type="text" value={curColor} onChange={(e) => onUpdate({ [cKey]: e.target.value })} placeholder="#111827"
-            className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary" />
-          {curColor && <button onClick={() => onUpdate({ [cKey]: "" })} className="material-symbols-outlined text-outline text-sm hover:text-error p-1">close</button>}
+            className="w-[72px] bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] font-mono focus:outline-none focus:border-primary" />
+          {curColor && <button onClick={() => onUpdate({ [cKey]: "" })} className="material-symbols-outlined text-outline text-xs hover:text-error">close</button>}
         </div>
       </div>
 
-      {/* Font */}
+      {/* Font — dropdown selector */}
       <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftart</label>
-        <div className="space-y-1">
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Schriftart</label>
+        <select
+          value={curFont}
+          onChange={(e) => onUpdate({ [fKey]: e.target.value || undefined })}
+          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none focus:border-primary transition-colors"
+          style={{ fontFamily: availableFonts.find(f => f.key === curFont)?.var ?? "inherit" }}
+        >
           {availableFonts.map((f) => (
-            <button key={f.key} onClick={() => onUpdate({ [fKey]: f.key || undefined })}
-              className={`w-full text-left px-3 py-2 rounded-xl border transition-all ${curFont === f.key ? "border-primary bg-primary-container/20" : "border-outline-variant/10 hover:border-outline"}`}>
-              <span className="block text-sm font-bold text-on-surface" style={{ fontFamily: f.var }}>{f.label}</span>
-            </button>
+            <option key={f.key} value={f.key} style={{ fontFamily: f.var }}>{f.label}</option>
           ))}
-        </div>
+        </select>
       </div>
 
-      {/* Icon Picker — available for ALL text elements */}
+      {/* Icon Picker — collapsible */}
       <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Icon einfügen</label>
-        <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
-          {popularIcons.map((icon) => (
-            <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
-              className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
-              title={icon}>
-              <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
-            </button>
-          ))}
-        </div>
-        <p className="font-label text-[9px] text-outline mt-1">Klick fügt Icon am Ende des Textes ein</p>
+        <button onClick={() => setShowIcons(!showIcons)}
+          className="w-full flex items-center justify-between py-2 font-label text-xs font-bold uppercase tracking-widest text-outline hover:text-on-surface transition-colors">
+          <span className="flex items-center gap-1.5">
+            <span className="material-symbols-outlined text-sm">add_reaction</span>
+            Icon einfügen
+          </span>
+          <span className={`material-symbols-outlined text-sm transition-transform ${showIcons ? "rotate-180" : ""}`}>expand_more</span>
+        </button>
+        {showIcons && (
+          <div className="grid grid-cols-6 gap-1 mt-1">
+            {popularIcons.map((icon) => (
+              <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
+                className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
+                title={icon}>
+                <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Back to block */}
       <button onClick={onClose}
-        className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl border border-outline-variant/20 text-on-surface-variant font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors">
+        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-outline-variant/20 text-on-surface-variant font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors">
         <span className="material-symbols-outlined text-sm">arrow_back</span>
         Zurück zum Block
       </button>
