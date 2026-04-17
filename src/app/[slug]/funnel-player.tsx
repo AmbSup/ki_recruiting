@@ -585,7 +585,12 @@ function BlockRenderer({
     return (
       <div className="px-5 py-3">
         <p className={`leading-relaxed ${c.bold ? "font-bold" : ""}`}
-          style={{ fontSize: (c.size_font_size as number) ? `${c.size_font_size}px` : sizeMap[(c.size as string) ?? "md"], color: (c.color as string) || "#374151", textAlign: ((c.align as string) ?? "left") as "left" | "center" | "right", ...((c.size_font as string) ? { fontFamily: fontVarMap[c.size_font as string] } : {}) }}>
+          style={{
+            fontSize: (c.text_font_size as number) ? `${c.text_font_size}px` : sizeMap[(c.text_size as string) ?? (c.size as string) ?? "md"],
+            color: (c.text_color as string) || (c.color as string) || "#374151",
+            textAlign: ((c.text_align as string) || (c.align as string) || "left") as "left" | "center" | "right",
+            ...((c.text_font as string) ? { fontFamily: fontVarMap[c.text_font as string] } : {}),
+          }}>
           {renderTextWithIcons((c.content as string) ?? "")}
         </p>
       </div>

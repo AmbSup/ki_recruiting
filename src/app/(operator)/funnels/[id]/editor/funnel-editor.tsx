@@ -180,7 +180,7 @@ const availableFonts = [
 
 const fieldLabels: Record<string, string> = {
   name: "Name", title: "Titel", headline: "Headline", subtext: "Beschreibung",
-  cta: "CTA Button", question: "Frage", size: "Text", content: "Text",
+  cta: "CTA Button", question: "Frage", text: "Text", size: "Text", content: "Text",
 };
 
 function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
@@ -201,7 +201,7 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
   // Map fieldKey to the actual content field for text editing
   const textFieldMap: Record<string, string> = {
     name: "name", title: "title_text", headline: "headline", subtext: "subtext",
-    cta: "cta_text", question: "question", size: "content", content: "content",
+    cta: "cta_text", question: "question", text: "content", size: "content", content: "content",
   };
   const textKey = textFieldMap[fieldKey] ?? fieldKey;
   const textValue = (content[textKey] as string) ?? "";
@@ -628,9 +628,9 @@ function BlockPreview({
       {block.type === "text" && (
         <div className="px-4 py-2">
           <p
-            {...tp("size")}
-            className={`leading-relaxed ${c.bold ? "font-bold" : ""} cursor-pointer transition-all rounded-sm ${activeFieldKey === "size" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
-            style={{ fontSize: sizeMap[(c.size as string) ?? "md"], color: (c.color as string) || "#374151", textAlign: ((c.align as string) || "left") as "left" | "center" | "right" }}
+            {...tp("text")}
+            className={`leading-relaxed ${c.bold ? "font-bold" : ""} cursor-pointer transition-all rounded-sm ${activeFieldKey === "text" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={ts("text", { size: "md", color: "#374151", align: "left" })}
           >
             {renderTextWithIcons((c.content as string) ?? "")}
           </p>
