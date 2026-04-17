@@ -292,22 +292,20 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
         </div>
       </div>
 
-      {/* Icon Picker */}
-      {(fieldKey === "content" || fieldKey === "size") && (
-        <div>
-          <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Icon einfügen</label>
-          <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
-            {popularIcons.map((icon) => (
-              <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
-                className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
-                title={icon}>
-                <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
-              </button>
-            ))}
-          </div>
-          <p className="font-label text-[9px] text-outline mt-1">Klick fügt Icon-Code in den Text ein</p>
+      {/* Icon Picker — available for ALL text elements */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Icon einfügen</label>
+        <div className="grid grid-cols-6 gap-1 max-h-32 overflow-y-auto">
+          {popularIcons.map((icon) => (
+            <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
+              className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
+              title={icon}>
+              <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
+            </button>
+          ))}
         </div>
-      )}
+        <p className="font-label text-[9px] text-outline mt-1">Klick fügt Icon am Ende des Textes ein</p>
+      </div>
 
       {/* Back to block */}
       <button onClick={onClose}
@@ -483,28 +481,22 @@ function BlockPreview({
           )}
           {(c.name || c.title_text) && (
             <div className="mb-2">
-              {c.name && <div {...tp("name")} style={ts("name", { size: "sm", color: "#111827" })}><span className="font-bold">{c.name}</span></div>}
+              {c.name && <div {...tp("name")} style={ts("name", { size: "sm", color: "#111827" })}><span className="font-bold">{renderTextWithIcons((c.name as string) ?? "")}</span></div>}
               {c.title_text && <div {...tp("title")} style={ts("title", { size: "sm", color })}>{c.title_text}</div>}
             </div>
           )}
           <h2
             {...tp("headline")}
             style={{ ...ts("headline", { size: "lg", color: "#111827" }), fontWeight: 900, lineHeight: 1.1 }}
-            contentEditable
-            suppressContentEditableWarning
-            onBlur={(e) => onUpdate({ headline: e.currentTarget.innerText })}
           >
-            {c.headline}
+            {renderTextWithIcons((c.headline as string) ?? "")}
           </h2>
           {c.subtext && (
             <p
               {...tp("subtext")}
               style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), lineHeight: 1.6, marginBottom: 12 }}
-              contentEditable
-              suppressContentEditableWarning
-              onBlur={(e) => onUpdate({ subtext: e.currentTarget.innerText })}
             >
-              {c.subtext}
+              {renderTextWithIcons((c.subtext as string) ?? "")}
             </p>
           )}
           <button className="w-full py-3 rounded-2xl font-black text-xs" style={{ background: color, color: textColor }}>
@@ -520,18 +512,14 @@ function BlockPreview({
           <h3
             {...tp("headline")}
             style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900 }}
-            contentEditable suppressContentEditableWarning
-            onBlur={(e) => onUpdate({ headline: e.currentTarget.innerText })}
           >
-            {c.headline}
+            {renderTextWithIcons((c.headline as string) ?? "")}
           </h3>
           <p
             {...tp("subtext")}
             style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), lineHeight: 1.6 }}
-            contentEditable suppressContentEditableWarning
-            onBlur={(e) => onUpdate({ subtext: e.currentTarget.innerText })}
           >
-            {c.subtext}
+            {renderTextWithIcons((c.subtext as string) ?? "")}
           </p>
         </div>
       )}
@@ -539,7 +527,7 @@ function BlockPreview({
       {/* ── MULTIPLE CHOICE ── */}
       {block.type === "multiple_choice" && (
         <div className="px-4 py-3">
-          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           {c.selection === "multiple" && <p className="text-[9px] text-gray-400 mb-2">(Wähle so viele Antworten, wie du möchtest)</p>}
           <div className="grid grid-cols-2 gap-1.5 mb-3">
             {(c.items ?? []).slice(0, 6).map((item, i) => (
@@ -559,7 +547,7 @@ function BlockPreview({
       {/* ── IMAGE CHOICE ── */}
       {block.type === "image_choice" && (
         <div className="px-4 py-3">
-          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           <div className="grid grid-cols-2 gap-1.5">
             {(c.items ?? []).slice(0, 4).map((item, i) => (
               <div key={item.id} className="relative rounded-xl overflow-hidden border-2 cursor-pointer" style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}>
@@ -582,7 +570,7 @@ function BlockPreview({
       {/* ── LIST CHOICE ── */}
       {block.type === "list_choice" && (
         <div className="px-4 py-3">
-          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           <div className="space-y-1.5">
             {(c.items ?? []).slice(0, 5).map((item, i) => (
               <div key={item.id} className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 cursor-pointer"
@@ -705,8 +693,8 @@ function BlockPreview({
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: (branding.primary_color) + "20" }}>
             <span className="material-symbols-outlined text-xl animate-spin" style={{ color: branding.primary_color }}>progress_activity</span>
           </div>
-          <h3 className="font-black text-sm" style={{ color: c.headline_color ?? "#111827" }}>{c.headline}</h3>
-          {c.subtext && <p className="text-xs mt-1" style={{ color: c.subtext_color ?? "#6B7280" }}>{c.subtext}</p>}
+          <h3 className="font-black text-sm" style={{ color: (c.headline_color as string) ?? "#111827" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
+          {c.subtext && <p className="text-xs mt-1" style={{ color: (c.subtext_color as string) ?? "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         </div>
       )}
 
@@ -717,15 +705,15 @@ function BlockPreview({
             <span className="material-symbols-outlined text-xl font-bold" style={{ color: branding.button_text_color, fontVariationSettings: "'FILL' 1" }}>check</span>
           </div>
           <p className="text-xs font-bold mb-1" style={{ color: branding.primary_color }}>Großartige Neuigkeiten!</p>
-          <h3 className="font-black text-sm leading-tight mb-2" style={{ color: c.headline_color ?? "#111827" }}>{c.headline}</h3>
-          {c.subtext && <p className="text-xs leading-relaxed" style={{ color: c.subtext_color ?? "#6B7280" }}>{c.subtext}</p>}
+          <h3 className="font-black text-sm leading-tight mb-2" style={{ color: (c.headline_color as string) ?? "#111827" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
+          {c.subtext && <p className="text-xs leading-relaxed" style={{ color: (c.subtext_color as string) ?? "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         </div>
       )}
 
       {/* ── ICON CARDS ── */}
       {block.type === "icon_cards" && (
         <div className="px-4 py-3">
-          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{c.question || "Frage"}</h3>
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           <div className={`grid gap-2 ${(c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2"}`}>
             {(c.items ?? []).map((item) => (
               <div key={item.id} className="flex flex-col items-center justify-center rounded-xl py-4 px-3 text-center"

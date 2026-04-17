@@ -378,8 +378,8 @@ function BlockRenderer({
             {c.title_text && <div style={{ fontSize: sizeMap[(c.title_size as string) ?? "sm"], color: (c.title_color as string) || color }}>{c.title_text}</div>}
           </div>
         )}
-        <h1 className="font-black leading-tight mb-2" style={{ fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "lg"], color: (c.headline_color as string) || "#111827", textAlign: ((c.headline_align as string) ?? "center") as "left" | "center" | "right", ...((c.headline_font as string) ? { fontFamily: fontVarMap[c.headline_font as string] } : {}) }}>{c.headline}</h1>
-        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: (c.subtext_font_size as number) ? `${c.subtext_font_size}px` : sizeMap[(c.subtext_size as string) ?? "md"], color: (c.subtext_color as string) || "#6B7280", textAlign: ((c.subtext_align as string) ?? "center") as "left" | "center" | "right", ...((c.subtext_font as string) ? { fontFamily: fontVarMap[c.subtext_font as string] } : {}) }}>{c.subtext}</p>}
+        <h1 className="font-black leading-tight mb-2" style={{ fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "lg"], color: (c.headline_color as string) || "#111827", textAlign: ((c.headline_align as string) ?? "center") as "left" | "center" | "right", ...((c.headline_font as string) ? { fontFamily: fontVarMap[c.headline_font as string] } : {}) }}>{renderTextWithIcons((c.headline as string) ?? "")}</h1>
+        {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: (c.subtext_font_size as number) ? `${c.subtext_font_size}px` : sizeMap[(c.subtext_size as string) ?? "md"], color: (c.subtext_color as string) || "#6B7280", textAlign: ((c.subtext_align as string) ?? "center") as "left" | "center" | "right", ...((c.subtext_font as string) ? { fontFamily: fontVarMap[c.subtext_font as string] } : {}) }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm shadow-sm active:scale-95 transition-transform" style={{ background: color, color: textColor }}>
           {c.cta_text || "Jetzt bewerben →"}
         </button>
@@ -392,8 +392,8 @@ function BlockRenderer({
     return (
       <div className="flex flex-col items-center text-center px-6 py-10">
         <div className="text-5xl mb-4">{c.emoji || "👋"}</div>
-        <h2 className="font-black mb-3" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{c.headline}</h2>
-        {c.subtext && <p className="leading-relaxed mb-6" style={{ fontSize: sizeMap[c.subtext_size ?? "md"], color: c.subtext_color || "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}>{c.subtext}</p>}
+        <h2 className="font-black mb-3" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h2>
+        {c.subtext && <p className="leading-relaxed mb-6" style={{ fontSize: sizeMap[c.subtext_size ?? "md"], color: c.subtext_color || "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm" style={{ background: color, color: textColor }}>
           Weiter →
         </button>
@@ -407,7 +407,7 @@ function BlockRenderer({
     const hasSelection = answers.length > 0;
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black mb-1 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{c.question || "Frage"}</h2>
+        <h2 className="font-black mb-1 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         {sel === "multiple" && <p className="text-xs text-gray-400 mb-3">Mehrere Antworten möglich</p>}
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
@@ -442,7 +442,7 @@ function BlockRenderer({
   if (block.type === "image_choice") {
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{c.question || "Frage"}</h2>
+        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
@@ -475,7 +475,7 @@ function BlockRenderer({
   if (block.type === "list_choice") {
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{c.question || "Frage"}</h2>
+        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className="space-y-2">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
@@ -501,7 +501,7 @@ function BlockRenderer({
     const isValid = form.name && form.email && form.phone && consent;
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-4">{c.headline || "Deine Kontaktdaten"}</h2>
+        <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h2>
         <div className="space-y-3 mb-4">
           {[
             { key: "name" as const, emoji: "👋", ph: "Vollständiger Name", type: "text" },
@@ -664,7 +664,7 @@ function BlockRenderer({
           <span className="material-symbols-outlined text-2xl animate-spin" style={{ color }}>progress_activity</span>
         </div>
         <h2 className="font-black text-lg mb-2" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Einen Moment…"}</h2>
-        {c.subtext && <p className="text-sm" style={{ color: c.subtext_color || "#6B7280" }}>{c.subtext}</p>}
+        {c.subtext && <p className="text-sm" style={{ color: c.subtext_color || "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
       </div>
     );
   }
@@ -678,7 +678,7 @@ function BlockRenderer({
         </div>
         <p className="text-xs font-bold mb-2" style={{ color }}>Großartige Neuigkeiten!</p>
         <h2 className="font-black text-xl leading-tight mb-3" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Vielen Dank!"}</h2>
-        {c.subtext && <p className="text-sm leading-relaxed" style={{ color: c.subtext_color || "#6B7280" }}>{c.subtext}</p>}
+        {c.subtext && <p className="text-sm leading-relaxed" style={{ color: c.subtext_color || "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
       </div>
     );
   }
@@ -688,7 +688,7 @@ function BlockRenderer({
     const cols = (c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2";
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-4 text-center">{c.question || "Frage"}</h2>
+        <h2 className="font-black text-lg text-gray-900 mb-4 text-center">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className={`grid gap-3 ${cols}`}>
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
