@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 type BlockType =
   | "profile_header" | "multiple_choice" | "image_choice" | "list_choice"
   | "contact_form" | "text" | "button" | "image" | "divider" | "rating"
-  | "welcome" | "loading_screen" | "thank_you";
+  | "welcome" | "loading_screen" | "thank_you" | "icon_cards";
 
 type ChoiceItem = { id: string; label: string; icon: string; value: string; image_url?: string };
 
@@ -60,7 +60,7 @@ type FunnelPage = {
   settings?: Record<string, unknown>;
 };
 
-type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string };
+type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string; bg_color?: string; bg_gradient?: string };
 
 const fontFamilyMap: Record<string, { headline: string; body: string }> = {
   default: { headline: "var(--font-newsreader), serif", body: "var(--font-manrope), sans-serif" },
@@ -326,8 +326,8 @@ function Screen({ children, color, textColor, branding }: {
 }) {
   return (
     <div className="min-h-screen bg-gray-50 flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4">
-      <div className="w-full sm:max-w-md lg:max-w-lg bg-white sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0"
-        style={{ fontFamily: (fontFamilyMap[branding.font_pair ?? "default"] ?? fontFamilyMap.default).body }}>
+      <div className="w-full sm:max-w-md lg:max-w-lg sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0"
+        style={{ fontFamily: (fontFamilyMap[branding.font_pair ?? "default"] ?? fontFamilyMap.default).body, background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
         {branding.logo_url && (
           <div className="px-5 pt-4 pb-2 flex justify-center flex-shrink-0">
             <img src={branding.logo_url} alt="Logo" className="h-8 object-contain" />
@@ -679,6 +679,30 @@ function BlockRenderer({
         <p className="text-xs font-bold mb-2" style={{ color }}>Großartige Neuigkeiten!</p>
         <h2 className="font-black text-xl leading-tight mb-3" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Vielen Dank!"}</h2>
         {c.subtext && <p className="text-sm leading-relaxed" style={{ color: c.subtext_color || "#6B7280" }}>{c.subtext}</p>}
+      </div>
+    );
+  }
+
+  // ── ICON CARDS ──
+  if (block.type === "icon_cards") {
+    const cols = (c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2";
+    return (
+      <div className="px-5 py-6">
+        <h2 className="font-black text-lg text-gray-900 mb-4 text-center">{c.question || "Frage"}</h2>
+        <div className={`grid gap-3 ${cols}`}>
+          {(c.items ?? []).map((item) => {
+            const selected = answers.includes(item.value);
+            return (
+              <button key={item.id}
+                onClick={() => { onToggleChoice(item.value, "single"); setTimeout(onAdvance, 300); }}
+                className={`flex flex-col items-center justify-center rounded-2xl py-6 px-4 text-center transition-all active:scale-95 ${selected ? "ring-2 ring-offset-2 ring-gray-900" : ""}`}
+                style={{ background: (c.card_bg as string) || color, minHeight: 100 }}>
+                <span className="material-symbols-outlined text-4xl mb-2" style={{ color: (c.card_icon_color as string) || "#ffffff", fontVariationSettings: "'FILL' 1" }}>{item.icon || "check"}</span>
+                <span className="text-sm font-black" style={{ color: (c.card_icon_color as string) || "#ffffff" }}>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     );
   }

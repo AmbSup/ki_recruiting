@@ -20,7 +20,8 @@ type BlockType =
   | "rating"
   | "welcome"
   | "loading_screen"
-  | "thank_you";
+  | "thank_you"
+  | "icon_cards";
 
 type ChoiceItem = { id: string; label: string; icon: string; value: string; image_url?: string };
 
@@ -96,6 +97,8 @@ type FunnelBranding = {
   button_text_color: string;
   logo_url?: string;
   font_pair?: string;
+  bg_color?: string;
+  bg_gradient?: string;
 };
 
 const fontPairs: { key: string; label: string; headline: string; body: string; headlineVar: string; bodyVar: string }[] = [
@@ -332,6 +335,10 @@ function blockDefaults(type: BlockType): Block {
     welcome: { emoji: "👋", headline: "Hey, lass' uns loslegen!", subtext: "Diese kurze Umfrage hilft uns zu verstehen, ob diese Rolle gut zu dir passt. Es dauert nur eine Minute." },
     loading_screen: { headline: "Wir überprüfen deine Antworten…", subtext: "Bitte noch einen Moment Geduld!" },
     thank_you: { headline: "Wir passen zueinander!", subtext: "Wir melden uns in Kürze bei dir." },
+    icon_cards: { items: [
+      { id: uid(), label: "Weiter bewerben!", icon: "check", value: "yes", image_url: "" },
+      { id: uid(), label: "Bewerbung abbrechen!", icon: "close", value: "no", image_url: "" },
+    ], question: "Was ist Dein nächster Schritt?", card_bg: "#22d3ee", card_icon_color: "#ffffff", card_columns: "2" },
   };
   return { id, type, content: defaults[type] };
 }
@@ -386,6 +393,7 @@ const blockConfig: Record<BlockType, { label: string; icon: string; category: "i
   rating:          { label: "Bewertungen",       icon: "star",           category: "simple" },
   loading_screen:  { label: "Ladescreen",        icon: "hourglass_top",  category: "simple" },
   thank_you:       { label: "Danke-Seite",       icon: "celebration",    category: "simple" },
+  icon_cards:      { label: "Icon-Kacheln",      icon: "dashboard",      category: "interactive" },
 };
 
 // ─── Block Preview Renderer ───────────────────────────────────────────────────
@@ -711,6 +719,22 @@ function BlockPreview({
           <p className="text-xs font-bold mb-1" style={{ color: branding.primary_color }}>Großartige Neuigkeiten!</p>
           <h3 className="font-black text-sm leading-tight mb-2" style={{ color: c.headline_color ?? "#111827" }}>{c.headline}</h3>
           {c.subtext && <p className="text-xs leading-relaxed" style={{ color: c.subtext_color ?? "#6B7280" }}>{c.subtext}</p>}
+        </div>
+      )}
+
+      {/* ── ICON CARDS ── */}
+      {block.type === "icon_cards" && (
+        <div className="px-4 py-3">
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{c.question || "Frage"}</h3>
+          <div className={`grid gap-2 ${(c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2"}`}>
+            {(c.items ?? []).map((item) => (
+              <div key={item.id} className="flex flex-col items-center justify-center rounded-xl py-4 px-3 text-center"
+                style={{ background: (c.card_bg as string) || color, minHeight: 80 }}>
+                <span className="material-symbols-outlined text-2xl mb-1" style={{ color: (c.card_icon_color as string) || "#ffffff", fontVariationSettings: "'FILL' 1" }}>{item.icon || "check"}</span>
+                <span className="text-xs font-black" style={{ color: (c.card_icon_color as string) || "#ffffff" }}>{item.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -1165,6 +1189,68 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           </div>
         </div>
       )}
+
+      {/* ICON CARDS */}
+      {block.type === "icon_cards" && (
+        <>
+          {field("Fragetext", c.question ?? "", (v) => onUpdate({ question: v }))}
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Spalten</label>
+            <div className="flex gap-2">
+              {(["1", "2"] as const).map((n) => (
+                <button key={n} onClick={() => onUpdate({ card_columns: n })}
+                  className={`flex-1 py-2 rounded-xl border font-label text-xs font-bold transition-all ${(c.card_columns as string) === n ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+                  {n === "1" ? "1 Spalte" : "2 Spalten"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Kachel-Farbe</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={(c.card_bg as string) || "#22d3ee"} onChange={(e) => onUpdate({ card_bg: e.target.value })}
+                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+                <input type="text" value={(c.card_bg as string) || ""} onChange={(e) => onUpdate({ card_bg: e.target.value })} placeholder="#22d3ee"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Icon/Text-Farbe</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={(c.card_icon_color as string) || "#ffffff"} onChange={(e) => onUpdate({ card_icon_color: e.target.value })}
+                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+                <input type="text" value={(c.card_icon_color as string) || ""} onChange={(e) => onUpdate({ card_icon_color: e.target.value })} placeholder="#ffffff"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline">Kacheln ({(c.items ?? []).length})</label>
+              <button onClick={addItem} className="flex items-center gap-1 font-label text-xs font-bold text-primary hover:underline">
+                <span className="material-symbols-outlined text-xs">add</span> Hinzufügen
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(c.items ?? []).map((item, i) => (
+                <div key={item.id} className="bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/10 space-y-1.5">
+                  <div className="flex gap-1.5 items-center">
+                    <input value={item.label} onChange={(e) => updateItem(i, { label: e.target.value })} placeholder="Label"
+                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                    <button onClick={() => removeItem(i)} className="material-symbols-outlined text-outline hover:text-error text-sm">close</button>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-outline text-sm w-5 text-center">{item.icon || "check"}</span>
+                    <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} placeholder="Icon (z.B. check)"
+                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1207,6 +1293,42 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
         <input value={branding.logo_url ?? ""} onChange={(e) => onChange({ logo_url: e.target.value })} placeholder="https://…"
           className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary" />
       </div>
+      {/* Page Background */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Hintergrund</label>
+        <div className="grid grid-cols-3 gap-1.5 mb-2">
+          <button onClick={() => onChange({ bg_color: undefined, bg_gradient: undefined })}
+            className={`py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${!branding.bg_color && !branding.bg_gradient ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            Weiß
+          </button>
+          <button onClick={() => onChange({ bg_gradient: undefined, bg_color: branding.bg_color || "#f3f4f6" })}
+            className={`py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${branding.bg_color && !branding.bg_gradient ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            Farbe
+          </button>
+          <button onClick={() => onChange({ bg_color: undefined, bg_gradient: branding.bg_gradient || gradientPresets[0].value })}
+            className={`py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${branding.bg_gradient ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+            Verlauf
+          </button>
+        </div>
+        {branding.bg_color && !branding.bg_gradient && (
+          <div className="flex items-center gap-2">
+            <input type="color" value={branding.bg_color} onChange={(e) => onChange({ bg_color: e.target.value })}
+              className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+            <input type="text" value={branding.bg_color} onChange={(e) => onChange({ bg_color: e.target.value })} placeholder="#f3f4f6"
+              className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+          </div>
+        )}
+        {branding.bg_gradient && (
+          <div className="grid grid-cols-3 gap-1.5">
+            {gradientPresets.map((g) => (
+              <button key={g.label} onClick={() => onChange({ bg_gradient: g.value })}
+                className={`h-8 rounded-lg border-2 transition-all ${branding.bg_gradient === g.value ? "border-primary scale-105" : "border-transparent"}`}
+                style={{ background: g.value }} title={g.label} />
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Font Pair */}
       <div>
         <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftart</label>
@@ -1578,7 +1700,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               <div className={previewMode === "desktop" ? "w-full max-w-[400px] bg-white min-h-full shadow-sm" : ""}>
 
               {/* Logo + Font */}
-              <div className="flex items-center justify-center px-5 pt-3 pb-1 bg-white" style={{ fontFamily: (fontPairs.find(f => f.key === (branding.font_pair ?? "default"))?.bodyVar ?? "inherit") }}>
+              <div className="flex items-center justify-center px-5 pt-3 pb-1" style={{ fontFamily: (fontPairs.find(f => f.key === (branding.font_pair ?? "default"))?.bodyVar ?? "inherit"), background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
                 {branding.logo_url ? (
                   <img src={branding.logo_url} alt="Logo" className="h-5 object-contain" />
                 ) : (
