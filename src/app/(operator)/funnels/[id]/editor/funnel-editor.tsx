@@ -185,6 +185,7 @@ const availableFonts = [
 const fieldLabels: Record<string, string> = {
   name: "Name", title: "Titel", headline: "Headline", subtext: "Beschreibung",
   cta: "CTA Button", question: "Frage", text: "Text", size: "Text", content: "Text",
+  btn: "Button", textarea_field: "Textfeld", card_item: "Kachel",
 };
 
 function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
@@ -206,9 +207,11 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
   const textFieldMap: Record<string, string> = {
     name: "name", title: "title_text", headline: "headline", subtext: "subtext",
     cta: "cta_text", question: "question", text: "content", size: "content", content: "content",
+    btn: "label", textarea_field: "placeholder", card_item: "question",
   };
   const textKey = textFieldMap[fieldKey] ?? fieldKey;
   const textValue = (content[textKey] as string) ?? "";
+  const isContainer = ["btn", "textarea_field", "card_item"].includes(fieldKey);
 
   const [showIcons, setShowIcons] = useState(false);
 
@@ -285,6 +288,43 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
           ))}
         </select>
       </div>
+
+      {/* Container sizing — for buttons, fields, cards */}
+      {isContainer && (
+        <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
+          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Abmessungen</span>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <span className="font-label text-[9px] text-outline">Höhe</span>
+              <input type="text" value={(content[`${fieldKey}_height`] as string) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_height`]: e.target.value || undefined })} placeholder="auto"
+                className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <span className="font-label text-[9px] text-outline">Breite</span>
+              <input type="text" value={(content[`${fieldKey}_width`] as string) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_width`]: e.target.value || undefined })} placeholder="100%"
+                className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <span className="font-label text-[9px] text-outline">Padding (px)</span>
+              <input type="number" min={0} value={(content[`${fieldKey}_padding`] as number) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_padding`]: e.target.value ? Number(e.target.value) : undefined })} placeholder="—"
+                className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-primary" />
+            </div>
+            <div>
+              <span className="font-label text-[9px] text-outline">Rundung (px)</span>
+              <input type="number" min={0} value={(content[`${fieldKey}_radius`] as number) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_radius`]: e.target.value ? Number(e.target.value) : undefined })} placeholder="16"
+                className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-primary" />
+            </div>
+          </div>
+          {/* Background color for this element */}
+          <div className="flex items-center gap-2">
+            <span className="font-label text-[9px] text-outline">Hintergrund</span>
+            <input type="color" value={(content[`${fieldKey}_bg`] as string) || "#000000"} onChange={(e) => onUpdate({ [`${fieldKey}_bg`]: e.target.value })}
+              className="w-6 h-6 rounded border border-outline-variant/20 cursor-pointer p-0" />
+            <input type="text" value={(content[`${fieldKey}_bg`] as string) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_bg`]: e.target.value || undefined })} placeholder="Standard"
+              className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] font-mono focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+      )}
 
       {/* Icon Picker — collapsible */}
       <div>
@@ -503,8 +543,15 @@ function BlockPreview({
               {renderTextWithIcons((c.subtext as string) ?? "")}
             </p>
           )}
-          <button className="w-full py-3 rounded-2xl font-black text-xs" style={{ background: color, color: textColor }}>
-            {c.cta_text || "Jetzt bewerben →"}
+          <button {...tp("btn")} className={`w-full py-3 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{
+              background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor,
+              ...((c.btn_height as string) ? { height: c.btn_height as string } : {}),
+              ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}),
+              ...((c.btn_padding as number) != null ? { padding: `${c.btn_padding}px` } : {}),
+              fontSize: ts("btn", { size: "sm" }).fontSize,
+            }}>
+            {renderTextWithIcons((c.cta_text as string) || "Jetzt bewerben →")}
           </button>
         </div>
       )}
@@ -542,8 +589,9 @@ function BlockPreview({
               </div>
             ))}
           </div>
-          <button className="w-full py-2.5 rounded-2xl font-black text-xs" style={{ background: color, color: textColor }}>
-            {c.cta || "Absenden und weiter"}
+          <button {...tp("btn")} className={`w-full py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}) }}>
+            {renderTextWithIcons((c.cta as string) || "Absenden und weiter")}
           </button>
         </div>
       )}
@@ -618,8 +666,9 @@ function BlockPreview({
             <div className="w-3 h-3 border border-gray-300 rounded mt-0.5 flex-shrink-0" />
             <span className="text-[9px] text-gray-400">Datenschutzerklärung gelesen und akzeptiert</span>
           </div>
-          <button className="w-full mt-3 py-2.5 rounded-2xl font-black text-xs" style={{ background: color, color: textColor }}>
-            {c.cta_text || "Bewerbung absenden →"}
+          <button {...tp("btn")} className={`w-full mt-3 py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}) }}>
+            {renderTextWithIcons((c.cta_text as string) || "Bewerbung absenden →")}
           </button>
         </div>
       )}
@@ -640,11 +689,16 @@ function BlockPreview({
       {/* ── BUTTON ── */}
       {block.type === "button" && (
         <div className="px-4 py-2">
-          <button
-            className="w-full py-3 rounded-2xl font-black text-xs"
-            style={c.style === "outline" ? { border: `2px solid ${color}`, color, background: "transparent" } : { background: color, color: textColor }}
+          <button {...tp("btn")}
+            className={`w-full py-3 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{
+              ...(c.style === "outline" ? { border: `2px solid ${color}`, color: (c.btn_color as string) || color, background: (c.btn_bg as string) || "transparent" } : { background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor }),
+              ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}),
+              ...((c.btn_height as string) ? { height: c.btn_height as string } : {}),
+              fontSize: ts("btn", { size: "sm" }).fontSize,
+            }}
           >
-            {c.label || "Weiter →"}
+            {renderTextWithIcons((c.label as string) || "Weiter →")}
           </button>
         </div>
       )}
@@ -718,11 +772,13 @@ function BlockPreview({
       {block.type === "free_text" && (
         <div className="px-4 py-3">
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
-          <div className="border border-gray-200 rounded-xl px-3 py-2.5 mb-3 min-h-[60px]">
+          <div {...tp("textarea_field")} className={`border border-gray-200 rounded-xl px-3 py-2.5 mb-3 cursor-pointer transition-all ${activeFieldKey === "textarea_field" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{ minHeight: (c.textarea_field_height as string) || "60px", ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}) }}>
             <span className="text-xs text-gray-400">{(c.placeholder as string) || "Deine Antwort hier…"}</span>
           </div>
-          <button className="w-full py-2.5 rounded-2xl font-black text-xs" style={{ background: color, color: textColor }}>
-            {(c.cta as string) || "Weiter →"}
+          <button {...tp("btn")} className={`w-full py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}) }}>
+            {renderTextWithIcons((c.cta as string) || "Weiter →")}
           </button>
         </div>
       )}
@@ -731,12 +787,17 @@ function BlockPreview({
       {block.type === "icon_cards" && (
         <div className="px-4 py-3">
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
-          <div className={`grid gap-2 ${(c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2"}`}>
+          <div {...tp("card_item")} className={`grid gap-2 cursor-pointer transition-all rounded-lg ${activeFieldKey === "card_item" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"} ${(c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2"}`}>
             {(c.items ?? []).map((item) => (
               <div key={item.id} className="flex flex-col items-center justify-center rounded-xl py-4 px-3 text-center"
-                style={{ background: (c.card_bg as string) || color, minHeight: 80 }}>
+                style={{
+                  background: (c.card_bg as string) || color,
+                  minHeight: (c.card_item_height as string) || "80px",
+                  ...((c.card_item_radius as number) != null ? { borderRadius: `${c.card_item_radius}px` } : {}),
+                  ...((c.card_item_padding as number) != null ? { padding: `${c.card_item_padding}px` } : {}),
+                }}>
                 <span className="material-symbols-outlined text-2xl mb-1" style={{ color: (c.card_icon_color as string) || "#ffffff", fontVariationSettings: "'FILL' 1" }}>{item.icon || "check"}</span>
-                <span className="text-xs font-black" style={{ color: (c.card_icon_color as string) || "#ffffff" }}>{item.label}</span>
+                <span className="font-black" style={{ color: (c.card_icon_color as string) || "#ffffff", fontSize: ts("card_item", { size: "sm" }).fontSize }}>{item.label}</span>
               </div>
             ))}
           </div>
