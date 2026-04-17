@@ -1688,12 +1688,10 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               <div className={previewMode === "desktop" ? "w-full max-w-[400px] bg-white min-h-full shadow-sm" : ""}>
 
               {/* Logo + Font */}
-              <div className="flex items-center justify-center px-5 pt-3 pb-1" style={{ fontFamily: (fontPairs.find(f => f.key === (branding.font_pair ?? "default"))?.bodyVar ?? "inherit"), background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
-                {branding.logo_url ? (
-                  <img src={branding.logo_url} alt="Logo" className="h-5 object-contain" />
-                ) : (
-                  <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ background: branding.primary_color }}>
-                    <span className="text-[8px] font-black" style={{ color: branding.button_text_color }}>P</span>
+              <div style={{ fontFamily: (fontPairs.find(f => f.key === (branding.font_pair ?? "default"))?.bodyVar ?? "inherit"), background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
+                {branding.logo_url && (
+                  <div className="flex items-center justify-center px-5 pt-3 pb-1">
+                    <img src={branding.logo_url} alt="Logo" className="h-5 object-contain" />
                   </div>
                 )}
               </div>
