@@ -21,7 +21,8 @@ type BlockType =
   | "welcome"
   | "loading_screen"
   | "thank_you"
-  | "icon_cards";
+  | "icon_cards"
+  | "free_text";
 
 type ChoiceItem = { id: string; label: string; icon: string; value: string; image_url?: string };
 
@@ -334,6 +335,7 @@ function blockDefaults(type: BlockType): Block {
     welcome: { emoji: "👋", headline: "Hey, lass' uns loslegen!", subtext: "Diese kurze Umfrage hilft uns zu verstehen, ob diese Rolle gut zu dir passt. Es dauert nur eine Minute." },
     loading_screen: { headline: "Wir überprüfen deine Antworten…", subtext: "Bitte noch einen Moment Geduld!" },
     thank_you: { headline: "Wir passen zueinander!", subtext: "Wir melden uns in Kürze bei dir." },
+    free_text: { question: "Warum bist du der/die Richtige für diesen Job?", placeholder: "Deine Antwort hier…", cta: "Weiter →", is_required: true },
     icon_cards: { items: [
       { id: uid(), label: "Weiter bewerben!", icon: "check", value: "yes", image_url: "" },
       { id: uid(), label: "Bewerbung abbrechen!", icon: "close", value: "no", image_url: "" },
@@ -392,6 +394,7 @@ const blockConfig: Record<BlockType, { label: string; icon: string; category: "i
   rating:          { label: "Bewertungen",       icon: "star",           category: "simple" },
   loading_screen:  { label: "Ladescreen",        icon: "hourglass_top",  category: "simple" },
   thank_you:       { label: "Danke-Seite",       icon: "celebration",    category: "simple" },
+  free_text:       { label: "Freitext-Antwort",   icon: "edit_note",      category: "interactive" },
   icon_cards:      { label: "Icon-Kacheln",      icon: "dashboard",      category: "interactive" },
 };
 
@@ -708,6 +711,19 @@ function BlockPreview({
           <p className="text-xs font-bold mb-1" style={{ color: branding.primary_color }}>Großartige Neuigkeiten!</p>
           <h3 className="font-black text-sm leading-tight mb-2" style={{ color: (c.headline_color as string) ?? "#111827" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
           {c.subtext && <p className="text-xs leading-relaxed" style={{ color: (c.subtext_color as string) ?? "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
+        </div>
+      )}
+
+      {/* ── FREE TEXT ── */}
+      {block.type === "free_text" && (
+        <div className="px-4 py-3">
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
+          <div className="border border-gray-200 rounded-xl px-3 py-2.5 mb-3 min-h-[60px]">
+            <span className="text-xs text-gray-400">{(c.placeholder as string) || "Deine Antwort hier…"}</span>
+          </div>
+          <button className="w-full py-2.5 rounded-2xl font-black text-xs" style={{ background: color, color: textColor }}>
+            {(c.cta as string) || "Weiter →"}
+          </button>
         </div>
       )}
 
@@ -1177,6 +1193,16 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
             ))}
           </div>
         </div>
+      )}
+
+      {/* FREE TEXT */}
+      {block.type === "free_text" && (
+        <>
+          {field("Fragetext", (c.question as string) ?? "", (v) => onUpdate({ question: v }))}
+          {field("Platzhalter", (c.placeholder as string) ?? "", (v) => onUpdate({ placeholder: v }), "Deine Antwort hier…")}
+          {field("CTA Button", (c.cta as string) ?? "", (v) => onUpdate({ cta: v }), "Weiter →")}
+          {toggle("Pflichtfeld", "Antwort ist erforderlich", (c.is_required as boolean) ?? true, (v) => onUpdate({ is_required: v }))}
+        </>
       )}
 
       {/* ICON CARDS */}

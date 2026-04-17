@@ -7,7 +7,7 @@ import { useState, useEffect, useRef } from "react";
 type BlockType =
   | "profile_header" | "multiple_choice" | "image_choice" | "list_choice"
   | "contact_form" | "text" | "button" | "image" | "divider" | "rating"
-  | "welcome" | "loading_screen" | "thank_you" | "icon_cards";
+  | "welcome" | "loading_screen" | "thank_you" | "icon_cards" | "free_text";
 
 type ChoiceItem = { id: string; label: string; icon: string; value: string; image_url?: string };
 
@@ -679,6 +679,33 @@ function BlockRenderer({
         <p className="text-xs font-bold mb-2" style={{ color }}>Großartige Neuigkeiten!</p>
         <h2 className="font-black text-xl leading-tight mb-3" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Vielen Dank!"}</h2>
         {c.subtext && <p className="text-sm leading-relaxed" style={{ color: c.subtext_color || "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
+      </div>
+    );
+  }
+
+  // ── FREE TEXT ──
+  if (block.type === "free_text") {
+    const questionKey = (c.question as string) || block.id;
+    const curAnswer = answers[0] ?? "";
+    const isRequired = (c.is_required as boolean) ?? true;
+    return (
+      <div className="px-5 py-6">
+        <h2 className="font-black text-lg text-gray-900 mb-4 leading-tight">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <textarea
+          value={curAnswer}
+          onChange={(e) => onToggleChoice(e.target.value, "single")}
+          rows={4}
+          placeholder={(c.placeholder as string) || "Deine Antwort hier…"}
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-colors resize-none mb-4"
+        />
+        <button
+          onClick={onAdvance}
+          disabled={isRequired && !curAnswer.trim()}
+          className="w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95 disabled:opacity-40"
+          style={{ background: color, color: textColor }}
+        >
+          {(c.cta as string) || "Weiter →"}
+        </button>
       </div>
     );
   }
