@@ -288,7 +288,11 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
       <div ref={containerRef} className="flex-1 overflow-y-auto">
         {currentPage.blocks.map((block) => (
-          <div key={block.id} style={{ background: (block.content.bg_gradient as string) ?? (block.content.bg_color as string) ?? undefined }}>
+          <div key={block.id} style={{
+            background: (block.content.bg_gradient as string) ?? (block.content.bg_color as string) ?? undefined,
+            ...((block.content.block_padding as number) != null ? { padding: `${block.content.block_padding}px` } : {}),
+            ...((block.content.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${block.content.block_gap}px` } : {}),
+          }}>
           <BlockRenderer
             block={block}
             color={color}
@@ -609,7 +613,14 @@ function BlockRenderer({
   if (block.type === "image" && c.url) {
     return (
       <div className="px-5 py-3">
-        <img src={c.url} alt={c.alt ?? ""} className={`w-full object-cover ${c.rounded ? "rounded-2xl" : ""}`} />
+        <img src={c.url as string} alt={(c.alt as string) ?? ""} className={`${c.rounded ? "rounded-2xl" : ""}`}
+          style={{
+            width: (c.img_width as string) || "100%",
+            height: (c.img_height as string) || "auto",
+            maxWidth: (c.img_max_width as string) || "100%",
+            objectFit: ((c.img_fit as string) || "cover") as "cover" | "contain" | "fill" | "none",
+            margin: "0 auto", display: "block",
+          }} />
       </div>
     );
   }

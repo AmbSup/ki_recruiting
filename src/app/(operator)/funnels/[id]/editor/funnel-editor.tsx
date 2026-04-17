@@ -445,7 +445,11 @@ function BlockPreview({
   return (
     <div
       className={wrapperClass}
-      style={{ background: (c.bg_gradient as string) ?? (c.bg_color as string) ?? undefined }}
+      style={{
+        background: (c.bg_gradient as string) ?? (c.bg_color as string) ?? undefined,
+        ...((c.block_padding as number) != null ? { padding: `${c.block_padding}px` } : {}),
+        ...((c.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${c.block_gap}px` } : {}),
+      }}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -649,7 +653,14 @@ function BlockPreview({
       {block.type === "image" && (
         <div className="px-4 py-2">
           {c.url ? (
-            <img src={c.url} alt={c.alt ?? ""} className={`w-full object-cover ${c.rounded ? "rounded-xl" : ""}`} style={{ maxHeight: 160 }} />
+            <img src={c.url as string} alt={(c.alt as string) ?? ""} className={`${c.rounded ? "rounded-xl" : ""}`}
+              style={{
+                width: (c.img_width as string) || "100%",
+                height: (c.img_height as string) || "auto",
+                maxWidth: (c.img_max_width as string) || "100%",
+                objectFit: ((c.img_fit as string) || "cover") as "cover" | "contain" | "fill" | "none",
+                margin: "0 auto", display: "block",
+              }} />
           ) : (
             <div className={`w-full h-24 bg-gray-100 flex items-center justify-center ${c.rounded ? "rounded-xl" : ""}`}>
               <span className="material-symbols-outlined text-3xl text-gray-300">image</span>
@@ -917,6 +928,23 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
         )}
       </div>
 
+      {/* Layout — Padding & Gap for all blocks */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Layout</label>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <span className="font-label text-[10px] text-outline">Padding (px)</span>
+            <input type="number" min={0} max={80} value={(c.block_padding as number) ?? ""} onChange={(e) => onUpdate({ block_padding: e.target.value ? Number(e.target.value) : undefined })} placeholder="—"
+              className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+          </div>
+          <div>
+            <span className="font-label text-[10px] text-outline">Gap (px)</span>
+            <input type="number" min={0} max={60} value={(c.block_gap as number) ?? ""} onChange={(e) => onUpdate({ block_gap: e.target.value ? Number(e.target.value) : undefined })} placeholder="—"
+              className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+          </div>
+        </div>
+      </div>
+
       {/* PROFILE HEADER */}
       {block.type === "profile_header" && (
         <>
@@ -1046,6 +1074,40 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           <ImageUpload value={c.url ?? ""} onChange={(v) => onUpdate({ url: v })} label="Bild" aspect="wide" />
           {field("Alt-Text", c.alt ?? "", (v) => onUpdate({ alt: v }))}
           {toggle("Abgerundet", "Bild mit gerundeten Ecken", c.rounded ?? true, (v) => onUpdate({ rounded: v }))}
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Größe</label>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <span className="font-label text-[10px] text-outline">Breite</span>
+                <div className="flex items-center gap-1">
+                  <input type="text" value={(c.img_width as string) ?? "100%"} onChange={(e) => onUpdate({ img_width: e.target.value })}
+                    className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div>
+                <span className="font-label text-[10px] text-outline">Höhe</span>
+                <div className="flex items-center gap-1">
+                  <input type="text" value={(c.img_height as string) ?? "auto"} onChange={(e) => onUpdate({ img_height: e.target.value })}
+                    className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div>
+                <span className="font-label text-[10px] text-outline">Max-Breite</span>
+                <input type="text" value={(c.img_max_width as string) ?? "100%"} onChange={(e) => onUpdate({ img_max_width: e.target.value })}
+                  className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+              </div>
+              <div>
+                <span className="font-label text-[10px] text-outline">Objekt-Anpassung</span>
+                <select value={(c.img_fit as string) ?? "cover"} onChange={(e) => onUpdate({ img_fit: e.target.value })}
+                  className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary">
+                  <option value="cover">Cover</option>
+                  <option value="contain">Contain</option>
+                  <option value="fill">Fill</option>
+                  <option value="none">None</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </>
       )}
 
