@@ -290,7 +290,10 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         {currentPage.blocks.map((block) => (
           <div key={block.id} style={{
             background: (block.content.bg_gradient as string) ?? (block.content.bg_color as string) ?? undefined,
-            ...((block.content.block_padding as number) != null ? { padding: `${block.content.block_padding}px` } : {}),
+            paddingTop: (block.content.block_padding_t as number) != null ? `${block.content.block_padding_t}px` : undefined,
+            paddingRight: (block.content.block_padding_r as number) != null ? `${block.content.block_padding_r}px` : undefined,
+            paddingBottom: (block.content.block_padding_b as number) != null ? `${block.content.block_padding_b}px` : undefined,
+            paddingLeft: (block.content.block_padding_l as number) != null ? `${block.content.block_padding_l}px` : undefined,
             ...((block.content.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${block.content.block_gap}px` } : {}),
           }}>
           <BlockRenderer

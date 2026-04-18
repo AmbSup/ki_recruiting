@@ -497,7 +497,10 @@ function BlockPreview({
       className={wrapperClass}
       style={{
         background: (c.bg_gradient as string) ?? (c.bg_color as string) ?? undefined,
-        ...((c.block_padding as number) != null ? { padding: `${c.block_padding}px` } : {}),
+        paddingTop: (c.block_padding_t as number) != null ? `${c.block_padding_t}px` : undefined,
+        paddingRight: (c.block_padding_r as number) != null ? `${c.block_padding_r}px` : undefined,
+        paddingBottom: (c.block_padding_b as number) != null ? `${c.block_padding_b}px` : undefined,
+        paddingLeft: (c.block_padding_l as number) != null ? `${c.block_padding_l}px` : undefined,
         ...((c.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${c.block_gap}px` } : {}),
       }}
       onClick={onSelect}
@@ -1018,19 +1021,36 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
         )}
       </div>
 
-      {/* Layout — Padding & Gap for all blocks */}
+      {/* Layout — Padding (4 values) & Gap */}
       <div>
         <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Layout</label>
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <span className="font-label text-[10px] text-outline">Padding (px)</span>
-            <input type="number" min={0} max={80} value={(c.block_padding as number) ?? ""} onChange={(e) => onUpdate({ block_padding: e.target.value ? Number(e.target.value) : undefined })} placeholder="—"
-              className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+        {/* Padding T/R/B/L */}
+        <div className="bg-surface-container-low rounded-xl p-3 mb-2">
+          <span className="font-label text-[10px] font-bold text-outline block mb-2">Padding (px)</span>
+          <div className="grid grid-cols-4 gap-1.5">
+            {(["t", "r", "b", "l"] as const).map((side) => {
+              const key = `block_padding_${side}`;
+              const labels = { t: "T", r: "R", b: "B", l: "L" };
+              return (
+                <div key={side} className="text-center">
+                  <input type="number" min={0} max={80}
+                    value={(c[key] as number) ?? ""}
+                    onChange={(e) => onUpdate({ [key]: e.target.value ? Number(e.target.value) : undefined })}
+                    placeholder="0"
+                    className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-1.5 py-1.5 text-xs text-center focus:outline-none focus:border-primary" />
+                  <span className="font-label text-[9px] text-outline mt-0.5 block">{labels[side]}</span>
+                </div>
+              );
+            })}
           </div>
-          <div>
-            <span className="font-label text-[10px] text-outline">Gap (px)</span>
-            <input type="number" min={0} max={60} value={(c.block_gap as number) ?? ""} onChange={(e) => onUpdate({ block_gap: e.target.value ? Number(e.target.value) : undefined })} placeholder="—"
-              className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+        </div>
+        {/* Gap */}
+        <div className="bg-surface-container-low rounded-xl p-3">
+          <div className="flex items-center gap-2">
+            <span className="font-label text-[10px] font-bold text-outline">Gap (px)</span>
+            <input type="number" min={0} max={60} value={(c.block_gap as number) ?? ""} onChange={(e) => onUpdate({ block_gap: e.target.value ? Number(e.target.value) : undefined })} placeholder="0"
+              className="w-16 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-primary" />
+            <span className="font-label text-[9px] text-outline">Vertikaler Abstand</span>
           </div>
         </div>
       </div>
