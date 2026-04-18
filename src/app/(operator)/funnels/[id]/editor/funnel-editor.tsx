@@ -1525,6 +1525,11 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
     setFunnel((f) => f ? { ...f, status: "active" } : f);
   }
 
+  async function unpublish() {
+    await supabase.from("funnels").update({ status: "draft" }).eq("id", funnelId);
+    setFunnel((f) => f ? { ...f, status: "draft" } : f);
+  }
+
   function updateBlock(blockId: string, content: Partial<BlockContent>) {
     setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
       ...p, blocks: p.blocks.map((b) => b.id === blockId ? { ...b, content: { ...b.content, ...content } } : b)
@@ -1755,11 +1760,19 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                : <span className="material-symbols-outlined text-sm">save</span>}
               {saved ? "Gespeichert" : "Speichern"}
             </button>
-            <button onClick={publish} disabled={funnel?.status === "active"}
-              className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-50">
-              <span className="material-symbols-outlined text-sm">wifi_tethering</span>
-              {funnel?.status === "active" ? "Live" : "Publizieren"}
-            </button>
+            {funnel?.status === "active" ? (
+              <button onClick={unpublish}
+                className="flex items-center gap-1.5 bg-error-container text-error px-4 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-widest hover:bg-error-container/80 transition-colors">
+                <span className="material-symbols-outlined text-sm">wifi_tethering_off</span>
+                Deaktivieren
+              </button>
+            ) : (
+              <button onClick={publish}
+                className="flex items-center gap-1.5 bg-primary text-on-primary px-4 py-2 rounded-lg font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors">
+                <span className="material-symbols-outlined text-sm">wifi_tethering</span>
+                Publizieren
+              </button>
+            )}
           </div>
         </div>
 
