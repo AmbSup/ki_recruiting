@@ -638,7 +638,7 @@ function BlockPreview({
       {/* ── CONTACT FORM ── */}
       {block.type === "contact_form" && (
         <div className="px-4 py-3">
-          <h3 className="font-black text-sm text-gray-900 mb-3">{c.headline || "Deine Kontaktdaten"}</h3>
+          <h3 {...tp("headline")} style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900, marginBottom: 12 }}>{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h3>
           <div className="space-y-2">
             {[{ emoji: "👋", ph: "Dein vollständiger Name" }, { emoji: "📧", ph: "Deine E-Mailadresse" }, { emoji: "📱", ph: "Deine Telefonnummer" }].map((f) => (
               <div key={f.ph} className="flex items-center gap-2 border border-gray-200 rounded-xl px-3 py-2">
@@ -751,8 +751,8 @@ function BlockPreview({
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: (branding.primary_color) + "20" }}>
             <span className="material-symbols-outlined text-xl animate-spin" style={{ color: branding.primary_color }}>progress_activity</span>
           </div>
-          <h3 className="font-black text-sm" style={{ color: (c.headline_color as string) ?? "#111827" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
-          {c.subtext && <p className="text-xs mt-1" style={{ color: (c.subtext_color as string) ?? "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
+          <h3 {...tp("headline")} style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900 }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
+          {c.subtext && <p {...tp("subtext")} style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), marginTop: 4 }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         </div>
       )}
 
@@ -762,9 +762,9 @@ function BlockPreview({
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: branding.primary_color }}>
             <span className="material-symbols-outlined text-xl font-bold" style={{ color: branding.button_text_color, fontVariationSettings: "'FILL' 1" }}>check</span>
           </div>
-          <p className="text-xs font-bold mb-1" style={{ color: branding.primary_color }}>Großartige Neuigkeiten!</p>
-          <h3 className="font-black text-sm leading-tight mb-2" style={{ color: (c.headline_color as string) ?? "#111827" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
-          {c.subtext && <p className="text-xs leading-relaxed" style={{ color: (c.subtext_color as string) ?? "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
+          <p {...tp("subtext")} className={`text-xs font-bold mb-1 cursor-pointer transition-all rounded-sm ${activeFieldKey === "subtext" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`} style={{ color: (c.subtext_color as string) || branding.primary_color }}>Großartige Neuigkeiten!</p>
+          <h3 {...tp("headline")} style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
+          {c.subtext && <p {...tp("subtext")} style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), lineHeight: 1.6 }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         </div>
       )}
 
