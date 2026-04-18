@@ -384,8 +384,9 @@ function BlockRenderer({
         )}
         <h1 className="font-black leading-tight mb-2" style={{ fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "lg"], color: (c.headline_color as string) || "#111827", textAlign: ((c.headline_align as string) ?? "center") as "left" | "center" | "right", ...((c.headline_font as string) ? { fontFamily: fontVarMap[c.headline_font as string] } : {}) }}>{renderTextWithIcons((c.headline as string) ?? "")}</h1>
         {c.subtext && <p className="mb-5 leading-relaxed" style={{ fontSize: (c.subtext_font_size as number) ? `${c.subtext_font_size}px` : sizeMap[(c.subtext_size as string) ?? "md"], color: (c.subtext_color as string) || "#6B7280", textAlign: ((c.subtext_align as string) ?? "center") as "left" | "center" | "right", ...((c.subtext_font as string) ? { fontFamily: fontVarMap[c.subtext_font as string] } : {}) }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
-        <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm shadow-sm active:scale-95 transition-transform" style={{ background: color, color: textColor }}>
-          {c.cta_text || "Jetzt bewerben →"}
+        <button onClick={onAdvance} className="w-full py-4 font-black text-sm shadow-sm active:scale-95 transition-transform"
+          style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px" }}>
+          {renderTextWithIcons((c.cta_text as string) || "Jetzt bewerben →")}
         </button>
       </div>
     );
@@ -398,7 +399,8 @@ function BlockRenderer({
         <div className="text-5xl mb-4">{c.emoji || "👋"}</div>
         <h2 className="font-black mb-3" style={{ fontSize: headlineSizeMap[c.headline_size ?? "lg"], color: c.headline_color || "#111827", textAlign: (c.headline_align ?? "center") as "left" | "center" | "right" }}>{renderTextWithIcons((c.headline as string) ?? "")}</h2>
         {c.subtext && <p className="leading-relaxed mb-6" style={{ fontSize: sizeMap[c.subtext_size ?? "md"], color: c.subtext_color || "#6B7280", textAlign: (c.subtext_align ?? "center") as "left" | "center" | "right" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
-        <button onClick={onAdvance} className="w-full py-4 rounded-2xl font-black text-sm" style={{ background: color, color: textColor }}>
+        <button onClick={onAdvance} className="w-full py-4 font-black text-sm"
+          style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px" }}>
           Weiter →
         </button>
       </div>
@@ -432,10 +434,10 @@ function BlockRenderer({
         {(sel === "single" ? hasSelection : true) && (
           <button
             onClick={onAdvance}
-            className="w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95"
-            style={{ background: hasSelection ? color : "#F3F4F6", color: hasSelection ? textColor : "#9CA3AF" }}
+            className="w-full py-4 font-black text-sm transition-all active:scale-95"
+            style={{ background: hasSelection ? ((c.btn_bg as string) || color) : "#F3F4F6", color: hasSelection ? ((c.btn_color as string) || textColor) : "#9CA3AF", borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px" }}
           >
-            {c.cta || "Weiter →"}
+            {renderTextWithIcons((c.cta as string) || "Weiter →")}
           </button>
         )}
       </div>
@@ -575,8 +577,8 @@ function BlockRenderer({
         <button
           onClick={onSubmit}
           disabled={!isValid || submitting}
-          className="w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95 disabled:opacity-50"
-          style={{ background: color, color: textColor }}
+          className="w-full py-4 font-black text-sm transition-all active:scale-95 disabled:opacity-50"
+          style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px" }}
         >
           {submitting ? "Wird gesendet…" : c.cta_text || "Bewerbung absenden →"}
         </button>
@@ -607,12 +609,15 @@ function BlockRenderer({
       <div className="px-5 py-3">
         <button
           onClick={onAdvance}
-          className="w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95"
-          style={c.style === "outline"
-            ? { border: `2px solid ${color}`, color, background: "transparent" }
-            : { background: color, color: textColor }}
+          className="w-full py-4 font-black text-sm transition-all active:scale-95"
+          style={{
+            ...(c.style === "outline"
+              ? { border: `2px solid ${color}`, color: (c.btn_color as string) || color, background: (c.btn_bg as string) || "transparent" }
+              : { background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor }),
+            borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px",
+          }}
         >
-          {c.label || "Weiter →"}
+          {renderTextWithIcons((c.label as string) || "Weiter →")}
         </button>
       </div>
     );
@@ -689,26 +694,36 @@ function BlockRenderer({
 
   // ── FREE TEXT ──
   if (block.type === "free_text") {
-    const questionKey = (c.question as string) || block.id;
     const curAnswer = answers[0] ?? "";
     const isRequired = (c.is_required as boolean) ?? true;
     return (
-      <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-4 leading-tight">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+      <div className="px-5 py-6" style={(c.block_gap as number) != null ? { display: "flex", flexDirection: "column", gap: `${c.block_gap}px` } : undefined}>
+        <h2 className="font-black leading-tight" style={{
+          fontSize: (c.question_font_size as number) ? `${c.question_font_size}px` : headlineSizeMap[(c.question_size as string) ?? "md"],
+          color: (c.question_color as string) || "#111827",
+          textAlign: ((c.question_align as string) || "left") as "left" | "center" | "right",
+          ...((c.question_font as string) ? { fontFamily: fontVarMap[c.question_font as string] } : {}),
+        }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <textarea
           value={curAnswer}
           onChange={(e) => onToggleChoice(e.target.value, "single")}
           rows={4}
           placeholder={(c.placeholder as string) || "Deine Antwort hier…"}
-          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-colors resize-none mb-4"
+          className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-colors resize-none"
+          style={{ minHeight: (c.textarea_field_height as string) || undefined, ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}) }}
         />
         <button
           onClick={onAdvance}
           disabled={isRequired && !curAnswer.trim()}
-          className="w-full py-4 rounded-2xl font-black text-sm transition-all active:scale-95 disabled:opacity-40"
-          style={{ background: color, color: textColor }}
+          className="w-full py-4 font-black text-sm transition-all active:scale-95 disabled:opacity-40"
+          style={{
+            background: (c.btn_bg as string) || color,
+            color: (c.btn_color as string) || textColor,
+            borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px",
+            fontSize: (c.btn_font_size as number) ? `${c.btn_font_size}px` : undefined,
+          }}
         >
-          {(c.cta as string) || "Weiter →"}
+          {renderTextWithIcons((c.cta as string) || "Weiter →")}
         </button>
       </div>
     );

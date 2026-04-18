@@ -486,6 +486,9 @@ function BlockPreview({
       ...(fontVar ? { fontFamily: fontVar } : {}),
     };
   };
+  // Helper: inner block container style with gap
+  const innerStyle = (c.block_gap as number) != null ? { display: "flex" as const, flexDirection: "column" as const, gap: `${c.block_gap}px` } : {};
+
   // Helper: click handler + active ring for text
   const tp = (fieldKey: string) => ({
     onClick: (e: React.MouseEvent) => { e.stopPropagation(); onTextClick(fieldKey, e); },
@@ -503,7 +506,6 @@ function BlockPreview({
         paddingRight: (c.block_padding_r as number) != null ? `${c.block_padding_r}px` : undefined,
         paddingBottom: (c.block_padding_b as number) != null ? `${c.block_padding_b}px` : undefined,
         paddingLeft: (c.block_padding_l as number) != null ? `${c.block_padding_l}px` : undefined,
-        ...((c.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${c.block_gap}px` } : {}),
       }}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
@@ -520,7 +522,7 @@ function BlockPreview({
 
       {/* ── PROFILE HEADER ── */}
       {block.type === "profile_header" && (
-        <div className="flex flex-col items-center text-center px-4 pt-3 pb-2">
+        <div className="flex flex-col items-center text-center px-4 pt-3 pb-2" style={innerStyle}>
           {c.image_url ? (
             <img src={c.image_url} className="w-12 h-12 rounded-full object-cover mb-1.5 border-2 border-white shadow" alt="" />
           ) : (
@@ -563,7 +565,7 @@ function BlockPreview({
 
       {/* ── WELCOME ── */}
       {block.type === "welcome" && (
-        <div className="flex flex-col items-center text-center px-4 py-5">
+        <div className="flex flex-col items-center text-center px-4 py-5" style={innerStyle}>
           <div className="text-3xl mb-3">{c.emoji || "👋"}</div>
           <h3
             {...tp("headline")}
@@ -582,7 +584,7 @@ function BlockPreview({
 
       {/* ── MULTIPLE CHOICE ── */}
       {block.type === "multiple_choice" && (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={innerStyle}>
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           {c.selection === "multiple" && <p className="text-[9px] text-gray-400 mb-2">(Wähle so viele Antworten, wie du möchtest)</p>}
           <div className="grid grid-cols-2 gap-1.5 mb-3">
@@ -642,7 +644,7 @@ function BlockPreview({
 
       {/* ── CONTACT FORM ── */}
       {block.type === "contact_form" && (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={innerStyle}>
           <h3 {...tp("headline")} style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900, marginBottom: 12 }}>{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h3>
           <div className="space-y-2">
             {[{ emoji: "👋", ph: "Dein vollständiger Name" }, { emoji: "📧", ph: "Deine E-Mailadresse" }, { emoji: "📱", ph: "Deine Telefonnummer" }].map((f) => (
@@ -752,7 +754,7 @@ function BlockPreview({
 
       {/* ── LOADING SCREEN ── */}
       {block.type === "loading_screen" && (
-        <div className="flex flex-col items-center justify-center py-8 text-center px-4">
+        <div className="flex flex-col items-center justify-center py-8 text-center px-4" style={innerStyle}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: (branding.primary_color) + "20" }}>
             <span className="material-symbols-outlined text-xl animate-spin" style={{ color: branding.primary_color }}>progress_activity</span>
           </div>
@@ -763,7 +765,7 @@ function BlockPreview({
 
       {/* ── THANK YOU ── */}
       {block.type === "thank_you" && (
-        <div className="flex flex-col items-center text-center py-8 px-4">
+        <div className="flex flex-col items-center text-center py-8 px-4" style={innerStyle}>
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: branding.primary_color }}>
             <span className="material-symbols-outlined text-xl font-bold" style={{ color: branding.button_text_color, fontVariationSettings: "'FILL' 1" }}>check</span>
           </div>
@@ -775,7 +777,7 @@ function BlockPreview({
 
       {/* ── FREE TEXT ── */}
       {block.type === "free_text" && (
-        <div className="px-4 py-3">
+        <div className="px-4 py-3" style={innerStyle}>
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           <div {...tp("textarea_field")} className={`border border-gray-200 rounded-xl px-3 py-2.5 mb-3 cursor-pointer transition-all ${activeFieldKey === "textarea_field" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
             style={{ minHeight: (c.textarea_field_height as string) || "60px", ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}) }}>
