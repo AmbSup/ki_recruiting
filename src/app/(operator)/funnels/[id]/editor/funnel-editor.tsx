@@ -164,6 +164,13 @@ function renderTextWithIcons(text: string) {
   });
 }
 
+// Auto-append px if value is a bare number (e.g. "120" → "120px", "80%" stays "80%")
+function cssVal(val: string | undefined, fallback: string | undefined): string | undefined {
+  if (!val) return fallback;
+  if (/^\d+$/.test(val)) return `${val}px`;
+  return val;
+}
+
 const sizeMap: Record<string, string> = { sm: "12px", md: "14px", lg: "18px", xl: "24px" };
 const headlineSizeMap: Record<string, string> = { sm: "14px", md: "18px", lg: "24px", xl: "32px" };
 
@@ -295,14 +302,15 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
       {isContainer && (
         <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
           <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Abmessungen</span>
+          <p className="font-label text-[8px] text-outline -mt-1">Werte: px (z.B. 120px), % (z.B. 80%), oder auto</p>
           <div className="grid grid-cols-2 gap-2">
             <div>
-              <span className="font-label text-[9px] text-outline">Höhe</span>
+              <span className="font-label text-[9px] text-outline">Höhe (px / %)</span>
               <input type="text" value={(content[`${fieldKey}_height`] as string) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_height`]: e.target.value || undefined })} placeholder="auto"
                 className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-primary" />
             </div>
             <div>
-              <span className="font-label text-[9px] text-outline">Breite</span>
+              <span className="font-label text-[9px] text-outline">Breite (px / %)</span>
               <input type="text" value={(content[`${fieldKey}_width`] as string) ?? ""} onChange={(e) => onUpdate({ [`${fieldKey}_width`]: e.target.value || undefined })} placeholder="100%"
                 className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-[10px] focus:outline-none focus:border-primary" />
             </div>
@@ -553,7 +561,7 @@ function BlockPreview({
           <button {...tp("btn")} className={`w-full py-3 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
             style={{
               background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor,
-              ...((c.btn_height as string) ? { height: c.btn_height as string } : {}),
+              ...((c.btn_height as string) ? { height: cssVal(c.btn_height as string, undefined) } : {}),
               ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}),
               ...((c.btn_padding as number) != null ? { padding: `${c.btn_padding}px` } : {}),
               fontSize: ts("btn", { size: "sm" }).fontSize,
@@ -701,7 +709,7 @@ function BlockPreview({
             style={{
               ...(c.style === "outline" ? { border: `2px solid ${color}`, color: (c.btn_color as string) || color, background: (c.btn_bg as string) || "transparent" } : { background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor }),
               ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}),
-              ...((c.btn_height as string) ? { height: c.btn_height as string } : {}),
+              ...((c.btn_height as string) ? { height: cssVal(c.btn_height as string, undefined) } : {}),
               fontSize: ts("btn", { size: "sm" }).fontSize,
             }}
           >
@@ -779,8 +787,14 @@ function BlockPreview({
       {block.type === "free_text" && (
         <div className="px-4 py-3" style={innerStyle}>
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
-          <div {...tp("textarea_field")} className={`border border-gray-200 rounded-xl px-3 py-2.5 mb-3 cursor-pointer transition-all ${activeFieldKey === "textarea_field" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
-            style={{ minHeight: (c.textarea_field_height as string) || "60px", ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}) }}>
+          <div {...tp("textarea_field")} className={`border border-gray-200 rounded-xl px-3 py-2.5 cursor-pointer transition-all ${activeFieldKey === "textarea_field" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+            style={{
+              minHeight: cssVal((c.textarea_field_height as string), "60px"),
+              width: cssVal((c.textarea_field_width as string), undefined),
+              ...((c.textarea_field_padding as number) != null ? { padding: `${c.textarea_field_padding}px` } : {}),
+              ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}),
+              ...((c.textarea_field_bg as string) ? { background: c.textarea_field_bg as string, borderColor: "transparent" } : {}),
+            }}>
             <span className="text-xs text-gray-400">{(c.placeholder as string) || "Deine Antwort hier…"}</span>
           </div>
           <button {...tp("btn")} className={`w-full py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
@@ -799,7 +813,7 @@ function BlockPreview({
               <div key={item.id} className="flex flex-col items-center justify-center rounded-xl py-4 px-3 text-center"
                 style={{
                   background: (c.card_bg as string) || color,
-                  minHeight: (c.card_item_height as string) || "80px",
+                  minHeight: cssVal((c.card_item_height as string), "80px"),
                   ...((c.card_item_radius as number) != null ? { borderRadius: `${c.card_item_radius}px` } : {}),
                   ...((c.card_item_padding as number) != null ? { padding: `${c.card_item_padding}px` } : {}),
                 }}>

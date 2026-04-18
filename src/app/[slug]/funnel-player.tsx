@@ -42,6 +42,12 @@ function renderTextWithIcons(text: string) {
   });
 }
 
+function cssVal(val: string | undefined, fallback: string | undefined): string | undefined {
+  if (!val) return fallback;
+  if (/^\d+$/.test(val)) return `${val}px`;
+  return val;
+}
+
 const sizeMap: Record<string, string> = { sm: "0.75rem", md: "0.875rem", lg: "1.125rem", xl: "1.5rem" };
 const headlineSizeMap: Record<string, string> = { sm: "0.875rem", md: "1.125rem", lg: "1.5rem", xl: "2rem" };
 const fontVarMap: Record<string, string> = {
@@ -710,7 +716,13 @@ function BlockRenderer({
           rows={4}
           placeholder={(c.placeholder as string) || "Deine Antwort hier…"}
           className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-gray-400 focus:ring-1 focus:ring-gray-300 transition-colors resize-none"
-          style={{ minHeight: (c.textarea_field_height as string) || undefined, ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}) }}
+          style={{
+            minHeight: cssVal((c.textarea_field_height as string), undefined),
+            width: cssVal((c.textarea_field_width as string), undefined),
+            ...((c.textarea_field_padding as number) != null ? { padding: `${c.textarea_field_padding}px` } : {}),
+            ...((c.textarea_field_radius as number) != null ? { borderRadius: `${c.textarea_field_radius}px` } : {}),
+            ...((c.textarea_field_bg as string) ? { background: c.textarea_field_bg as string, borderColor: "transparent" } : {}),
+          }}
         />
         <button
           onClick={onAdvance}
