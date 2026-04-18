@@ -204,8 +204,10 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   }
 
   async function handleSubmit() {
-    if (!form.name || !form.email) return;
-    if (!consent) return;
+    console.log("[funnel] handleSubmit called", { name: form.name, email: form.email, consent, submitted });
+    if (!form.name || !form.email) { console.log("[funnel] missing name or email"); return; }
+    if (!consent) { console.log("[funnel] consent not given"); return; }
+    if (submitted) { console.log("[funnel] already submitted"); return; }
     setSubmitting(true);
 
     // Advance immediately for good UX
@@ -245,8 +247,10 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           answers,
         }),
       }).then(async (r) => {
-        if (!r.ok) return;
+        console.log("[funnel] apply response:", r.status);
+        if (!r.ok) { console.error("[funnel] apply failed:", await r.text().catch(() => "")); return; }
         const { application_id } = await r.json();
+        console.log("[funnel] application_id:", application_id);
         if (!application_id) return;
         // Fire Meta Pixel standard events
         if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
@@ -262,7 +266,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ application_id }),
         }).catch(() => {/* best-effort */});
-      }).catch(() => {/* best-effort */});
+      }).catch((err) => console.error("[funnel] apply error:", err));
     })();
   }
 
