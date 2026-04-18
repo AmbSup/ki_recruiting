@@ -100,6 +100,8 @@ type FunnelBranding = {
   font_pair?: string;
   bg_color?: string;
   bg_gradient?: string;
+  content_width?: string;
+  [key: string]: unknown;
 };
 
 const fontPairs: { key: string; label: string; headline: string; body: string; headlineVar: string; bodyVar: string }[] = [
@@ -1425,21 +1427,31 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
         )}
       </div>
 
-      {/* Font Pair */}
+      {/* Content Width */}
       <div>
-        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Schriftart</label>
-        <div className="space-y-1.5">
-          {fontPairs.map((fp) => (
-            <button key={fp.key} onClick={() => onChange({ font_pair: fp.key })}
-              className={`w-full text-left px-3 py-2.5 rounded-xl border transition-all ${(branding.font_pair ?? "default") === fp.key ? "border-primary bg-primary-container/20" : "border-outline-variant/20 hover:border-outline"}`}>
-              <span className="block text-base font-bold text-on-surface" style={{ fontFamily: fp.headlineVar }}>{fp.headline}</span>
-              <span className="block text-xs text-outline" style={{ fontFamily: fp.bodyVar }}>{fp.body} — {fp.label}</span>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">Inhaltsbreite (Desktop)</label>
+        <div className="flex gap-1.5 mb-2">
+          {[
+            { label: "Schmal", value: "400px" },
+            { label: "Normal", value: "520px" },
+            { label: "Breit", value: "680px" },
+            { label: "Voll", value: "100%" },
+          ].map((w) => (
+            <button key={w.value} onClick={() => onChange({ content_width: w.value })}
+              className={`flex-1 py-1.5 rounded-lg border font-label text-[10px] font-bold transition-all ${(branding.content_width ?? "520px") === w.value ? "border-primary bg-primary-container/30 text-primary" : "border-outline-variant/20 text-on-surface-variant"}`}>
+              {w.label}
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-2">
+          <input type="text" value={branding.content_width ?? "520px"} onChange={(e) => onChange({ content_width: e.target.value })} placeholder="520px"
+            className="w-24 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+          <span className="font-label text-[9px] text-outline">Mobil: automatisch 100%</span>
+        </div>
       </div>
+      {/* Preview */}
       <div className="border border-outline-variant/10 rounded-xl p-4 bg-surface-container-low">
-        <p className="font-label text-xs text-outline uppercase tracking-widest mb-3">Vorschau</p>
+        <p className="font-label text-xs text-outline uppercase tracking-widest mb-3">Button-Vorschau</p>
         <button className="w-full py-3 rounded-2xl font-black text-sm" style={{ background: branding.primary_color, color: branding.button_text_color }}>
           Jetzt bewerben →
         </button>
@@ -1792,17 +1804,17 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
               )}
 
               {/* Content wrapper — centered card on desktop, full-width on mobile */}
-              <div className={`overflow-y-auto bg-white ${previewMode === "desktop" ? "flex justify-center bg-gray-50" : ""}`} style={{ maxHeight: previewMode === "desktop" ? 640 : 580 }}>
-              <div className={previewMode === "desktop" ? "w-full max-w-[400px] bg-white min-h-full shadow-sm" : ""}>
+              <div className={`overflow-y-auto ${previewMode === "desktop" ? "flex justify-center bg-gray-50" : ""}`}
+                style={{ maxHeight: previewMode === "desktop" ? 640 : 580, background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
+              <div className={previewMode === "desktop" ? `w-full min-h-full shadow-sm ${!branding.bg_gradient && !branding.bg_color ? "bg-white" : ""}` : ""}
+                style={previewMode === "desktop" ? { maxWidth: (branding.content_width as string) || "400px" } : undefined}>
 
-              {/* Logo + Font */}
-              <div style={{ fontFamily: (fontPairs.find(f => f.key === (branding.font_pair ?? "default"))?.bodyVar ?? "inherit"), background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
-                {branding.logo_url && (
-                  <div className="flex items-center justify-center px-5 pt-3 pb-1">
-                    <img src={branding.logo_url} alt="Logo" className="h-5 object-contain" />
-                  </div>
-                )}
-              </div>
+              {/* Logo */}
+              {branding.logo_url && (
+                <div className="flex items-center justify-center px-5 pt-3 pb-1">
+                  <img src={branding.logo_url} alt="Logo" className="h-5 object-contain" />
+                </div>
+              )}
 
               {/* Blocks */}
               <div className="relative">

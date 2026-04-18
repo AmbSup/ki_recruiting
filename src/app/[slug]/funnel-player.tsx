@@ -60,7 +60,7 @@ type FunnelPage = {
   settings?: Record<string, unknown>;
 };
 
-type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string; bg_color?: string; bg_gradient?: string };
+type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string; bg_color?: string; bg_gradient?: string; content_width?: string; [key: string]: unknown };
 
 const fontFamilyMap: Record<string, { headline: string; body: string }> = {
   default: { headline: "var(--font-newsreader), serif", body: "var(--font-manrope), sans-serif" },
@@ -328,9 +328,10 @@ function Screen({ children, color, textColor, branding }: {
   children: React.ReactNode; color: string; textColor: string; branding: FunnelBranding;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4">
-      <div className="w-full sm:max-w-md lg:max-w-lg sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0"
-        style={{ fontFamily: (fontFamilyMap[branding.font_pair ?? "default"] ?? fontFamilyMap.default).body, background: branding.bg_gradient ?? branding.bg_color ?? "white" }}>
+    <div className="min-h-screen flex items-start justify-center py-0 sm:py-8 px-0 sm:px-4"
+      style={{ background: branding.bg_gradient ?? branding.bg_color ?? "#f9fafb" }}>
+      <div className="w-full sm:rounded-3xl sm:shadow-xl overflow-hidden flex flex-col min-h-screen sm:min-h-0"
+        style={{ fontFamily: (fontFamilyMap[branding.font_pair ?? "default"] ?? fontFamilyMap.default).body, maxWidth: branding.content_width ?? "520px", background: branding.bg_gradient || branding.bg_color ? "transparent" : "white" }}>
         {branding.logo_url && (
           <div className="px-5 pt-4 pb-2 flex justify-center flex-shrink-0">
             <img src={branding.logo_url} alt="Logo" className="h-8 object-contain" />
