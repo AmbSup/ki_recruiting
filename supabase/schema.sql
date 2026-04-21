@@ -18,8 +18,6 @@ create type pipeline_stage as enum ('new', 'cv_analyzed', 'call_scheduled', 'cal
 create type customer_decision as enum ('pending', 'interested', 'rejected');
 create type call_status as enum ('scheduled', 'ringing', 'in_progress', 'completed', 'failed', 'no_answer');
 create type call_recommendation as enum ('strong_yes', 'yes', 'maybe', 'no', 'strong_no');
-create type ad_platform as enum ('facebook', 'instagram', 'linkedin');
-create type campaign_status as enum ('draft', 'active', 'paused', 'completed');
 create type invoice_status as enum ('draft', 'sent', 'paid', 'overdue', 'cancelled');
 create type auth_provider as enum ('email_password', 'magic_link', 'google_oauth');
 
@@ -139,7 +137,9 @@ create table jobs (
 -- ============================================================
 create table funnels (
   id uuid primary key default gen_random_uuid(),
-  job_id uuid not null references jobs(id) on delete cascade,
+  -- Polymorph: genau EINES von job_id oder sales_program_id gesetzt (XOR)
+  job_id uuid references jobs(id) on delete cascade,
+  sales_program_id uuid references sales_programs(id) on delete set null,
   name varchar(255) not null,
   slug varchar(100) not null unique,
   branding jsonb default '{}'::jsonb,
@@ -152,7 +152,10 @@ create table funnels (
   views integer not null default 0,
   submissions integer not null default 0,
   created_at timestamptz not null default now(),
-  published_at timestamptz
+  published_at timestamptz,
+  constraint funnels_target_xor check (
+    (job_id is not null) <> (sales_program_id is not null)
+  )
 );
 
 -- ============================================================
@@ -292,30 +295,120 @@ create table call_analyses (
 );
 
 -- ============================================================
--- CAMPAIGNS (Ad-Kampagnen, Metriken via n8n-Cronjob synchronisiert)
+-- SALES PROGRAMS (Sales-Anker, parallel zu jobs)
 -- ============================================================
-create table campaigns (
+create table sales_programs (
   id uuid primary key default gen_random_uuid(),
-  job_id uuid not null references jobs(id) on delete cascade,
-  funnel_id uuid references funnels(id) on delete set null,
-  platform ad_platform not null,
-  platform_campaign_id varchar(100),
+  company_id uuid not null references companies(id) on delete restrict,
   name varchar(255) not null,
-  daily_budget decimal(10,2),
-  total_spent decimal(10,2) not null default 0,
-  targeting jsonb default '{}'::jsonb,
-  creatives jsonb default '[]'::jsonb,  -- [{image_url, headline, text, cta}]
-  status campaign_status not null default 'draft',
-  impressions integer not null default 0,
-  clicks integer not null default 0,
-  conversions integer not null default 0,
-  cpl decimal(10,2),
+  product_pitch text,
+  value_proposition text,
+  target_persona text,
+  script_guidelines text,
+  vapi_assistant_id varchar(255),
+  caller_phone_number varchar(50),
+  booking_link text,
+  meta_form_ids jsonb not null default '[]'::jsonb,
+  auto_dial boolean not null default false,
+  status varchar(20) not null default 'draft',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_sales_programs_company_id on sales_programs(company_id);
+create index idx_sales_programs_status on sales_programs(status);
+
+-- ============================================================
+-- SALES LEADS (per-program, nicht global — im Gegensatz zu applicants)
+-- Dedupe via unique(sales_program_id, phone)
+-- ============================================================
+create table sales_leads (
+  id uuid primary key default gen_random_uuid(),
+  sales_program_id uuid not null references sales_programs(id) on delete cascade,
+  first_name text,
+  last_name text,
+  full_name text,
+  email text,
+  phone text not null,
+  company_name text,
+  role text,
+  linkedin_url text,
+  source text not null,               -- meta_ads | csv_import | funnel | manual
+  source_ref text,
+  funnel_responses jsonb not null default '{}'::jsonb,
+  custom_fields jsonb not null default '{}'::jsonb,
+  consent_given boolean not null default false,
+  consent_source text,
+  consent_timestamp timestamptz,
+  notes text,
+  status text not null default 'new', -- new|calling|contacted|meeting_booked|not_interested|do_not_call|failed
+  next_call_scheduled_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index idx_sales_leads_program_id on sales_leads(sales_program_id);
+create index idx_sales_leads_status on sales_leads(status);
+create unique index uq_sales_leads_program_phone on sales_leads(sales_program_id, phone);
+
+-- ============================================================
+-- SALES CALLS (parallel zu voice_calls)
+-- ============================================================
+create table sales_calls (
+  id uuid primary key default gen_random_uuid(),
+  sales_lead_id uuid not null references sales_leads(id) on delete cascade,
+  sales_program_id uuid not null references sales_programs(id) on delete restrict,
+  vapi_call_id varchar(255),
+  twilio_call_sid varchar(255),
+  status varchar(20) not null default 'initiated', -- initiated|ringing|in_progress|completed|no_answer|failed
   started_at timestamptz,
   ended_at timestamptz,
+  duration_seconds integer,
+  transcript jsonb,
+  recording_url text,
+  end_reason text,
+  vapi_metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now()
 );
 
-create index idx_campaigns_job_id on campaigns(job_id);
+create index idx_sales_calls_lead_id on sales_calls(sales_lead_id);
+create index idx_sales_calls_program_id on sales_calls(sales_program_id);
+create index idx_sales_calls_status on sales_calls(status);
+
+-- ============================================================
+-- SALES CALL ANALYSES (parallel zu call_analyses)
+-- ============================================================
+create table sales_call_analyses (
+  id uuid primary key default gen_random_uuid(),
+  sales_call_id uuid not null unique references sales_calls(id) on delete cascade,
+  meeting_booked boolean not null default false,
+  meeting_datetime timestamptz,
+  interest_level text,                -- high|medium|low|none
+  call_rating integer,                -- 1..10
+  sentiment text,                     -- positive|neutral|negative
+  summary text,
+  objections jsonb not null default '[]'::jsonb,
+  pain_points jsonb not null default '[]'::jsonb,
+  next_action text,                   -- send_email|call_back|send_proposal|dead_lead|nurture
+  next_action_at timestamptz,
+  key_quotes jsonb not null default '[]'::jsonb,
+  structured_data jsonb not null default '{}'::jsonb,
+  model_version varchar(100),
+  analyzed_at timestamptz not null default now()
+);
+
+-- ============================================================
+-- SALES CALL SESSIONS (Wait-Node-Resume, parallel zu call_sessions)
+-- ============================================================
+create table sales_call_sessions (
+  sales_lead_id uuid primary key references sales_leads(id) on delete cascade,
+  sales_call_id uuid references sales_calls(id) on delete set null,
+  resume_url text not null,
+  phone_number text,
+  cached_data jsonb,
+  created_at timestamptz not null default now(),
+  expires_at timestamptz not null default (now() + interval '2 hours')
+);
 
 -- ============================================================
 -- INVOICES (Rechnungen)
@@ -357,6 +450,14 @@ as $$ begin new.updated_at = now(); return new; end; $$;
 
 create trigger update_applications_updated_at
   before update on applications
+  for each row execute procedure update_updated_at();
+
+create trigger update_sales_programs_updated_at
+  before update on sales_programs
+  for each row execute procedure update_updated_at();
+
+create trigger update_sales_leads_updated_at
+  before update on sales_leads
   for each row execute procedure update_updated_at();
 
 -- ============================================================
@@ -497,22 +598,74 @@ create policy "Customer sieht Analysen freigegebener Applications" on call_analy
     )
   );
 
--- CAMPAIGNS
-alter table campaigns enable row level security;
-create policy "Operator sieht alle Kampagnen" on campaigns for select
+-- SALES PROGRAMS
+alter table sales_programs enable row level security;
+create policy "sales_programs_operator_select" on sales_programs for select
   using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator', 'viewer')));
-create policy "Admin/Operator verwaltet Kampagnen" on campaigns for all
+create policy "sales_programs_operator_write" on sales_programs for all
   using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator')));
-create policy "Customer sieht Kampagnen seiner Firma" on campaigns for select
+create policy "sales_programs_customer_select" on sales_programs for select
   using (
     exists (
-      select 1 from jobs j
-      join profiles p on p.company_id = j.company_id
-      where j.id = campaigns.job_id
-        and p.id = auth.uid()
-        and p.role = 'customer'
+      select 1 from profiles
+      where id = auth.uid() and company_id = sales_programs.company_id and role = 'customer'
     )
   );
+
+-- SALES LEADS
+alter table sales_leads enable row level security;
+create policy "sales_leads_operator_select" on sales_leads for select
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator', 'viewer')));
+create policy "sales_leads_operator_write" on sales_leads for all
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator')));
+create policy "sales_leads_public_insert" on sales_leads for insert with check (true);
+create policy "sales_leads_customer_select" on sales_leads for select
+  using (
+    exists (
+      select 1 from sales_programs sp
+      join profiles p on p.company_id = sp.company_id
+      where sp.id = sales_leads.sales_program_id
+        and p.id = auth.uid() and p.role = 'customer'
+    )
+  );
+
+-- SALES CALLS
+alter table sales_calls enable row level security;
+create policy "sales_calls_operator_select" on sales_calls for select
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator', 'viewer')));
+create policy "sales_calls_operator_write" on sales_calls for all
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator')));
+create policy "sales_calls_customer_select" on sales_calls for select
+  using (
+    exists (
+      select 1 from sales_programs sp
+      join profiles p on p.company_id = sp.company_id
+      where sp.id = sales_calls.sales_program_id
+        and p.id = auth.uid() and p.role = 'customer'
+    )
+  );
+
+-- SALES CALL ANALYSES
+alter table sales_call_analyses enable row level security;
+create policy "sales_call_analyses_operator_select" on sales_call_analyses for select
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator', 'viewer')));
+create policy "sales_call_analyses_operator_write" on sales_call_analyses for all
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator')));
+create policy "sales_call_analyses_customer_select" on sales_call_analyses for select
+  using (
+    exists (
+      select 1 from sales_calls sc
+      join sales_programs sp on sp.id = sc.sales_program_id
+      join profiles p on p.company_id = sp.company_id
+      where sc.id = sales_call_analyses.sales_call_id
+        and p.id = auth.uid() and p.role = 'customer'
+    )
+  );
+
+-- SALES CALL SESSIONS (intern)
+alter table sales_call_sessions enable row level security;
+create policy "sales_call_sessions_operator_all" on sales_call_sessions for all
+  using (exists (select 1 from profiles where id = auth.uid() and role in ('admin', 'operator')));
 
 -- INVOICES
 alter table invoices enable row level security;

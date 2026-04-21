@@ -76,11 +76,6 @@ drop policy if exists "Operator sieht Gesprächsanalysen" on call_analyses;
 drop policy if exists "Admin/Operator verwaltet Gesprächsanalysen" on call_analyses;
 drop policy if exists "Customer sieht Analysen freigegebener Applications" on call_analyses;
 
--- campaigns
-drop policy if exists "Operator sieht alle Kampagnen" on campaigns;
-drop policy if exists "Admin/Operator verwaltet Kampagnen" on campaigns;
-drop policy if exists "Customer sieht Kampagnen seiner Firma" on campaigns;
-
 -- invoices
 drop policy if exists "Admin/Operator sieht alle Rechnungen" on invoices;
 drop policy if exists "Admin verwaltet Rechnungen" on invoices;
@@ -100,8 +95,12 @@ alter table cv_analyses enable row level security;
 alter table voice_calls enable row level security;
 alter table transcripts enable row level security;
 alter table call_analyses enable row level security;
-alter table campaigns   enable row level security;
 alter table invoices    enable row level security;
+alter table sales_programs enable row level security;
+alter table sales_leads enable row level security;
+alter table sales_calls enable row level security;
+alter table sales_call_analyses enable row level security;
+alter table sales_call_sessions enable row level security;
 
 -- ============================================================
 -- PROFILES
@@ -306,24 +305,93 @@ create policy "call_analyses_customer_select" on call_analyses
   );
 
 -- ============================================================
--- CAMPAIGNS
+-- SALES PROGRAMS
 -- ============================================================
-create policy "campaigns_operator_select" on campaigns
+create policy "sales_programs_operator_select" on sales_programs
   for select using (get_my_role() in ('admin', 'operator', 'viewer'));
 
-create policy "campaigns_operator_write" on campaigns
+create policy "sales_programs_operator_write" on sales_programs
   for all using (get_my_role() in ('admin', 'operator'));
 
-create policy "campaigns_customer_select" on campaigns
+create policy "sales_programs_customer_select" on sales_programs
   for select using (
     get_my_role() = 'customer'
     and exists (
-      select 1 from jobs j
-      join profiles p on p.company_id = j.company_id
-      where j.id = campaigns.job_id
+      select 1 from profiles
+      where id = auth.uid() and company_id = sales_programs.company_id
+    )
+  );
+
+-- ============================================================
+-- SALES LEADS
+-- ============================================================
+create policy "sales_leads_operator_select" on sales_leads
+  for select using (get_my_role() in ('admin', 'operator', 'viewer'));
+
+create policy "sales_leads_operator_write" on sales_leads
+  for all using (get_my_role() in ('admin', 'operator'));
+
+-- Öffentlich einfügen (Funnel-Submission, analog applicants_public_insert)
+create policy "sales_leads_public_insert" on sales_leads
+  for insert with check (true);
+
+create policy "sales_leads_customer_select" on sales_leads
+  for select using (
+    get_my_role() = 'customer'
+    and exists (
+      select 1 from sales_programs sp
+      join profiles p on p.company_id = sp.company_id
+      where sp.id = sales_leads.sales_program_id
         and p.id = auth.uid()
     )
   );
+
+-- ============================================================
+-- SALES CALLS
+-- ============================================================
+create policy "sales_calls_operator_select" on sales_calls
+  for select using (get_my_role() in ('admin', 'operator', 'viewer'));
+
+create policy "sales_calls_operator_write" on sales_calls
+  for all using (get_my_role() in ('admin', 'operator'));
+
+create policy "sales_calls_customer_select" on sales_calls
+  for select using (
+    get_my_role() = 'customer'
+    and exists (
+      select 1 from sales_programs sp
+      join profiles p on p.company_id = sp.company_id
+      where sp.id = sales_calls.sales_program_id
+        and p.id = auth.uid()
+    )
+  );
+
+-- ============================================================
+-- SALES CALL ANALYSES
+-- ============================================================
+create policy "sales_call_analyses_operator_select" on sales_call_analyses
+  for select using (get_my_role() in ('admin', 'operator', 'viewer'));
+
+create policy "sales_call_analyses_operator_write" on sales_call_analyses
+  for all using (get_my_role() in ('admin', 'operator'));
+
+create policy "sales_call_analyses_customer_select" on sales_call_analyses
+  for select using (
+    get_my_role() = 'customer'
+    and exists (
+      select 1 from sales_calls sc
+      join sales_programs sp on sp.id = sc.sales_program_id
+      join profiles p on p.company_id = sp.company_id
+      where sc.id = sales_call_analyses.sales_call_id
+        and p.id = auth.uid()
+    )
+  );
+
+-- ============================================================
+-- SALES CALL SESSIONS (intern, nur Operator/Admin)
+-- ============================================================
+create policy "sales_call_sessions_operator_all" on sales_call_sessions
+  for all using (get_my_role() in ('admin', 'operator'));
 
 -- ============================================================
 -- INVOICES

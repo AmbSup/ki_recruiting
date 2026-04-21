@@ -4,7 +4,7 @@
 
 -- Cleanup
 truncate table call_analyses, transcripts, voice_calls, cv_analyses,
-  campaigns, applications, funnel_pages, funnels, applicants,
+  applications, funnel_pages, funnels, applicants,
   invoices, jobs, companies cascade;
 
 -- ============================================================
@@ -172,16 +172,6 @@ insert into call_analyses (id, voice_call_id, transcript_id, interview_score, su
    ARRAY['Stellvertretungs-Erfahrung','Direkte Kommunikation','Motivation erkennbar'],
    ARRAY['Keine eigenständige Filialleitung bisher','Umsatzverantwortung unklar'],
    '2026-04-05 14:12:00+02');
-
--- ============================================================
--- CAMPAIGNS  (prefix 90……)
--- ============================================================
-insert into campaigns (id, job_id, funnel_id, platform, name, status, daily_budget, total_spent, impressions, clicks, conversions, cpl, started_at, created_at) values
-  ('90000000-0000-0000-0000-000000000001', '20000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000001', 'facebook',  'UX Designer Wien — Spring', 'active',  45.00, 1237.50, 84200,  1423, 87,  14.22, '2026-03-11 00:00:00+01', '2026-03-10 09:00:00+01'),
-  ('90000000-0000-0000-0000-000000000002', '20000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000002', 'instagram', 'Backend Java — Instagram',  'active',  30.00, 620.00,  42100,  684,  41,  15.12, '2026-03-15 00:00:00+01', '2026-03-14 10:00:00+01'),
-  ('90000000-0000-0000-0000-000000000003', '20000000-0000-0000-0000-000000000004', '30000000-0000-0000-0000-000000000004', 'facebook',  'Lager Salzburg — Breit',    'active',  60.00, 2154.00, 163800, 3100, 183, 11.77, '2026-03-06 00:00:00+01', '2026-03-05 11:00:00+01'),
-  ('90000000-0000-0000-0000-000000000004', '20000000-0000-0000-0000-000000000003', '30000000-0000-0000-0000-000000000003', 'linkedin',  'Bauleiter LinkedIn',        'paused',  50.00, 820.00,  18400,  312,  28,  29.29, '2026-03-01 00:00:00+01', '2026-02-28 08:00:00+01'),
-  ('90000000-0000-0000-0000-000000000005', '20000000-0000-0000-0000-000000000006', null,                                   'instagram', 'Filialleiter INN — Draft',  'draft',   25.00, 0.00,    0,      0,    0,   null,  null,                   '2026-03-18 09:30:00+01');
 
 -- ============================================================
 -- INVOICES  (prefix a0……)
