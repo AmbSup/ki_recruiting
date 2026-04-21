@@ -1164,8 +1164,40 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
         <>
           {field("Überschrift", c.headline ?? "", (v) => onUpdate({ headline: v }))}
           {field("CTA Button", c.cta_text ?? "", (v) => onUpdate({ cta_text: v }), "Bewerbung absenden →")}
-          {toggle("Lebenslauf Upload", "CV-Upload im Formular zeigen", c.show_cv_upload ?? true, (v) => onUpdate({ show_cv_upload: v }))}
-          {toggle("Stadt-Feld", "Feld 'Deine Stadt' anzeigen", c.show_city ?? false, (v) => onUpdate({ show_city: v }))}
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Basis</span>
+            {toggle("Name getrennt", "Vorname + Nachname statt Vollname", (c.show_name_split as boolean) ?? false, (v) => onUpdate({ show_name_split: v }))}
+            {toggle("Stadt", "Feld 'Deine Stadt'", (c.show_city as boolean) ?? false, (v) => onUpdate({ show_city: v }))}
+            {toggle("LinkedIn", "LinkedIn Profil-URL", (c.show_linkedin as boolean) ?? false, (v) => onUpdate({ show_linkedin: v }))}
+            {toggle("Lebenslauf", "CV-Upload", (c.show_cv_upload as boolean) ?? true, (v) => onUpdate({ show_cv_upload: v }))}
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Bewerbungsrelevant</span>
+            {toggle("Aktueller Jobtitel", "", (c.show_current_job as boolean) ?? false, (v) => onUpdate({ show_current_job: v }))}
+            {toggle("Aktueller Arbeitgeber", "", (c.show_current_employer as boolean) ?? false, (v) => onUpdate({ show_current_employer: v }))}
+            {toggle("Starttermin", "Frühester Starttermin", (c.show_start_date as boolean) ?? false, (v) => onUpdate({ show_start_date: v }))}
+            {toggle("Gehaltsvorstellung", "", (c.show_salary as boolean) ?? false, (v) => onUpdate({ show_salary: v }))}
+            {toggle("Berufserfahrung", "Jahre", (c.show_experience_years as boolean) ?? false, (v) => onUpdate({ show_experience_years: v }))}
+            {toggle("Ausbildung", "Abschluss", (c.show_education as boolean) ?? false, (v) => onUpdate({ show_education: v }))}
+            {toggle("Führerschein", "Ja/Nein", (c.show_drivers_license as boolean) ?? false, (v) => onUpdate({ show_drivers_license: v }))}
+            {toggle("Reisebereitschaft", "", (c.show_travel as boolean) ?? false, (v) => onUpdate({ show_travel: v }))}
+            {toggle("Umzugsbereitschaft", "", (c.show_relocate as boolean) ?? false, (v) => onUpdate({ show_relocate: v }))}
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Qualifikation</span>
+            {toggle("Skills", "Hauptkompetenzen", (c.show_skills as boolean) ?? false, (v) => onUpdate({ show_skills: v }))}
+            {toggle("Sprachen", "", (c.show_languages as boolean) ?? false, (v) => onUpdate({ show_languages: v }))}
+            {toggle("Portfolio", "Website / GitHub", (c.show_portfolio as boolean) ?? false, (v) => onUpdate({ show_portfolio: v }))}
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Recruiting</span>
+            {toggle("Wie gefunden", "Quelle", (c.show_source as boolean) ?? false, (v) => onUpdate({ show_source: v }))}
+            {toggle("Positionsinteresse", "Dropdown", (c.show_position_interest as boolean) ?? false, (v) => onUpdate({ show_position_interest: v }))}
+          </div>
         </>
       )}
 

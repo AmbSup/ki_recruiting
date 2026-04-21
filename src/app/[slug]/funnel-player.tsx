@@ -140,7 +140,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
   const [pageIdx, setPageIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
-  const [form, setForm] = useState({ name: "", email: "", phone: "", city: "" });
+  const [form, setForm] = useState<Record<string, string>>({ name: "", email: "", phone: "", city: "" });
   const [consent, setConsent] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -204,8 +204,9 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   }
 
   async function handleSubmit() {
-    console.log("[funnel] handleSubmit called", { name: form.name, email: form.email, consent, submitted });
-    if (!form.name || !form.email) { console.log("[funnel] missing name or email"); return; }
+    const hasName = form.name || (form.first_name && form.last_name);
+    console.log("[funnel] handleSubmit called", { hasName, email: form.email, consent, submitted });
+    if (!hasName || !form.email) { console.log("[funnel] missing name or email"); return; }
     if (!consent) { console.log("[funnel] consent not given"); return; }
     if (submitted) { console.log("[funnel] already submitted"); return; }
     setSubmitting(true);
@@ -231,6 +232,20 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         } catch { /* best-effort */ }
       }
 
+      // Map extra form fields to German labels for funnel_responses
+      const extraFieldLabels: Record<string, string> = {
+        linkedin: "LinkedIn", current_job: "Aktueller Jobtitel", current_employer: "Aktueller Arbeitgeber",
+        start_date: "Starttermin", salary: "Gehaltsvorstellung", experience_years: "Berufserfahrung (Jahre)",
+        education: "Ausbildung", drivers_license: "Führerschein", travel: "Reisebereitschaft",
+        relocate: "Umzugsbereitschaft", skills: "Skills", languages: "Sprachen",
+        portfolio: "Portfolio", source: "Gefunden über", position_interest: "Positionsinteresse",
+      };
+      const extraAnswers: Record<string, string[]> = {};
+      for (const [k, label] of Object.entries(extraFieldLabels)) {
+        if (form[k]) extraAnswers[label] = [form[k]];
+      }
+      const fullName = form.name || [form.first_name, form.last_name].filter(Boolean).join(" ");
+
       // Save application, then trigger CV analysis in its own request
       fetch("/api/apply", {
         method: "POST",
@@ -238,13 +253,13 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         body: JSON.stringify({
           funnel_id: funnel.id,
           job_id: funnel.job_id,
-          name: form.name,
+          name: fullName,
           email: form.email,
           phone: form.phone || null,
           city: form.city || null,
           cv_url,
           cv_file_name: cvFile?.name ?? null,
-          answers,
+          answers: { ...answers, ...extraAnswers },
         }),
       }).then(async (r) => {
         console.log("[funnel] apply response:", r.status);
@@ -366,8 +381,8 @@ function BlockRenderer({
   block: Block; color: string; textColor: string; branding: FunnelBranding;
   answers: string[]; onToggleChoice: (value: string, sel: "single" | "multiple") => void;
   onAdvance: () => void;
-  form: { name: string; email: string; phone: string; city: string };
-  onFormChange: (patch: Partial<typeof form>) => void;
+  form: Record<string, string>;
+  onFormChange: (patch: Record<string, string>) => void;
   consent: boolean; onConsentChange: (v: boolean) => void;
   consentText: string | null;
   cvFile: File | null; onCvChange: (f: File | null) => void;
@@ -514,39 +529,66 @@ function BlockRenderer({
 
   // ── CONTACT FORM ──
   if (block.type === "contact_form") {
-    const isValid = form.name && form.email && consent;
+    const nameValid = c.show_name_split ? (form.first_name && form.last_name) : form.name;
+    const isValid = nameValid && form.email && consent;
+    const FieldRow = ({ emoji, placeholder, fieldKey, type = "text" }: { emoji: string; placeholder: string; fieldKey: string; type?: string }) => (
+      <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
+        <span className="text-lg flex-shrink-0">{emoji}</span>
+        <input type={type} value={form[fieldKey] ?? ""} onChange={(e) => onFormChange({ [fieldKey]: e.target.value })} placeholder={placeholder}
+          className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent" />
+      </div>
+    );
     return (
       <div className="px-5 py-6">
         <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h2>
         <div className="space-y-3 mb-4">
-          {[
-            { key: "name" as const, emoji: "👋", ph: "Vollständiger Name", type: "text" },
-            { key: "email" as const, emoji: "📧", ph: "E-Mail Adresse", type: "email" },
-            { key: "phone" as const, emoji: "📱", ph: "Telefonnummer", type: "tel" },
-          ].map((f) => (
-            <div key={f.key} className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3 focus-within:border-current transition-colors" style={{ "--tw-border-opacity": 1 } as React.CSSProperties}>
-              <span className="text-lg flex-shrink-0">{f.emoji}</span>
-              <input
-                type={f.type}
-                value={form[f.key]}
-                onChange={(e) => onFormChange({ [f.key]: e.target.value })}
-                placeholder={f.ph}
-                className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
-              />
-            </div>
-          ))}
-          {c.show_city && (
+          {c.show_name_split ? (
+            <>
+              <FieldRow emoji="👤" placeholder="Vorname" fieldKey="first_name" />
+              <FieldRow emoji="👤" placeholder="Nachname" fieldKey="last_name" />
+            </>
+          ) : (
+            <FieldRow emoji="👋" placeholder="Vollständiger Name" fieldKey="name" />
+          )}
+          <FieldRow emoji="📧" placeholder="E-Mail Adresse" fieldKey="email" type="email" />
+          <FieldRow emoji="📱" placeholder="Telefonnummer" fieldKey="phone" type="tel" />
+          {(c.show_city as boolean) && <FieldRow emoji="📍" placeholder="Deine Stadt" fieldKey="city" />}
+          {(c.show_linkedin as boolean) && <FieldRow emoji="🔗" placeholder="LinkedIn Profil-URL" fieldKey="linkedin" type="url" />}
+          {(c.show_current_job as boolean) && <FieldRow emoji="💼" placeholder="Aktueller Jobtitel" fieldKey="current_job" />}
+          {(c.show_current_employer as boolean) && <FieldRow emoji="🏢" placeholder="Aktueller Arbeitgeber" fieldKey="current_employer" />}
+          {(c.show_start_date as boolean) && <FieldRow emoji="📅" placeholder="Frühester Starttermin" fieldKey="start_date" type="date" />}
+          {(c.show_salary as boolean) && <FieldRow emoji="💰" placeholder="Gehaltsvorstellung (z.B. 50.000 €)" fieldKey="salary" />}
+          {(c.show_experience_years as boolean) && <FieldRow emoji="⏱️" placeholder="Berufserfahrung (Jahre)" fieldKey="experience_years" type="number" />}
+          {(c.show_education as boolean) && <FieldRow emoji="🎓" placeholder="Ausbildung / Abschluss" fieldKey="education" />}
+          {(c.show_drivers_license as boolean) && (
             <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
-              <span className="text-lg">📍</span>
-              <input
-                type="text"
-                value={form.city}
-                onChange={(e) => onFormChange({ city: e.target.value })}
-                placeholder="Deine Stadt"
-                className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
-              />
+              <span className="text-lg">🚗</span>
+              <select value={form.drivers_license ?? ""} onChange={(e) => onFormChange({ drivers_license: e.target.value })}
+                className="flex-1 text-sm text-gray-900 outline-none bg-transparent">
+                <option value="">Führerschein vorhanden?</option>
+                <option value="yes">Ja</option>
+                <option value="no">Nein</option>
+              </select>
             </div>
           )}
+          {(c.show_travel as boolean) && <FieldRow emoji="✈️" placeholder="Reisebereitschaft (z.B. 30%)" fieldKey="travel" />}
+          {(c.show_relocate as boolean) && (
+            <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
+              <span className="text-lg">🏠</span>
+              <select value={form.relocate ?? ""} onChange={(e) => onFormChange({ relocate: e.target.value })}
+                className="flex-1 text-sm text-gray-900 outline-none bg-transparent">
+                <option value="">Umzugsbereitschaft?</option>
+                <option value="yes">Ja</option>
+                <option value="no">Nein</option>
+                <option value="maybe">Vielleicht</option>
+              </select>
+            </div>
+          )}
+          {(c.show_skills as boolean) && <FieldRow emoji="⚡" placeholder="Hauptkompetenzen / Skills" fieldKey="skills" />}
+          {(c.show_languages as boolean) && <FieldRow emoji="🌍" placeholder="Sprachen (z.B. DE C2, EN B2)" fieldKey="languages" />}
+          {(c.show_portfolio as boolean) && <FieldRow emoji="🔗" placeholder="Portfolio / Website / GitHub" fieldKey="portfolio" type="url" />}
+          {(c.show_source as boolean) && <FieldRow emoji="👀" placeholder="Wie hast du uns gefunden?" fieldKey="source" />}
+          {(c.show_position_interest as boolean) && <FieldRow emoji="🎯" placeholder="Interesse an Position" fieldKey="position_interest" />}
           {c.show_cv_upload && (
             <label className="flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-2xl px-4 py-3 cursor-pointer hover:border-gray-300 transition-colors">
               <span className="text-lg">📎</span>
