@@ -178,10 +178,21 @@ export async function POST(req: NextRequest) {
   if (!resolvedJobId && funnelId) {
     const { data: funnel } = await supabase
       .from("funnels")
-      .select("job_id")
+      .select("job_id, sales_program_id")
       .eq("id", funnelId)
       .single();
     resolvedJobId = funnel?.job_id ?? null;
+    // Sales-Funnels laufen nicht über involve.me. Diese Integration ist
+    // Recruiting-only — Sales-Submissions kommen über /api/apply.
+    if (!resolvedJobId && funnel?.sales_program_id) {
+      return NextResponse.json(
+        { error: "Sales-Funnels werden via involve.me nicht unterstützt" },
+        { status: 400 }
+      );
+    }
+  }
+  if (!resolvedJobId) {
+    return NextResponse.json({ error: "Kein job_id ermittelt" }, { status: 400 });
   }
 
   // 6. Bewerber anlegen oder aktualisieren (upsert auf E-Mail)

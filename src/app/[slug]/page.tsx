@@ -43,7 +43,7 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
 
   const { data: funnel } = await supabase
     .from("funnels")
-    .select("id, name, slug, status, funnel_type, external_url, branding, consent_text, job_id, views, job:jobs(title, selected_ad_image_url, company:companies(name))")
+    .select("id, name, slug, status, funnel_type, external_url, branding, consent_text, job_id, sales_program_id, views, job:jobs(title, selected_ad_image_url, company:companies(name))")
     .eq("slug", slug)
     .single();
 

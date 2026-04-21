@@ -100,7 +100,9 @@ export async function runPerformanceAnalyzer(): Promise<{
         .eq('id', ad.ad_campaign_id)
         .single();
 
-      if (campaign) {
+      // Creative-Insights werden bisher nur aus Recruiting-Kampagnen abgeleitet
+      // (Sales-Kampagnen haben kein job_id → job.title als Kategorie-Quelle nicht verfügbar).
+      if (campaign?.job_id) {
         const { data: job } = await supabase
           .from('jobs')
           .select('title')

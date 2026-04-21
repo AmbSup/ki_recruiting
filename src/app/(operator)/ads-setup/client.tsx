@@ -13,7 +13,9 @@ type FunnelData = {
   slug: string;
   funnel_type: string;
   external_url: string | null;
-  job_id: string;
+  // Ads-Setup ist aktuell Recruiting-only; Sales-Funnels werden
+  // gefiltert und hier erscheint nur job_id-basiertes.
+  job_id: string | null;
   job: { id: string; title: string; company: { id: string; name: string } } | null;
 };
 
@@ -149,6 +151,8 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
         .then(({ data }) => {
           if (!data) { setLoadingFunnel(false); return; }
           const f = data as unknown as FunnelData;
+          // Sales-Funnels haben kein job_id — Ads-Setup ist Recruiting-only.
+          if (!f.job_id) { setLoadingFunnel(false); return; }
           setFunnel(f);
           const jobTitle = f.job?.title ?? "";
           const campaignName = `[KI] ${jobTitle} – Österreich`;
@@ -162,7 +166,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
           setForm((prev) => ({
             ...prev,
             funnel_id: f.id,
-            job_id: f.job_id,
+            job_id: f.job_id ?? "",
             company_id: companyId,
             campaign_name: campaignName,
             utm_campaign: slugify(campaignName),
@@ -172,11 +176,13 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
           setLoadingFunnel(false);
         });
     } else {
-      // No funnel pre-selected — load all available funnels for picker
+      // No funnel pre-selected — load all available Recruiting-Funnels for picker
+      // (Sales-Funnels haben kein job_id; Meta-Ads-Setup unterstützt bisher nur Jobs).
       supabase
         .from("funnels")
         .select("id, name, slug, funnel_type, external_url, job_id, job:jobs(id, title, company:companies(id, name))")
         .in("status", ["active", "draft"])
+        .not("job_id", "is", null)
         .order("created_at", { ascending: false })
         .then(({ data }) => {
           if (data) setFunnels(data as unknown as FunnelData[]);
@@ -283,7 +289,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
         ) : (
           <span className="font-headline text-xl italic text-on-surface">Neue Kampagne</span>
         )}
-        <div className="ml-auto font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+        <div className="ml-auto font-label text-xs font-bold uppercase tracking-widest text-outline">
           Schritt {step + 1} von {STEPS.length}
         </div>
       </div>
@@ -292,7 +298,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
       <div className="flex flex-1 overflow-hidden">
         {/* Step Sidebar */}
         <nav className="w-52 flex-shrink-0 bg-surface-container-lowest border-r border-outline-variant/20 py-6 px-3 overflow-y-auto">
-          <p className="px-3 font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">Schritte</p>
+          <p className="px-3 font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">Schritte</p>
           {STEPS.map((s, i) => {
             const done = i < step;
             const active = i === step;
@@ -326,7 +332,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
         <main className="flex-1 overflow-y-auto px-10 py-8">
           <div className="max-w-xl">
             <h2 className="font-headline text-3xl italic text-on-surface mb-1">{STEPS[step].label}</h2>
-            <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-8">
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-8">
               Schritt {step + 1} · {STEPS[step].label}
             </p>
 
@@ -377,7 +383,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                   <div className="flex flex-wrap gap-2">
                     {AUSTRIAN_REGIONS.map((r) => (
                       <button key={r} type="button" onClick={() => toggleRegion(r)}
-                        className={`px-3 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg font-label text-xs font-bold uppercase tracking-widest transition-colors ${
                           form.regions.includes(r)
                             ? "bg-primary-container text-on-primary-container"
                             : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest"
@@ -408,7 +414,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                   <div className="flex gap-3">
                     {(["ALL", "MALE", "FEMALE"] as const).map((g) => (
                       <button key={g} type="button" onClick={() => update({ gender: g })}
-                        className={`flex-1 py-2.5 rounded-xl font-label text-[10px] font-bold uppercase tracking-widest transition-colors border ${
+                        className={`flex-1 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest transition-colors border ${
                           form.gender === g
                             ? "bg-primary-container border-primary text-on-primary-container"
                             : "bg-surface-container-low border-outline-variant/20 text-on-surface-variant hover:bg-surface-container"
@@ -435,7 +441,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {form.interests.map((i) => (
-                      <span key={i} className="flex items-center gap-1.5 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full font-label text-[10px] font-bold">
+                      <span key={i} className="flex items-center gap-1.5 px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full font-label text-xs font-bold">
                         {i}
                         <button onClick={() => removeInterest(i)} className="hover:opacity-70">
                           <span className="material-symbols-outlined text-xs">close</span>
@@ -472,7 +478,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                     <input type="number" min="1" max="500" step="1" value={form.daily_budget}
                       onChange={(e) => update({ daily_budget: e.target.value })}
                       className="flex-1 bg-transparent px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none" />
-                    <span className="px-3 py-2.5 font-label text-[10px] text-outline border-l border-outline-variant/20">
+                    <span className="px-3 py-2.5 font-label text-xs text-outline border-l border-outline-variant/20">
                       {form.budget_type === "daily" ? "/Tag" : "gesamt"}
                     </span>
                   </div>
@@ -546,7 +552,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                           <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Aktiv</span>
                         </div>
                       </div>
-                      <p className="font-label text-[10px] text-outline mt-1.5">
+                      <p className="font-label text-xs text-outline mt-1.5">
                         Aus Job-Einstellungen übernommen · <button className="text-primary underline" onClick={() => router.push(`/jobs/${form.job_id}`)}>Ändern</button>
                       </p>
                     </Field>
@@ -556,7 +562,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                     <span className="material-symbols-outlined text-outline text-xl">image</span>
                     <div>
                       <p className="font-label text-xs font-bold text-on-surface-variant">Kein Ad-Bild ausgewählt</p>
-                      <button className="font-label text-[10px] text-primary underline" onClick={() => router.push(`/jobs/${form.job_id}`)}>
+                      <button className="font-label text-xs text-primary underline" onClick={() => router.push(`/jobs/${form.job_id}`)}>
                         Im Job ein Bild auswählen
                       </button>
                     </div>
@@ -566,7 +572,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                 <div className="bg-primary-container/10 border border-primary-container/30 rounded-xl px-4 py-3">
                   <div className="flex items-center gap-2 mb-1">
                     <span className="material-symbols-outlined text-primary text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>auto_awesome</span>
-                    <span className="font-label text-[10px] font-bold uppercase tracking-widest text-primary">KI-Generierung</span>
+                    <span className="font-label text-xs font-bold uppercase tracking-widest text-primary">KI-Generierung</span>
                   </div>
                   <p className="font-body text-xs text-on-surface-variant">
                     Felder leer lassen → Claude generiert 9 Varianten automatisch (3 Hooks × 3 Adsets). Eigene Texte überschreiben die KI.
@@ -615,7 +621,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                           : (rawC as { id: string } | null)?.id ?? "";
                         update({
                           funnel_id: selected.id,
-                          job_id: selected.job_id,
+                          job_id: selected.job_id ?? "",
                           company_id: cId,
                           destination_url: getFunnelPublicUrl(selected),
                           campaign_name: campaignName,
@@ -655,7 +661,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                       { key: "utm_campaign", label: "utm_campaign", value: form.utm_campaign, readOnly: false },
                     ].map((p) => (
                       <div key={p.key} className="flex items-center gap-0 bg-surface-container-low border border-outline-variant/20 rounded-xl overflow-hidden">
-                        <span className="px-3 py-2.5 font-label text-[10px] text-outline border-r border-outline-variant/20 whitespace-nowrap w-36">{p.label}</span>
+                        <span className="px-3 py-2.5 font-label text-xs text-outline border-r border-outline-variant/20 whitespace-nowrap w-36">{p.label}</span>
                         <input value={p.value} readOnly={p.readOnly}
                           onChange={!p.readOnly ? (e) => update({ utm_campaign: e.target.value }) : undefined}
                           className={`flex-1 bg-transparent px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none ${p.readOnly ? "text-outline" : ""}`} />
@@ -703,7 +709,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                 ].map((section) => (
                   <div key={section.label} className="bg-surface-container rounded-xl overflow-hidden">
                     <div className="px-4 py-2 bg-surface-container-high border-b border-outline-variant/10">
-                      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{section.label}</span>
+                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{section.label}</span>
                     </div>
                     <div className="divide-y divide-outline-variant/10">
                       {section.items.map((item) => (
@@ -756,7 +762,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
 
         {/* Ad Preview Panel */}
         <aside className="w-80 flex-shrink-0 bg-surface-container-lowest border-l border-outline-variant/20 py-6 px-4 overflow-y-auto">
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-4">Vorschau</p>
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">Vorschau</p>
 
           {/* Facebook Ad Mockup */}
           <div className="bg-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
@@ -792,7 +798,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
             {/* Link Preview */}
             <div className="border-t border-gray-100 px-3 py-2.5 bg-gray-50 flex items-center justify-between gap-2">
               <div className="min-w-0">
-                <div className="text-[10px] text-gray-400 uppercase truncate">
+                <div className="text-xs text-gray-400 uppercase truncate">
                   {form.destination_url ? new URL(form.destination_url.startsWith("http") ? form.destination_url : `https://${form.destination_url}`).hostname : "apply.domain.com"}
                 </div>
                 <div className="text-[13px] font-bold text-gray-900 truncate">
@@ -808,7 +814,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
           {/* Stats estimate */}
           <div className="mt-5 space-y-3">
             <div className="bg-surface-container rounded-xl p-4">
-              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-3">Schätzwerte</p>
+              <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-3">Schätzwerte</p>
               <div className="space-y-2.5">
                 {[
                   { label: "Reichweite/Tag",  value: form.regions.length === 0 ? "~120.000" : `~${Math.round(120000 / 9 * (form.regions.length || 9)).toLocaleString("de-AT")}` },
@@ -817,24 +823,24 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
                   { label: "Est. CPL",        value: `€ ${((parseFloat(form.daily_budget) || 50) / Math.max(Math.round((parseFloat(form.daily_budget) || 50) * 0.4), 1)).toFixed(2)}` },
                 ].map((s) => (
                   <div key={s.label} className="flex justify-between items-center">
-                    <span className="font-label text-[10px] text-outline">{s.label}</span>
+                    <span className="font-label text-xs text-outline">{s.label}</span>
                     <span className="font-headline text-sm text-on-surface">{s.value}</span>
                   </div>
                 ))}
               </div>
-              <p className="font-label text-[10px] text-outline-variant mt-3">Schätzwerte basierend auf Erfahrungswerten</p>
+              <p className="font-label text-xs text-outline-variant mt-3">Schätzwerte basierend auf Erfahrungswerten</p>
             </div>
 
             {/* Adset breakdown */}
             <div className="bg-surface-container rounded-xl p-4">
-              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">KI erstellt automatisch</p>
+              <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">KI erstellt automatisch</p>
               {["Broad 22–55", "Interests 25–45", "Retargeting 22–50"].map((a) => (
                 <div key={a} className="flex items-center gap-2 py-1.5">
                   <span className="material-symbols-outlined text-primary text-xs" style={{ fontVariationSettings: "'FILL' 1" }}>check_circle</span>
                   <span className="font-body text-xs text-on-surface-variant">{a}</span>
                 </div>
               ))}
-              <p className="font-label text-[10px] text-outline-variant mt-1">3 Ad Sets · je 3 KI-Creatives</p>
+              <p className="font-label text-xs text-outline-variant mt-1">3 Ad Sets · je 3 KI-Creatives</p>
             </div>
           </div>
         </aside>
@@ -848,7 +854,7 @@ export function AdsSetupClient({ funnelId }: { funnelId: string | null }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
+      <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">{label}</label>
       {children}
     </div>
   );
@@ -857,4 +863,4 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 const inputClass =
   "w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
 
-const hintClass = "font-label text-[10px] text-outline-variant mt-1";
+const hintClass = "font-label text-xs text-outline-variant mt-1";

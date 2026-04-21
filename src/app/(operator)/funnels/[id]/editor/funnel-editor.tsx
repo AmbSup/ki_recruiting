@@ -134,12 +134,14 @@ type Funnel = {
   slug: string;
   funnel_type: string;
   external_url: string | null;
-  job_id: string;
+  // Polymorph: genau eines von beiden ist gesetzt (DB-seitig via XOR-Check)
+  job_id: string | null;
+  sales_program_id: string | null;
   status: string;
   branding: FunnelBranding | null;
   views: number;
   submissions: number;
-  job: { title: string; company: { name: string } };
+  job: { title: string; company: { name: string } } | null;
 };
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -1723,8 +1725,8 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                     <span className="font-label text-xs text-on-surface text-right">{funnel.job?.company.name ?? "–"}</span>
                   </div>
                   <div className="flex items-start justify-between gap-2">
-                    <span className="font-label text-xs text-outline">Job-ID</span>
-                    <span className="font-label text-xs text-outline font-mono text-right break-all">{funnel.job_id}</span>
+                    <span className="font-label text-xs text-outline">{funnel.job_id ? "Job-ID" : "Sales-Program-ID"}</span>
+                    <span className="font-label text-xs text-outline font-mono text-right break-all">{funnel.job_id ?? funnel.sales_program_id ?? "–"}</span>
                   </div>
                 </div>
               )}

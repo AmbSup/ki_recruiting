@@ -79,7 +79,9 @@ type Funnel = {
   id: string; name: string; slug: string; status: string;
   funnel_type: string; external_url: string | null;
   branding: FunnelBranding | null; consent_text: string | null;
-  job_id: string;
+  // Polymorph: genau eines von beiden ist gesetzt (DB-seitig via XOR-Check)
+  job_id: string | null;
+  sales_program_id: string | null;
   job: { title: string; company: { name: string } } | null;
 };
 
@@ -253,6 +255,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         body: JSON.stringify({
           funnel_id: funnel.id,
           job_id: funnel.job_id,
+          sales_program_id: funnel.sales_program_id,
           name: fullName,
           email: form.email,
           phone: form.phone || null,

@@ -112,6 +112,9 @@ export async function runAudienceOptimizer(): Promise<{
 
     if (campaigns) {
       for (const campaign of campaigns) {
+        // Audience-Optimizer arbeitet bisher nur auf Recruiting-Kampagnen
+        // (Sales-Kampagnen haben keinen Job-Titel als Kategorie-Quelle).
+        if (!campaign.job_id) continue;
         const { data: job } = await supabase
           .from('jobs')
           .select('title')

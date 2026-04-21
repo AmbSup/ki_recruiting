@@ -122,6 +122,9 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
   }
 
   if (!open || !funnel) return null;
+  // Meta-Ads-Setup ist aktuell nur für Recruiting-Funnels (job_id).
+  // Sales-Funnels werden in einer späteren Iteration unterstützt.
+  if (!funnel.job_id) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -131,7 +134,7 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20">
           <div>
             <h2 className="font-headline text-2xl italic text-on-surface">Meta Ads Setup</h2>
-            <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mt-0.5">
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
               Kampagne für diesen Funnel starten
             </p>
           </div>
@@ -171,7 +174,7 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                 <span className="font-body text-sm text-on-surface font-medium">{funnel.name}</span>
               </div>
               {funnel.job && (
-                <p className="font-label text-[10px] text-outline pl-6">
+                <p className="font-label text-xs text-outline pl-6">
                   {funnel.job.title} · {funnel.job.company.name}
                 </p>
               )}
@@ -191,7 +194,7 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                   <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-              <p className="font-label text-[10px] text-outline-variant mt-1">
+              <p className="font-label text-xs text-outline-variant mt-1">
                 Bestimmt Zielgruppen und KI-generierte Anzeigentexte
               </p>
             </div>
@@ -211,9 +214,9 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                   onChange={(e) => setForm({ ...form, daily_budget: e.target.value })}
                   className="flex-1 bg-transparent px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none"
                 />
-                <span className="px-3 py-2.5 font-label text-[10px] text-outline border-l border-outline-variant/20">/Tag</span>
+                <span className="px-3 py-2.5 font-label text-xs text-outline border-l border-outline-variant/20">/Tag</span>
               </div>
-              <p className="font-label text-[10px] text-outline-variant mt-1">
+              <p className="font-label text-xs text-outline-variant mt-1">
                 Min. €1 · Max. €500 · Kill-Switch stoppt bei €500 Tagesausgabe
               </p>
             </div>
@@ -227,7 +230,7 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                     key={region}
                     type="button"
                     onClick={() => toggleRegion(region)}
-                    className={`px-3 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase tracking-widest transition-colors ${
+                    className={`px-3 py-1.5 rounded-lg font-label text-xs font-bold uppercase tracking-widest transition-colors ${
                       form.regions.includes(region)
                         ? "bg-primary-container text-on-primary-container"
                         : "bg-surface-container-high text-on-surface-variant hover:bg-surface-container-highest"
@@ -237,7 +240,7 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                   </button>
                 ))}
               </div>
-              <p className="font-label text-[10px] text-outline-variant mt-2">
+              <p className="font-label text-xs text-outline-variant mt-2">
                 Keine Auswahl = ganz Österreich
               </p>
             </div>
@@ -254,13 +257,13 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
                     <span className="font-label text-[9px] font-bold text-on-primary uppercase tracking-widest">Ausgewählt</span>
                   </div>
                 </div>
-                <p className="font-label text-[10px] text-outline mt-1.5">Aus Job-Einstellungen übernommen</p>
+                <p className="font-label text-xs text-outline mt-1.5">Aus Job-Einstellungen übernommen</p>
               </div>
             )}
 
             {/* What the AI does */}
             <div className="bg-primary-container/10 border border-primary-container/30 rounded-xl px-4 py-3">
-              <p className="font-label text-[10px] font-bold uppercase tracking-widest text-primary mb-2">Was die KI macht</p>
+              <p className="font-label text-xs font-bold uppercase tracking-widest text-primary mb-2">Was die KI macht</p>
               <ul className="space-y-1">
                 {[
                   "3 Anzeigensets (Broad, Interessen, Retargeting)",
@@ -313,6 +316,6 @@ export function MetaAdsSetupModal({ open, onClose, funnel }: Props) {
   );
 }
 
-const labelClass = "font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5";
+const labelClass = "font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5";
 const inputClass =
   "w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
