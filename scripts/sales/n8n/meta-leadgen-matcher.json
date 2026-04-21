@@ -1,0 +1,248 @@
+{
+  "name": "Sales — Meta Leadgen Matcher",
+  "nodes": [
+    {
+      "id": "webhook-match",
+      "name": "Meta Matcher Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "meta-leadgen-matcher",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "webhookId": "sales-meta-matcher"
+    },
+    {
+      "id": "split-ids",
+      "name": "Split ad_lead_ids",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "parameters": {
+        "fieldToSplitOut": "body.ad_lead_ids",
+        "options": {}
+      }
+    },
+    {
+      "id": "fetch-ad-lead",
+      "name": "Fetch ad_lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [720, 300],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ad_leads",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.ad_lead_ids }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "graph-api-lead",
+      "name": "Meta Graph — Fetch Lead Fields",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://graph.facebook.com/v21.0/{{ $json.meta_lead_id }}?fields=field_data,form_id,ad_id,created_time",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": { "timeout": 15000 }
+      },
+      "credentials": {
+        "httpHeaderAuth": { "id": "REPLACE_META_GRAPH_CREDENTIAL_ID", "name": "Meta Graph (Page Access Token)" }
+      }
+    },
+    {
+      "id": "normalize-fields",
+      "name": "Parse field_data + Determine Target",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "parameters": {
+        "jsCode": "// Meta field_data ist ein Array von {name, values[]}. Flach machen.\nconst graph = $input.first().json;\nconst adLead = $('Fetch ad_lead').first().json;\nconst fieldMap = {};\nfor (const f of graph.field_data ?? []) {\n  fieldMap[f.name] = (f.values ?? [])[0] ?? null;\n}\n\n// Phone-Normalisierung (minimal — Server-Side macht es nochmal sauber)\nlet phone = fieldMap.phone_number ?? fieldMap.phone ?? null;\nif (phone) {\n  phone = String(phone).replace(/[\\s\\-()\\/]/g, '');\n  if (phone.startsWith('00')) phone = '+' + phone.slice(2);\n  if (!phone.startsWith('+') && phone.startsWith('0')) phone = '+43' + phone.slice(1);\n}\n\nreturn [{\n  json: {\n    ad_lead_id: adLead.id,\n    ad_campaign_id: adLead.ad_campaign_id,\n    form_id: graph.form_id ?? adLead.meta_form_id,\n    full_name: fieldMap.full_name ?? fieldMap.name ?? null,\n    first_name: fieldMap.first_name ?? null,\n    last_name: fieldMap.last_name ?? null,\n    email: fieldMap.email ?? null,\n    phone,\n    company_name: fieldMap.company_name ?? null,\n    role: fieldMap.job_title ?? null,\n    raw_fields: fieldMap\n  }\n}];"
+      }
+    },
+    {
+      "id": "fetch-campaign",
+      "name": "Fetch ad_campaign (target decision)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1440, 300],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "ad_campaigns",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.ad_campaign_id }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "route-target",
+      "name": "Route: Recruiting vs Sales",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [1680, 300],
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.job_id }}", "rightValue": "", "operator": { "type": "string", "operation": "notEquals" } } ], "combinator": "and" }, "outputKey": "recruiting" },
+            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.sales_program_id }}", "rightValue": "", "operator": { "type": "string", "operation": "notEquals" } } ], "combinator": "and" }, "outputKey": "sales" }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      }
+    },
+    {
+      "id": "upsert-sales-lead",
+      "name": "Upsert sales_lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1920, 360],
+      "parameters": {
+        "operation": "upsert",
+        "tableId": "sales_leads",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "sales_program_id", "fieldValue": "={{ $json.sales_program_id }}" },
+            { "fieldId": "phone", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.phone }}" },
+            { "fieldId": "first_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.first_name }}" },
+            { "fieldId": "last_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.last_name }}" },
+            { "fieldId": "full_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.full_name }}" },
+            { "fieldId": "email", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.email }}" },
+            { "fieldId": "company_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.company_name }}" },
+            { "fieldId": "role", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.role }}" },
+            { "fieldId": "source", "fieldValue": "meta_ads" },
+            { "fieldId": "source_ref", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.ad_lead_id }}" },
+            { "fieldId": "consent_given", "fieldValue": true },
+            { "fieldId": "consent_source", "fieldValue": "meta_form" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "link-ad-lead-sales",
+      "name": "Link ad_lead → sales_lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2160, 360],
+      "parameters": {
+        "operation": "update",
+        "tableId": "ad_leads",
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Parse field_data + Determine Target').first().json.ad_lead_id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "sales_lead_id", "fieldValue": "={{ $json.id }}" },
+            { "fieldId": "matched_at", "fieldValue": "={{ $now }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "maybe-auto-dial",
+      "name": "Auto-Dial if program.auto_dial",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2400, 360],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
+          "conditions": [
+            { "leftValue": "={{ $('Fetch ad_campaign (target decision)').first().json.auto_dial }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "trigger-call",
+      "name": "Trigger Start-Sales-Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2640, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://ki-recruiting.vercel.app/api/sales/trigger-call",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [ { "name": "Content-Type", "value": "application/json" } ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \"sales_lead_id\": \"{{ $('Upsert sales_lead').first().json.id }}\" }",
+        "options": { "timeout": 15000 }
+      }
+    },
+    {
+      "id": "recruiting-todo",
+      "name": "Recruiting-Route (TODO: implement)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1920, 240],
+      "parameters": {},
+      "notes": "Recruiting-Ingest über Meta-Leadgen ist noch nicht gebaut. Hier später: applicants + applications upsert, dann ad_leads.applicant_id + application_id setzen."
+    },
+    {
+      "id": "unmatched",
+      "name": "Unmatched (no campaign target)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1920, 480],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Meta Matcher Webhook": { "main": [[{ "node": "Split ad_lead_ids", "type": "main", "index": 0 }]] },
+    "Split ad_lead_ids": { "main": [[{ "node": "Fetch ad_lead", "type": "main", "index": 0 }]] },
+    "Fetch ad_lead": { "main": [[{ "node": "Meta Graph — Fetch Lead Fields", "type": "main", "index": 0 }]] },
+    "Meta Graph — Fetch Lead Fields": { "main": [[{ "node": "Parse field_data + Determine Target", "type": "main", "index": 0 }]] },
+    "Parse field_data + Determine Target": { "main": [[{ "node": "Fetch ad_campaign (target decision)", "type": "main", "index": 0 }]] },
+    "Fetch ad_campaign (target decision)": { "main": [[{ "node": "Route: Recruiting vs Sales", "type": "main", "index": 0 }]] },
+    "Route: Recruiting vs Sales": {
+      "main": [
+        [{ "node": "Recruiting-Route (TODO: implement)", "type": "main", "index": 0 }],
+        [{ "node": "Upsert sales_lead", "type": "main", "index": 0 }],
+        [{ "node": "Unmatched (no campaign target)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Upsert sales_lead": { "main": [[{ "node": "Link ad_lead → sales_lead", "type": "main", "index": 0 }]] },
+    "Link ad_lead → sales_lead": { "main": [[{ "node": "Auto-Dial if program.auto_dial", "type": "main", "index": 0 }]] },
+    "Auto-Dial if program.auto_dial": {
+      "main": [
+        [{ "node": "Trigger Start-Sales-Call", "type": "main", "index": 0 }],
+        []
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}

@@ -1,0 +1,191 @@
+{
+  "name": "Sales — Vapi Data Tools",
+  "nodes": [
+    {
+      "id": "webhook-tools",
+      "name": "Vapi Sales-Tools Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi-sales-tools",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "webhookId": "sales-vapi-tools"
+    },
+    {
+      "id": "extract-tool",
+      "name": "Extract Tool & Args",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "jsCode": "// Vapi tool-call webhook payload shape:\n// body.message.toolCalls[].function.{name, arguments}\n// `.arguments` ist in n8n-Expressions reserviert → hier im Code extrahieren.\nconst msg = $input.first().json.body?.message ?? {};\nconst toolCalls = msg.toolCalls ?? [];\nconst call = msg.call ?? {};\nconst vars = call?.assistantOverrides?.variableValues ?? {};\n\n// Wir nehmen den ersten Tool-Call je Request (Vapi kann mehrere bündeln)\nconst first = toolCalls[0]?.function ?? {};\nconst toolName = first.name ?? null;\nconst toolArgs = first.arguments ?? {};\n\nreturn [{\n  json: {\n    tool_name: toolName,\n    tool_args: toolArgs,\n    tool_call_id: toolCalls[0]?.id ?? null,\n    sales_lead_id: vars.sales_lead_id ?? toolArgs.sales_lead_id ?? null,\n    sales_program_id: vars.sales_program_id ?? toolArgs.sales_program_id ?? null,\n    sales_call_id: vars.sales_call_id ?? null\n  }\n}];"
+      }
+    },
+    {
+      "id": "route-tool",
+      "name": "Route by Tool",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [720, 300],
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "get_program", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "get_program" },
+            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "get_lead_context", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "get_lead_context" },
+            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "book_meeting", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "book_meeting" },
+            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "log_objection", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "log_objection" }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      }
+    },
+    {
+      "id": "fetch-program",
+      "name": "Fetch Program",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [960, 100],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sales_programs",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.sales_program_id }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "fetch-lead",
+      "name": "Fetch Lead",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [960, 260],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sales_leads",
+        "returnAll": true,
+        "filterType": "manual",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.sales_lead_id }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "book-meeting",
+      "name": "Persist Meeting (book_meeting)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [960, 420],
+      "parameters": {
+        "operation": "upsert",
+        "tableId": "sales_call_analyses",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "sales_call_id", "fieldValue": "={{ $json.sales_call_id }}" },
+            { "fieldId": "meeting_booked", "fieldValue": true },
+            { "fieldId": "meeting_datetime", "fieldValue": "={{ $json.tool_args.datetime }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "log-objection",
+      "name": "Log Objection (noop — appended by analyzer)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [960, 580],
+      "parameters": {}
+    },
+    {
+      "id": "respond-program",
+      "name": "Respond get_program",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 100],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"result\": {\n    \"name\": \"{{ $json.name }}\",\n    \"product_pitch\": {{ JSON.stringify($json.product_pitch ?? '') }},\n    \"value_proposition\": {{ JSON.stringify($json.value_proposition ?? '') }},\n    \"booking_link\": {{ JSON.stringify($json.booking_link ?? '') }}\n  }\n}"
+      }
+    },
+    {
+      "id": "respond-lead",
+      "name": "Respond get_lead_context",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 260],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"result\": {\n    \"full_name\": {{ JSON.stringify($json.full_name ?? '') }},\n    \"first_name\": {{ JSON.stringify($json.first_name ?? '') }},\n    \"company_name\": {{ JSON.stringify($json.company_name ?? '') }},\n    \"role\": {{ JSON.stringify($json.role ?? '') }},\n    \"notes\": {{ JSON.stringify($json.notes ?? '') }},\n    \"custom_fields\": {{ JSON.stringify($json.custom_fields ?? {}) }}\n  }\n}"
+      }
+    },
+    {
+      "id": "respond-meeting",
+      "name": "Respond book_meeting",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 420],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"result\": { \"booked\": true } }"
+      }
+    },
+    {
+      "id": "respond-objection",
+      "name": "Respond log_objection",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 580],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"result\": { \"logged\": true } }"
+      }
+    },
+    {
+      "id": "respond-unknown",
+      "name": "Respond unknown tool",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1200, 740],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"result\": null, \"error\": \"unknown_tool\" }"
+      }
+    }
+  ],
+  "connections": {
+    "Vapi Sales-Tools Webhook": { "main": [[{ "node": "Extract Tool & Args", "type": "main", "index": 0 }]] },
+    "Extract Tool & Args": { "main": [[{ "node": "Route by Tool", "type": "main", "index": 0 }]] },
+    "Route by Tool": {
+      "main": [
+        [{ "node": "Fetch Program", "type": "main", "index": 0 }],
+        [{ "node": "Fetch Lead", "type": "main", "index": 0 }],
+        [{ "node": "Persist Meeting (book_meeting)", "type": "main", "index": 0 }],
+        [{ "node": "Log Objection (noop — appended by analyzer)", "type": "main", "index": 0 }],
+        [{ "node": "Respond unknown tool", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fetch Program": { "main": [[{ "node": "Respond get_program", "type": "main", "index": 0 }]] },
+    "Fetch Lead": { "main": [[{ "node": "Respond get_lead_context", "type": "main", "index": 0 }]] },
+    "Persist Meeting (book_meeting)": { "main": [[{ "node": "Respond book_meeting", "type": "main", "index": 0 }]] },
+    "Log Objection (noop — appended by analyzer)": { "main": [[{ "node": "Respond log_objection", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

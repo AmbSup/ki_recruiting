@@ -1,0 +1,229 @@
+{
+  "name": "Sales — Start Sales Calls",
+  "nodes": [
+    {
+      "id": "webhook-start",
+      "name": "Start Sales Call Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "start-sales-call",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "webhookId": "sales-start-call"
+    },
+    {
+      "id": "fetch-lead",
+      "name": "Fetch Lead + Program",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [480, 300],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sales_leads",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.sales_lead_id }}" }
+          ]
+        },
+        "filterType": "manual"
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "fetch-program",
+      "name": "Fetch Program",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [720, 300],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sales_programs",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.sales_program_id }}" }
+          ]
+        },
+        "filterType": "manual"
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "merge-lead-program",
+      "name": "Merge Lead & Program",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300],
+      "parameters": {
+        "jsCode": "const lead = $('Fetch Lead + Program').first().json;\nconst program = $('Fetch Program').first().json;\nreturn [{ json: { lead, program } }];"
+      }
+    },
+    {
+      "id": "gate-consent",
+      "name": "Has Consent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
+          "conditions": [
+            { "leftValue": "={{ $json.lead.consent_given }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "dedupe-check",
+      "name": "Check Active Call",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1440, 240],
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "sales_calls",
+        "returnAll": true,
+        "filters": {
+          "conditions": [
+            { "keyName": "sales_lead_id", "condition": "eq", "keyValue": "={{ $json.lead.id }}" },
+            { "keyName": "status", "condition": "in", "keyValue": "initiated,ringing,in_progress" }
+          ]
+        },
+        "filterType": "manual"
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "gate-no-active",
+      "name": "No Active Call?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1680, 240],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
+          "conditions": [
+            { "leftValue": "={{ ($input.all() || []).length }}", "rightValue": "0", "operator": { "type": "number", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "insert-call",
+      "name": "Insert sales_calls",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1920, 180],
+      "parameters": {
+        "operation": "create",
+        "tableId": "sales_calls",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "sales_lead_id", "fieldValue": "={{ $('Merge Lead & Program').first().json.lead.id }}" },
+            { "fieldId": "sales_program_id", "fieldValue": "={{ $('Merge Lead & Program').first().json.program.id }}" },
+            { "fieldId": "status", "fieldValue": "initiated" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "twilio-call",
+      "name": "Twilio — Outbound Call",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2160, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://studio.twilio.com/v2/Flows/REPLACE_TWILIO_STUDIO_FLOW_SID/Executions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"To\": \"{{ $('Merge Lead & Program').first().json.lead.phone }}\",\n  \"From\": \"{{ $('Merge Lead & Program').first().json.program.caller_phone_number }}\",\n  \"Parameters\": {\n    \"sales_lead_id\": \"{{ $('Merge Lead & Program').first().json.lead.id }}\",\n    \"sales_call_id\": \"{{ $json.id }}\",\n    \"sales_program_id\": \"{{ $('Merge Lead & Program').first().json.program.id }}\",\n    \"vapi_assistant_id\": \"{{ $('Merge Lead & Program').first().json.program.vapi_assistant_id }}\"\n  }\n}",
+        "options": { "timeout": 30000 }
+      },
+      "credentials": {
+        "httpBasicAuth": { "id": "REPLACE_TWILIO_CREDENTIAL_ID", "name": "Twilio (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "update-lead-status",
+      "name": "Lead status → calling",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2400, 180],
+      "parameters": {
+        "operation": "update",
+        "tableId": "sales_leads",
+        "filterType": "manual",
+        "matchType": "anyFilter",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Merge Lead & Program').first().json.lead.id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [ { "fieldId": "status", "fieldValue": "calling" } ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
+      "id": "skip-no-consent",
+      "name": "Skip (no consent)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1440, 420],
+      "parameters": {}
+    },
+    {
+      "id": "skip-active",
+      "name": "Skip (already calling)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1920, 360],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Start Sales Call Webhook": { "main": [[{ "node": "Fetch Lead + Program", "type": "main", "index": 0 }]] },
+    "Fetch Lead + Program": { "main": [[{ "node": "Fetch Program", "type": "main", "index": 0 }]] },
+    "Fetch Program": { "main": [[{ "node": "Merge Lead & Program", "type": "main", "index": 0 }]] },
+    "Merge Lead & Program": { "main": [[{ "node": "Has Consent?", "type": "main", "index": 0 }]] },
+    "Has Consent?": {
+      "main": [
+        [{ "node": "Check Active Call", "type": "main", "index": 0 }],
+        [{ "node": "Skip (no consent)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Check Active Call": { "main": [[{ "node": "No Active Call?", "type": "main", "index": 0 }]] },
+    "No Active Call?": {
+      "main": [
+        [{ "node": "Insert sales_calls", "type": "main", "index": 0 }],
+        [{ "node": "Skip (already calling)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Insert sales_calls": { "main": [[{ "node": "Twilio — Outbound Call", "type": "main", "index": 0 }]] },
+    "Twilio — Outbound Call": { "main": [[{ "node": "Lead status → calling", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" }
+}

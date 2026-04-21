@@ -1,0 +1,114 @@
+{
+  "name": "Sales — Vapi Call Processing",
+  "nodes": [
+    {
+      "id": "webhook-vapi-end",
+      "name": "Vapi Sales-End Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vapi-sales-end",
+        "responseMode": "onReceived",
+        "responseData": "firstEntryJson",
+        "options": {}
+      },
+      "webhookId": "sales-vapi-end-of-call"
+    },
+    {
+      "id": "filter-eoc",
+      "name": "Is End-of-Call Report?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [480, 300],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
+          "conditions": [
+            { "leftValue": "={{ $json.body.message.type }}", "rightValue": "end-of-call-report", "operator": { "type": "string", "operation": "equals" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "extract-data",
+      "name": "Extract Sales-Call Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 240],
+      "parameters": {
+        "jsCode": "const msg = $input.first().json.body.message;\nconst call = msg.call ?? {};\nconst vars = call?.assistantOverrides?.variableValues ?? {};\nconst artifact = msg.artifact ?? {};\n\nconst rawMessages = artifact.messages ?? [];\nconst transcriptMessages = rawMessages\n  .filter(m => m.message && typeof m.message === 'string' && m.message.trim() !== '' && m.role !== 'system')\n  .map(m => ({ role: m.role, text: m.message.trim() }));\n\nconst transcriptText = artifact.transcript\n  ?? transcriptMessages.map(m => `${m.role}: ${m.text}`).join('\\n');\n\n// Vapi-End-of-Call-Report als Vorab-Hinweis an den Claude-Analyzer\nconst vapiEndReport = msg.analysis ?? msg.structuredData ?? null;\n\nreturn [{\n  json: {\n    sales_call_id: vars.sales_call_id ?? null,\n    sales_lead_id: vars.sales_lead_id ?? null,\n    vapi_call_id: call?.id ?? null,\n    started_at: msg.startedAt ?? null,\n    ended_at: msg.endedAt ?? null,\n    recording_url: artifact.recordingUrl ?? null,\n    transcript_messages: transcriptMessages,\n    transcript_text: transcriptText,\n    end_reason: msg.endedReason ?? null,\n    vapi_end_report: vapiEndReport\n  }\n}];"
+      }
+    },
+    {
+      "id": "check-call-id",
+      "name": "Has Sales Call ID?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 240],
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
+          "conditions": [
+            { "leftValue": "={{ $json.sales_call_id }}", "rightValue": "", "operator": { "type": "string", "operation": "notEquals" } }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "post-analyse",
+      "name": "POST /api/sales/call-analyse",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1200, 180],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://ki-recruiting.vercel.app/api/sales/call-analyse",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [ { "name": "Content-Type", "value": "application/json" } ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": { "timeout": 65000 }
+      }
+    },
+    {
+      "id": "skip-no-id",
+      "name": "Skip (no sales_call_id)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1200, 360],
+      "parameters": {}
+    },
+    {
+      "id": "skip-not-eoc",
+      "name": "Skip (not end-of-call)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [480, 440],
+      "parameters": {}
+    }
+  ],
+  "connections": {
+    "Vapi Sales-End Webhook": { "main": [[{ "node": "Is End-of-Call Report?", "type": "main", "index": 0 }]] },
+    "Is End-of-Call Report?": {
+      "main": [
+        [{ "node": "Extract Sales-Call Data", "type": "main", "index": 0 }],
+        [{ "node": "Skip (not end-of-call)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extract Sales-Call Data": { "main": [[{ "node": "Has Sales Call ID?", "type": "main", "index": 0 }]] },
+    "Has Sales Call ID?": {
+      "main": [
+        [{ "node": "POST /api/sales/call-analyse", "type": "main", "index": 0 }],
+        [{ "node": "Skip (no sales_call_id)", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" }
+}
