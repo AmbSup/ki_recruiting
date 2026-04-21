@@ -18,8 +18,16 @@ type Funnel = {
   submissions: number;
   published_at: string | null;
   created_at: string;
+  // Polymorph: genau eines gesetzt (DB-XOR)
+  job_id: string | null;
+  sales_program_id: string | null;
   job: { id: string; title: string; selected_ad_image_url: string | null; company: { name: string } } | null;
+  sales_program: { id: string; name: string; company: { name: string } } | null;
 };
+
+function funnelPurpose(f: Funnel): "recruiting" | "sales" {
+  return f.sales_program_id ? "sales" : "recruiting";
+}
 
 const statusConfig = {
   draft:    { label: "Entwurf",  bg: "bg-surface-container-high",   text: "text-outline",    icon: "draft" },
@@ -43,7 +51,9 @@ export function FunnelsClient() {
       .from("funnels")
       .select(`
         id, name, slug, status, funnel_type, external_url, views, submissions, published_at, created_at,
-        job:jobs(id, title, selected_ad_image_url, company:companies(name))
+        job_id, sales_program_id,
+        job:jobs(id, title, selected_ad_image_url, company:companies(name)),
+        sales_program:sales_programs(id, name, company:companies(name))
       `)
       .order("created_at", { ascending: false });
     setFunnels((data ?? []) as unknown as Funnel[]);
@@ -64,9 +74,11 @@ export function FunnelsClient() {
   const externalFunnels = funnels.filter((f) => f.funnel_type === "external");
 
   const filtered = internalFunnels.filter((f) => {
+    const s = search.toLowerCase();
     const matchSearch =
-      f.name.toLowerCase().includes(search.toLowerCase()) ||
-      (f.job?.title ?? "").toLowerCase().includes(search.toLowerCase());
+      f.name.toLowerCase().includes(s) ||
+      (f.job?.title ?? "").toLowerCase().includes(s) ||
+      (f.sales_program?.name ?? "").toLowerCase().includes(s);
     const matchStatus = statusFilter === "all" || f.status === statusFilter;
     return matchSearch && matchStatus;
   });
@@ -209,7 +221,7 @@ export function FunnelsClient() {
                   </div>
                 </div>
 
-                {/* Job Badge */}
+                {/* Target Badge (Job oder Sales-Program) */}
                 {funnel.job && (
                   <Link href={`/jobs/${funnel.job.id}`}
                     className="flex items-center gap-2 bg-primary-container/20 hover:bg-primary-container/40 rounded-lg px-3 py-2 mb-3 transition-colors"
@@ -218,6 +230,16 @@ export function FunnelsClient() {
                     <span className="font-label text-xs font-bold text-on-surface truncate">{funnel.job.title}</span>
                     <span className="font-label text-xs text-outline">·</span>
                     <span className="font-label text-xs text-outline truncate">{funnel.job.company.name}</span>
+                  </Link>
+                )}
+                {funnel.sales_program && (
+                  <Link href={`/sales/programs/${funnel.sales_program.id}`}
+                    className="flex items-center gap-2 bg-tertiary-container/30 hover:bg-tertiary-container/50 rounded-lg px-3 py-2 mb-3 transition-colors"
+                    onClick={(e) => e.stopPropagation()}>
+                    <span className="material-symbols-outlined text-tertiary text-sm">trending_up</span>
+                    <span className="font-label text-xs font-bold text-on-surface truncate">{funnel.sales_program.name}</span>
+                    <span className="font-label text-xs text-outline">·</span>
+                    <span className="font-label text-xs text-outline truncate">{funnel.sales_program.company.name}</span>
                   </Link>
                 )}
 
@@ -328,6 +350,12 @@ export function FunnelsClient() {
                 </h3>
                 {funnel.job && (
                   <p className="font-label text-xs text-outline mb-1">{funnel.job.title}</p>
+                )}
+                {funnel.sales_program && (
+                  <p className="font-label text-xs text-outline mb-1">
+                    <span className="material-symbols-outlined text-xs align-middle mr-1">trending_up</span>
+                    {funnel.sales_program.name}
+                  </p>
                 )}
 
                 <div className="flex items-center gap-2 bg-surface-container rounded-lg px-3 py-2 mt-3">

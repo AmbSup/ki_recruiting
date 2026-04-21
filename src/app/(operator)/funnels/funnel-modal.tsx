@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 
 type Props = { open: boolean; onClose: () => void; onSuccess?: () => void };
 type Job = { id: string; title: string; company: { name: string } };
+type SalesProgram = { id: string; name: string; company: { name: string } };
+type FunnelPurpose = "recruiting" | "sales";
 
 function slugify(str: string) {
   return str
@@ -14,32 +16,59 @@ function slugify(str: string) {
     .replace(/^-|-$/g, "");
 }
 
+const RECRUITING_CONSENT =
+  "Mit dem Absenden deiner Bewerbung stimmst du der Verarbeitung deiner Daten gemäß unserer Datenschutzerklärung zu.";
+
+const SALES_CONSENT =
+  "Mit dem Absenden willige ich ein, dass mich [Firma] telefonisch kontaktiert, um mein Anliegen zu besprechen. Die Einwilligung kann jederzeit widerrufen werden. Details in der Datenschutzerklärung.";
+
 export function FunnelModal({ open, onClose, onSuccess }: Props) {
+  const [purpose, setPurpose] = useState<FunnelPurpose>("recruiting");
   const [jobs, setJobs] = useState<Job[]>([]);
+  const [programs, setPrograms] = useState<SalesProgram[]>([]);
   const [form, setForm] = useState({
     job_id: "",
+    sales_program_id: "",
     name: "",
     slug: "",
     intro_headline: "",
     intro_subtext: "",
-    consent_text:
-      "Mit dem Absenden deiner Bewerbung stimmst du der Verarbeitung deiner Daten gemäß unserer Datenschutzerklärung zu.",
+    consent_text: RECRUITING_CONSENT,
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    if (open) {
-      supabase
-        .from("jobs")
-        .select("id, title, status, company:companies(name)")
-        .in("status", ["active", "draft", "paused"])
-        .then(({ data }) => {
-          if (data) setJobs(data as unknown as Job[]);
-        });
-    }
+    if (!open) return;
+    supabase
+      .from("jobs")
+      .select("id, title, status, company:companies(name)")
+      .in("status", ["active", "draft", "paused"])
+      .then(({ data }) => { if (data) setJobs(data as unknown as Job[]); });
+    supabase
+      .from("sales_programs")
+      .select("id, name, status, company:companies(name)")
+      .in("status", ["active", "draft", "paused"])
+      .then(({ data }) => { if (data) setPrograms(data as unknown as SalesProgram[]); });
   }, [open]);
+
+  // Purpose-Switch: Consent-Default + Target-IDs säubern
+  function switchPurpose(p: FunnelPurpose) {
+    setPurpose(p);
+    setForm((prev) => ({
+      ...prev,
+      job_id: p === "recruiting" ? prev.job_id : "",
+      sales_program_id: p === "sales" ? prev.sales_program_id : "",
+      consent_text: consentLooksDefault(prev.consent_text)
+        ? (p === "sales" ? SALES_CONSENT : RECRUITING_CONSENT)
+        : prev.consent_text,
+    }));
+  }
+
+  function consentLooksDefault(text: string): boolean {
+    return text === RECRUITING_CONSENT || text === SALES_CONSENT || text.trim() === "";
+  }
 
   function handleNameChange(name: string) {
     setForm({ ...form, name, slug: slugify(name) });
@@ -47,18 +76,46 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
-    const { error } = await supabase.from("funnels").insert([{ ...form, funnel_type: "internal" }]);
-
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else {
-      onClose();
-      onSuccess?.();
+    // Target-Validation (XOR sitzt auf DB-Ebene, hier freundlicher Fehler)
+    if (purpose === "recruiting" && !form.job_id) {
+      setError("Bitte Job auswählen"); return;
     }
+    if (purpose === "sales" && !form.sales_program_id) {
+      setError("Bitte Sales-Program auswählen"); return;
+    }
+
+    // Sales-Consent-Validator: consent_text darf nicht leer sein
+    if (purpose === "sales" && form.consent_text.trim().length < 30) {
+      setError(
+        "Sales-Funnels brauchen einen dokumentierten Consent-Text (mind. 30 Zeichen). "
+        + "Der Text muss klarstellen, dass die Person telefonisch kontaktiert wird."
+      );
+      return;
+    }
+
+    setLoading(true);
+
+    const payload = {
+      job_id: purpose === "recruiting" ? form.job_id : null,
+      sales_program_id: purpose === "sales" ? form.sales_program_id : null,
+      name: form.name,
+      slug: form.slug,
+      intro_headline: form.intro_headline,
+      intro_subtext: form.intro_subtext,
+      consent_text: form.consent_text,
+      funnel_type: "internal",
+    };
+
+    const { error: insertErr } = await supabase.from("funnels").insert([payload]);
+    if (insertErr) {
+      setError(insertErr.message);
+      setLoading(false);
+      return;
+    }
+    onClose();
+    onSuccess?.();
   }
 
   if (!open) return null;
@@ -71,7 +128,7 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
           <div>
             <h2 className="font-headline text-2xl italic text-on-surface">Neuer Funnel</h2>
             <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
-              Bewerbungs-Funnel erstellen
+              {purpose === "sales" ? "Sales-Lead-Funnel erstellen" : "Bewerbungs-Funnel erstellen"}
             </p>
           </div>
           <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">
@@ -80,28 +137,80 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
-          <Field label="Job *">
-            <select
-              required
-              value={form.job_id}
-              onChange={(e) => setForm({ ...form, job_id: e.target.value })}
-              className={inputClass}
-            >
-              <option value="">Job auswählen…</option>
-              {jobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.title} · {j.company.name}
-                </option>
-              ))}
-            </select>
+          <Field label="Funnel-Zweck *">
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => switchPurpose("recruiting")}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                  purpose === "recruiting"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">work</span>
+                Recruiting (Job)
+              </button>
+              <button
+                type="button"
+                onClick={() => switchPurpose("sales")}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                  purpose === "sales"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">trending_up</span>
+                Sales (Program)
+              </button>
+            </div>
           </Field>
+
+          {purpose === "recruiting" ? (
+            <Field label="Job *">
+              <select
+                required
+                value={form.job_id}
+                onChange={(e) => setForm({ ...form, job_id: e.target.value })}
+                className={inputClass}
+              >
+                <option value="">Job auswählen…</option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.title} · {j.company.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          ) : (
+            <Field label="Sales-Program *">
+              <select
+                required
+                value={form.sales_program_id}
+                onChange={(e) => setForm({ ...form, sales_program_id: e.target.value })}
+                className={inputClass}
+              >
+                <option value="">Program auswählen…</option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} · {p.company.name}
+                  </option>
+                ))}
+              </select>
+              {programs.length === 0 && (
+                <p className="font-label text-xs text-outline mt-1.5">
+                  Noch kein Sales-Program vorhanden. Lege zuerst eines unter <em>Sales → Programs</em> an.
+                </p>
+              )}
+            </Field>
+          )}
 
           <Field label="Funnel-Name *">
             <input
               required
               value={form.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder="Lagerarbeiter Variante A"
+              placeholder={purpose === "sales" ? "B2B Closer — Outreach A" : "Lagerarbeiter Variante A"}
               className={inputClass}
             />
           </Field>
@@ -114,7 +223,7 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
               <input
                 value={form.slug}
                 onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                placeholder="lagerarbeiter-a"
+                placeholder={purpose === "sales" ? "b2b-closer-a" : "lagerarbeiter-a"}
                 className="flex-1 bg-transparent px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none"
               />
             </div>
@@ -124,7 +233,7 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
             <input
               value={form.intro_headline}
               onChange={(e) => setForm({ ...form, intro_headline: e.target.value })}
-              placeholder="Wir suchen dich als Lagerarbeiter!"
+              placeholder={purpose === "sales" ? "Mehr Umsatz für B2B-Sales-Teams" : "Wir suchen dich als Lagerarbeiter!"}
               className={inputClass}
             />
           </Field>
@@ -133,19 +242,24 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
             <textarea
               value={form.intro_subtext}
               onChange={(e) => setForm({ ...form, intro_subtext: e.target.value })}
-              placeholder="Bewirb dich jetzt in nur 2 Minuten…"
+              placeholder={purpose === "sales" ? "Kostenfreies Erstgespräch in 2 Minuten anfragen…" : "Bewirb dich jetzt in nur 2 Minuten…"}
               rows={2}
               className={inputClass + " resize-none"}
             />
           </Field>
 
-          <Field label="Datenschutz-Text">
+          <Field label={purpose === "sales" ? "Consent-Text (Opt-In für Anruf) *" : "Datenschutz-Text"}>
             <textarea
               value={form.consent_text}
               onChange={(e) => setForm({ ...form, consent_text: e.target.value })}
-              rows={2}
+              rows={purpose === "sales" ? 3 : 2}
               className={inputClass + " resize-none text-xs"}
             />
+            {purpose === "sales" && (
+              <p className="font-label text-xs text-outline mt-1.5">
+                Pflicht: Der Text muss das Opt-In für den telefonischen Kontakt dokumentieren. Ohne validen Consent-Text lässt sich der Funnel nicht speichern.
+              </p>
+            )}
           </Field>
 
           {error && (

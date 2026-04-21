@@ -5,50 +5,64 @@ import { createClient } from "@/lib/supabase/client";
 
 type Props = { open: boolean; onClose: () => void; onSuccess?: () => void };
 type Job = { id: string; title: string; company: { name: string } };
+type SalesProgram = { id: string; name: string; company: { name: string } };
+type FunnelPurpose = "recruiting" | "sales";
 
 export function ExternalFunnelModal({ open, onClose, onSuccess }: Props) {
+  const [purpose, setPurpose] = useState<FunnelPurpose>("recruiting");
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [form, setForm] = useState({ name: "", external_url: "", job_id: "" });
+  const [programs, setPrograms] = useState<SalesProgram[]>([]);
+  const [form, setForm] = useState({ name: "", external_url: "", job_id: "", sales_program_id: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    if (open) {
-      setForm({ name: "", external_url: "", job_id: "" });
-      setError(null);
-      supabase
-        .from("jobs")
-        .select("id, title, company:companies(name)")
-        .eq("status", "active")
-        .then(({ data }) => {
-          if (data) setJobs(data as unknown as Job[]);
-        });
-    }
+    if (!open) return;
+    setForm({ name: "", external_url: "", job_id: "", sales_program_id: "" });
+    setPurpose("recruiting");
+    setError(null);
+    supabase
+      .from("jobs")
+      .select("id, title, company:companies(name)")
+      .eq("status", "active")
+      .then(({ data }) => { if (data) setJobs(data as unknown as Job[]); });
+    supabase
+      .from("sales_programs")
+      .select("id, name, company:companies(name)")
+      .in("status", ["active", "draft", "paused"])
+      .then(({ data }) => { if (data) setPrograms(data as unknown as SalesProgram[]); });
   }, [open]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setError(null);
     if (!form.external_url.startsWith("http")) {
       setError("Bitte eine gültige URL eingeben (beginnt mit http)");
       return;
     }
+    if (purpose === "recruiting" && !form.job_id) {
+      setError("Bitte Job auswählen"); return;
+    }
+    if (purpose === "sales" && !form.sales_program_id) {
+      setError("Bitte Sales-Program auswählen"); return;
+    }
     setLoading(true);
-    setError(null);
 
-    const { error } = await supabase.from("funnels").insert([
+    const { error: insertErr } = await supabase.from("funnels").insert([
       {
         name: form.name,
         slug: `ext-${Date.now()}`,
         funnel_type: "external",
         external_url: form.external_url,
-        job_id: form.job_id,
+        job_id: purpose === "recruiting" ? form.job_id : null,
+        sales_program_id: purpose === "sales" ? form.sales_program_id : null,
         status: "active",
       },
     ]);
 
-    if (error) {
-      setError(error.message);
+    if (insertErr) {
+      setError(insertErr.message);
       setLoading(false);
     } else {
       onClose();
@@ -65,8 +79,8 @@ export function ExternalFunnelModal({ open, onClose, onSuccess }: Props) {
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20">
           <div>
             <h2 className="font-headline text-2xl italic text-on-surface">Externer Funnel</h2>
-            <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mt-0.5">
-              Externen Bewerbungs-Link hinzufügen
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
+              Externen Link hinzufügen
             </p>
           </div>
           <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">
@@ -75,6 +89,36 @@ export function ExternalFunnelModal({ open, onClose, onSuccess }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className={labelClass}>Funnel-Zweck *</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPurpose("recruiting")}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                  purpose === "recruiting"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">work</span>
+                Recruiting
+              </button>
+              <button
+                type="button"
+                onClick={() => setPurpose("sales")}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                  purpose === "sales"
+                    ? "bg-primary text-on-primary"
+                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">trending_up</span>
+                Sales
+              </button>
+            </div>
+          </div>
+
           <div>
             <label className={labelClass}>Name *</label>
             <input
@@ -96,27 +140,46 @@ export function ExternalFunnelModal({ open, onClose, onSuccess }: Props) {
               placeholder="https://martin-amon.involve.me/resume-collection"
               className={inputClass}
             />
-            <p className="font-label text-[10px] text-outline-variant mt-1">
+            <p className="font-label text-xs text-outline-variant mt-1">
               Vollständige URL zum externen Funnel (involve.me, Typeform, etc.)
             </p>
           </div>
 
-          <div>
-            <label className={labelClass}>Job *</label>
-            <select
-              required
-              value={form.job_id}
-              onChange={(e) => setForm({ ...form, job_id: e.target.value })}
-              className={inputClass}
-            >
-              <option value="">Job auswählen…</option>
-              {jobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  {j.title} · {j.company.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          {purpose === "recruiting" ? (
+            <div>
+              <label className={labelClass}>Job *</label>
+              <select
+                required
+                value={form.job_id}
+                onChange={(e) => setForm({ ...form, job_id: e.target.value })}
+                className={inputClass}
+              >
+                <option value="">Job auswählen…</option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.title} · {j.company.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className={labelClass}>Sales-Program *</label>
+              <select
+                required
+                value={form.sales_program_id}
+                onChange={(e) => setForm({ ...form, sales_program_id: e.target.value })}
+                className={inputClass}
+              >
+                <option value="">Program auswählen…</option>
+                {programs.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name} · {p.company.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-2 bg-error-container/20 border border-error-container/40 rounded-xl px-4 py-3">
@@ -146,5 +209,5 @@ export function ExternalFunnelModal({ open, onClose, onSuccess }: Props) {
   );
 }
 
-const labelClass = "font-label text-[10px] font-bold uppercase tracking-widest text-outline block mb-1.5";
+const labelClass = "font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5";
 const inputClass = "w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";

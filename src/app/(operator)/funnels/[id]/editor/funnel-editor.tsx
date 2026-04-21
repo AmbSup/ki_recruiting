@@ -141,6 +141,7 @@ type Funnel = {
   branding: FunnelBranding | null;
   views: number;
   submissions: number;
+  consent_text: string | null;
   job: { title: string; company: { name: string } } | null;
 };
 
@@ -1552,6 +1553,27 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   async function save() {
     setSaving(true);
     setSaveError(null);
+
+    // Sales-Consent-Validator: Sales-Funnels dürfen ohne dokumentiertes Opt-In
+    // nicht gespeichert werden. Recruiting unverändert.
+    if (funnel?.sales_program_id) {
+      const consent = (funnel.consent_text ?? "").trim();
+      if (consent.length < 30) {
+        setSaveError(
+          "Sales-Funnel: Consent-Text fehlt oder ist zu kurz (mind. 30 Zeichen). "
+          + "Ohne dokumentiertes Opt-In darf kein Sales-Call getriggert werden."
+        );
+        setSaving(false);
+        return;
+      }
+      const hasContactForm = pages.some((p) => p.blocks.some((b) => b.type === "contact_form"));
+      if (!hasContactForm) {
+        setSaveError("Sales-Funnel: Mindestens eine Seite mit 'contact_form'-Block erforderlich.");
+        setSaving(false);
+        return;
+      }
+    }
+
     await supabase.from("funnels").update({ branding }).eq("id", funnelId);
     for (const page of pages) {
       const payload = { blocks: page.blocks, is_required: page.is_required, page_order: page.page_order, funnel_id: funnelId, page_type: "intro" };
