@@ -12,6 +12,7 @@ const navItems = [
   { href: "/funnels",      icon: "filter_alt",     label: "Funnels" },
   { href: "/ads-setup",    icon: "ads_click",      label: "Ads Setup" },
   { href: "/applicants",   icon: "people",         label: "Bewerber" },
+  { href: "/sales",        icon: "trending_up",    label: "Sales" },
   { href: "/campaigns",    icon: "campaign",       label: "Kampagnen" },
   { href: "/calls",        icon: "call",           label: "Calls" },
   { href: "/invoices",     icon: "receipt_long",   label: "Abrechnung" },
@@ -78,7 +79,7 @@ export function Sidebar() {
       {/* Main Nav */}
       <nav className="flex-1 overflow-y-auto py-4 px-3">
         <div className="mb-1">
-          <span className="px-3 text-[10px] font-label font-bold uppercase tracking-widest text-outline mb-2 block">
+          <span className="px-3 text-xs font-label font-bold uppercase tracking-widest text-outline mb-2 block">
             Hauptmenü
           </span>
           {navItems.map((item) => {
@@ -140,7 +141,7 @@ export function Sidebar() {
             </div>
             <div className="flex-1 min-w-0 text-left">
               <div className="font-label text-xs font-bold text-on-surface truncate">Operator</div>
-              <div className="font-label text-[10px] text-outline truncate">{email ?? "Lädt…"}</div>
+              <div className="font-label text-xs text-outline truncate">{email ?? "Lädt…"}</div>
             </div>
             <span className="material-symbols-outlined text-outline text-base flex-shrink-0">
               {menuOpen ? "expand_less" : "expand_more"}
@@ -151,7 +152,7 @@ export function Sidebar() {
           {menuOpen && (
             <div className="absolute bottom-full left-0 right-0 mb-1 bg-surface-container-lowest border border-outline-variant/20 rounded-xl shadow-lg overflow-hidden">
               <div className="px-4 py-3 border-b border-outline-variant/10">
-                <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-0.5">Eingeloggt als</div>
+                <div className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-0.5">Eingeloggt als</div>
                 <div className="font-body text-sm text-on-surface truncate">{email ?? "—"}</div>
               </div>
               <Link
