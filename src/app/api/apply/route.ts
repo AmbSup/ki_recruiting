@@ -16,77 +16,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Pflichtfelder fehlen" }, { status: 400 });
     }
 
-    // 1. Find or create applicant
-    let applicantId: string | null = null;
-
-    const { data: existing } = await supabase
+    // 1. Always create a new applicant — same email can apply multiple times with different names
+    const { data: newApplicant, error: insertErr } = await supabase
       .from("applicants")
-      .select("id")
-      .eq("email", email)
-      .maybeSingle();
-
-    if (existing) {
-      applicantId = existing.id;
-      await supabase.from("applicants").update({
-        phone: phone || undefined,
-        cv_file_url: cv_url || undefined,
-        ...(cv_file_name ? { cv_file_name } : {}),
+      .insert({
+        full_name: name,
+        email,
+        phone: phone || null,
+        cv_file_url: cv_url || null,
+        cv_file_name: cv_file_name || null,
         consent_given_at: new Date().toISOString(),
-      }).eq("id", applicantId);
-    } else {
-      const { data: newApplicant, error: insertErr } = await supabase
-        .from("applicants")
-        .insert({
-          full_name: name,
-          email,
-          phone: phone || null,
-          cv_file_url: cv_url || null,
-          cv_file_name: cv_file_name || null,
-          consent_given_at: new Date().toISOString(),
-        })
-        .select("id")
-        .single();
-
-      if (insertErr || !newApplicant) {
-        return NextResponse.json({ error: insertErr?.message ?? "Bewerber konnte nicht gespeichert werden" }, { status: 500 });
-      }
-      applicantId = newApplicant.id;
-    }
-
-    if (!applicantId) {
-      return NextResponse.json({ error: "Bewerber ID fehlt" }, { status: 500 });
-    }
-
-    // 2. Find or create application (unique per applicant+job)
-    let applicationId: string | null = null;
-
-    const { data: existingApp } = await supabase
-      .from("applications")
+      })
       .select("id")
-      .eq("applicant_id", applicantId)
-      .eq("job_id", job_id)
-      .maybeSingle();
+      .single();
 
-    if (existingApp) {
-      applicationId = existingApp.id;
-      await supabase.from("applications").update({
-        funnel_responses: answers ?? {},
-        funnel_id,
-      }).eq("id", applicationId);
-    } else {
-      const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
-        applicant_id: applicantId,
-        job_id,
-        funnel_id,
-        funnel_responses: answers ?? {},
-        source: "direct",
-      }).select("id").single();
-
-      if (appicErr || !newApplication) {
-        return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
-      }
-      applicationId = newApplication.id;
+    if (insertErr || !newApplicant) {
+      return NextResponse.json({ error: insertErr?.message ?? "Bewerber konnte nicht gespeichert werden" }, { status: 500 });
     }
+    const applicantId = newApplicant.id;
+
+    // 2. Create new application (fresh applicant → no unique constraint conflict)
+    const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
+      applicant_id: applicantId,
+      job_id,
+      funnel_id,
+      funnel_responses: answers ?? {},
+      source: "direct",
+    }).select("id").single();
+
+    if (appicErr || !newApplication) {
+      return NextResponse.json({ error: appicErr?.message ?? "Bewerbung konnte nicht gespeichert werden" }, { status: 500 });
+    }
+    const applicationId = newApplication.id;
 
     if (!applicationId) {
       return NextResponse.json({ error: "Bewerbungs-ID fehlt" }, { status: 500 });
