@@ -87,20 +87,19 @@
     {
       "id": "dedupe-check",
       "name": "Check Active Call",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1440, 240],
       "parameters": {
-        "operation": "getAll",
-        "tableId": "sales_calls",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            { "keyName": "sales_lead_id", "condition": "eq", "keyValue": "={{ $json.lead.id }}" },
-            { "keyName": "status", "condition": "in", "keyValue": "initiated,ringing,in_progress" }
-          ]
-        },
-        "filterType": "manual"
+        "method": "GET",
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_calls?sales_lead_id=eq.{{ $json.lead.id }}&status=in.(initiated,ringing,in_progress)&select=id&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "timeout": 15000,
+          "splitIntoItems": false,
+          "response": { "response": { "neverError": true } }
+        }
       },
       "credentials": {
         "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
@@ -116,7 +115,7 @@
         "conditions": {
           "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
           "conditions": [
-            { "leftValue": "={{ ($input.all() || []).length }}", "rightValue": "0", "operator": { "type": "number", "operation": "equals" } }
+            { "leftValue": "={{ $json.length }}", "rightValue": "0", "operator": { "type": "number", "operation": "equals" } }
           ],
           "combinator": "and"
         }
