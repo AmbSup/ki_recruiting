@@ -316,6 +316,8 @@ Dieser Report ist **nur Vorab-Hinweis**. Der endgültige Analyzer (Claude, `/api
 
 **Assistant-Routing:** Recruiting- und Sales-Calls teilen sich den SIP-User `aiprofis@sip.vapi.ai`. Die Assistant-Wahl passiert dynamisch im `/api/webhook/vapi`-Endpoint anhand des Phone-Lookups (`sales_call_sessions` wird vor `call_sessions` geprüft). Deshalb muss jeder Sales-Call beim n8n-Trigger zusätzlich eine Zeile in `sales_call_sessions` schreiben — mit `cached_data`, aus dem die Template-Variablen gelesen werden.
 
+**Assistant-ID-Quelle:** Pro Program in `sales_programs.vapi_assistant_id`. Als Fallback (wenn leer) zieht der Webhook `process.env.VAPI_SALES_ASSISTANT_ID` (Vercel). Sinnvoll, die Env-Variable als globalen Safety-Net zu setzen — aktueller Wert: `998f169b-6a78-4eb0-a516-350a64968a8e`.
+
 ---
 
 ## Test-Checkliste

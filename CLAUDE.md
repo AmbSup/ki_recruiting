@@ -191,6 +191,21 @@ node build_*.js
 curl -X PUT -H "..." .../workflows/ID -d @workflow_put.json
 ```
 
+## Environment Variables (Vercel)
+
+### Pre-existing (Recruiting + general)
+`ANTHROPIC_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `N8N_BASE_URL`, `N8N_WEBHOOK_SECRET`, `VAPI_ASSISTANT_ID`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `NEXT_PUBLIC_META_AD_ACCOUNT_ID`, `NEXT_PUBLIC_FUNNEL_BASE_URL`, `INVOLVEME_WEBHOOK_SECRET`, `REPLICATE_API_TOKEN`
+
+### Sales-new
+
+| Var | Required? | Purpose |
+|---|---|---|
+| `VAPI_SALES_ASSISTANT_ID` | **Optional fallback** | Vapi assistant used if `sales_programs.vapi_assistant_id` is null when `/api/webhook/vapi` resolves an incoming SIP call. Current known Sales-Assistant ID: `998f169b-6a78-4eb0-a516-350a64968a8e`. Recommended: set this as a global safety net in Vercel. |
+| `META_APP_SECRET` | **Required only** if `/api/webhook/meta-leadgen` is wired in Meta | Used to verify the `x-hub-signature-256` HMAC of incoming Meta Leadgen events. If not set, route returns 500. |
+| `META_VERIFY_TOKEN` | **Required only** if subscribing the webhook in Meta Developer console | Must match the `hub.verify_token` query string Meta sends during the subscription-challenge handshake. User-chosen string, copy into both Meta app + Vercel. |
+
+Until Meta Leadgen ingest is turned on, the two `META_*` vars can stay unset — the route only errors when actually invoked.
+
 ## Important Constraints
 - n8n expressions: `.arguments` is blocked (reserved keyword) → use Code nodes to extract tool call args
 - Twilio SIP URI limit: ~1024 chars → only pass minimal IDs, not full job/program data
