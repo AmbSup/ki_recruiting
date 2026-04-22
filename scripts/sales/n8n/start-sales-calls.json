@@ -154,8 +154,14 @@
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "twilioApi",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"To\": \"{{ $('Merge Lead & Program').first().json.lead.phone }}\",\n  \"From\": \"{{ $('Merge Lead & Program').first().json.program.caller_phone_number }}\",\n  \"Parameters\": {\n    \"sales_lead_id\": \"{{ $('Merge Lead & Program').first().json.lead.id }}\",\n    \"sales_call_id\": \"{{ $('Insert sales_calls').first().json.id }}\",\n    \"sales_program_id\": \"{{ $('Merge Lead & Program').first().json.program.id }}\",\n    \"vapi_assistant_id\": \"{{ $('Merge Lead & Program').first().json.program.vapi_assistant_id }}\"\n  }\n}",
+        "specifyBody": "form",
+        "bodyParameters": {
+          "parameters": [
+            { "name": "To", "value": "={{ $('Merge Lead & Program').first().json.lead.phone }}" },
+            { "name": "From", "value": "={{ $('Merge Lead & Program').first().json.program.caller_phone_number }}" },
+            { "name": "Parameters", "value": "={{ JSON.stringify({ sales_lead_id: $('Merge Lead & Program').first().json.lead.id, sales_call_id: $('Insert sales_calls').first().json.id, sales_program_id: $('Merge Lead & Program').first().json.program.id, vapi_assistant_id: $('Merge Lead & Program').first().json.program.vapi_assistant_id }) }}" }
+          ]
+        },
         "options": { "timeout": 30000 }
       },
       "credentials": {
