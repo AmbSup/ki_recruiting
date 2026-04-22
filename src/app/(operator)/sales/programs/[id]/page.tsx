@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { LeadModal } from "../../leads/lead-modal";
 
 type Program = {
   id: string;
@@ -38,6 +39,7 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [metaFormInput, setMetaFormInput] = useState("");
+  const [leadModalOpen, setLeadModalOpen] = useState(false);
 
   useEffect(() => {
     const supabase = createClient();
@@ -152,6 +154,13 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
             </button>
           )}
           <button
+            onClick={() => setLeadModalOpen(true)}
+            className="flex items-center gap-1.5 border border-primary/30 text-primary px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-container/20 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">person_add</span>
+            Test-Lead anlegen
+          </button>
+          <button
             onClick={del}
             className="flex items-center gap-1.5 border border-error/30 text-error px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-error-container/20 transition-colors"
           >
@@ -244,6 +253,12 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
           </div>
         </div>
       </div>
+
+      <LeadModal
+        open={leadModalOpen}
+        onClose={() => setLeadModalOpen(false)}
+        defaultProgramId={id}
+      />
     </div>
   );
 }

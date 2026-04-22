@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { LeadModal } from "./lead-modal";
 
 type Lead = {
   id: string;
@@ -47,6 +48,7 @@ export default function SalesLeadsPage() {
   const [sourceFilter, setSourceFilter] = useState("all");
   const [programFilter, setProgramFilter] = useState("all");
   const [programs, setPrograms] = useState<{ id: string; name: string }[]>([]);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -97,6 +99,13 @@ export default function SalesLeadsPage() {
             <span className="material-symbols-outlined text-sm">upload_file</span>
             CSV Import
           </Link>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="flex items-center gap-2 bg-primary text-on-primary px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">person_add</span>
+            Neuer Lead
+          </button>
         </div>
       </div>
 
@@ -130,7 +139,7 @@ export default function SalesLeadsPage() {
       {loading ? (
         <div className="text-center py-16 font-label text-outline">Lädt…</div>
       ) : filtered.length === 0 ? (
-        <EmptyState />
+        <EmptyState onCreate={() => setModalOpen(true)} />
       ) : (
         <div className="bg-surface-container-lowest rounded-2xl shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] overflow-hidden">
           <table className="w-full">
@@ -197,6 +206,8 @@ export default function SalesLeadsPage() {
           </table>
         </div>
       )}
+
+      <LeadModal open={modalOpen} onClose={() => setModalOpen(false)} onSuccess={() => load()} />
     </div>
   );
 }
@@ -219,7 +230,7 @@ function formatDateShort(iso: string) {
     + d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
 }
 
-function EmptyState() {
+function EmptyState({ onCreate }: { onCreate: () => void }) {
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-16 text-center shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
       <span className="material-symbols-outlined text-6xl text-outline-variant mb-4 block">people</span>
@@ -227,13 +238,22 @@ function EmptyState() {
       <p className="font-body text-sm text-outline max-w-md mx-auto mb-6">
         Leads kommen aus vier Quellen: <strong>Meta-Lead-Ads</strong>, <strong>CSV-Import</strong>, <strong>Sales-Funnel</strong>, manueller Eintrag.
       </p>
-      <Link
-        href="/sales/leads/import"
-        className="inline-flex items-center gap-2 bg-primary text-on-primary px-5 py-3 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors"
-      >
-        <span className="material-symbols-outlined text-sm">upload_file</span>
-        CSV hochladen
-      </Link>
+      <div className="flex items-center justify-center gap-3">
+        <button
+          onClick={onCreate}
+          className="inline-flex items-center gap-2 bg-primary text-on-primary px-5 py-3 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors"
+        >
+          <span className="material-symbols-outlined text-sm">person_add</span>
+          Neuer Lead
+        </button>
+        <Link
+          href="/sales/leads/import"
+          className="inline-flex items-center gap-2 border border-outline-variant/30 text-on-surface-variant px-5 py-3 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
+        >
+          <span className="material-symbols-outlined text-sm">upload_file</span>
+          CSV hochladen
+        </Link>
+      </div>
     </div>
   );
 }
