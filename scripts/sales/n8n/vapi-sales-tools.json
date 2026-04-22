@@ -34,7 +34,7 @@
       "position": [640, 300],
       "parameters": {
         "method": "GET",
-        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_leads?phone=eq.{{ $json.phone }}&select=id,first_name,last_name,full_name,email,company_name,role,notes,custom_fields,sales_program_id,program:sales_programs(id,name,product_pitch,value_proposition,booking_link,target_persona)&limit=1",
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_leads?phone=eq.{{ encodeURIComponent($json.phone) }}&select=id,first_name,last_name,full_name,email,company_name,role,notes,custom_fields,sales_program_id,program:sales_programs(id,name,product_pitch,value_proposition,booking_link,target_persona)&limit=1",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
         "options": { "timeout": 10000, "response": { "response": { "neverError": true } } }
