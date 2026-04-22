@@ -148,6 +148,7 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [2460, 180],
+      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
         "url": "=https://studio.twilio.com/v2/Flows/FWf3b5573e6cfff5829c85c7a260073154/Executions",
@@ -166,6 +167,33 @@
       },
       "credentials": {
         "twilioApi": { "id": "AGT4eJcf8gZIc8pO", "name": "Twilio account" }
+      }
+    },
+    {
+      "id": "mark-call-failed",
+      "name": "Mark Call Failed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2640, 320],
+      "parameters": {
+        "operation": "update",
+        "tableId": "sales_calls",
+        "filterType": "manual",
+        "matchType": "anyFilter",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Insert sales_calls').first().json.id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "status", "fieldValue": "failed" },
+            { "fieldId": "end_reason", "fieldValue": "={{ 'Twilio error: ' + ($json.error && $json.error.message ? $json.error.message : $json.message ? $json.message : JSON.stringify($json).slice(0, 400)) }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -215,7 +243,12 @@
     "Insert sales_calls": { "main": [[{ "node": "Build Session Payload", "type": "main", "index": 0 }]] },
     "Build Session Payload": { "main": [[{ "node": "Upsert sales_call_sessions", "type": "main", "index": 0 }]] },
     "Upsert sales_call_sessions": { "main": [[{ "node": "Twilio — Outbound Call", "type": "main", "index": 0 }]] },
-    "Twilio — Outbound Call": { "main": [[{ "node": "Lead status → calling", "type": "main", "index": 0 }]] }
+    "Twilio — Outbound Call": {
+      "main": [
+        [{ "node": "Lead status → calling", "type": "main", "index": 0 }],
+        [{ "node": "Mark Call Failed", "type": "main", "index": 0 }]
+      ]
+    }
   },
   "settings": { "executionOrder": "v1" }
 }

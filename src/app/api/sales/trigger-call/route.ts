@@ -30,17 +30,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kein dokumentiertes Opt-In — Call blockiert" }, { status: 403 });
   }
 
-  // Status-Lock: kein doppeltes Dialing wenn schon aktiv
-  const { data: activeCall } = await supabase
-    .from("sales_calls")
-    .select("id")
-    .eq("sales_lead_id", sales_lead_id)
-    .in("status", ["initiated", "ringing", "in_progress"])
-    .maybeSingle();
+  // Status-Lock: kein doppeltes Dialing wenn schon aktiv.
+  // `initiated`-Rows, die älter als 30s sind, sind fast sicher tot (Twilio
+  // Studio Executions schlagen sofort fehl oder wechseln rasch in `ringing`).
+  // Wir markieren die als `failed` und lassen den neuen Trigger durch.
+  const STALE_THRESHOLD_MS = 30_000;
+  const staleCutoff = new Date(Date.now() - STALE_THRESHOLD_MS).toISOString();
 
-  if (activeCall) {
+  const { data: activeCalls } = await supabase
+    .from("sales_calls")
+    .select("id, status, created_at")
+    .eq("sales_lead_id", sales_lead_id)
+    .in("status", ["initiated", "ringing", "in_progress"]);
+
+  const stuck: string[] = [];
+  const trulyActive: { id: string; status: string }[] = [];
+  for (const c of activeCalls ?? []) {
+    if (c.status === "initiated" && c.created_at < staleCutoff) {
+      stuck.push(c.id);
+    } else {
+      trulyActive.push({ id: c.id, status: c.status });
+    }
+  }
+
+  if (stuck.length > 0) {
+    await supabase
+      .from("sales_calls")
+      .update({
+        status: "failed",
+        end_reason: "Auto-cleanup on retry (stuck in initiated > 30s)",
+        ended_at: new Date().toISOString(),
+      })
+      .in("id", stuck);
+  }
+
+  if (trulyActive.length > 0) {
     return NextResponse.json(
-      { error: "Lead hat bereits einen aktiven Call", sales_call_id: activeCall.id },
+      {
+        error: `Lead hat bereits einen ${trulyActive[0].status === "in_progress" ? "laufenden" : "aktiven"} Call`,
+        sales_call_id: trulyActive[0].id,
+        status: trulyActive[0].status,
+      },
       { status: 409 },
     );
   }

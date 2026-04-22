@@ -63,6 +63,12 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [triggerMsg, setTriggerMsg] = useState<string | null>(null);
+  const [triggerError, setTriggerError] = useState<{
+    status: number;
+    message: string;
+    sales_call_id?: string;
+    callStatus?: string;
+  } | null>(null);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
 
@@ -113,6 +119,7 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
 
   async function triggerCall() {
     setTriggering(true);
+    setTriggerError(null);
     setTriggerMsg(null);
     const res = await fetch("/api/sales/trigger-call", {
       method: "POST",
@@ -122,7 +129,12 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
     const data = await res.json();
     setTriggering(false);
     if (!res.ok) {
-      setTriggerMsg(data.error ?? "Trigger fehlgeschlagen");
+      setTriggerError({
+        status: res.status,
+        message: data.error ?? "Trigger fehlgeschlagen",
+        sales_call_id: data.sales_call_id,
+        callStatus: data.status,
+      });
       return;
     }
     setTriggerMsg("Call wird initiiert…");
@@ -196,6 +208,42 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
           </button>
         </div>
       </div>
+
+      {triggerError && (
+        <div className="flex items-start justify-between gap-3 bg-error-container/20 border border-error-container/40 rounded-xl px-4 py-3 mb-6">
+          <div className="flex items-start gap-2">
+            <span className="material-symbols-outlined text-error text-sm mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+            <div>
+              <div className="font-label text-xs font-bold uppercase tracking-widest text-error">
+                Call-Trigger fehlgeschlagen ({triggerError.status})
+              </div>
+              <div className="font-body text-sm text-on-surface mt-1">{triggerError.message}</div>
+              {triggerError.callStatus && (
+                <div className="font-label text-xs text-outline mt-1">
+                  Letzter Call-Status: <strong>{triggerError.callStatus}</strong>
+                  {triggerError.sales_call_id && (
+                    <>
+                      {" · "}
+                      <Link href={`/sales/calls/${triggerError.sales_call_id}`} className="underline">
+                        Call öffnen
+                      </Link>
+                    </>
+                  )}
+                </div>
+              )}
+              {triggerError.status === 502 && (
+                <div className="font-label text-xs text-outline mt-1">
+                  n8n hat den Workflow nicht akzeptiert — prüf die letzte Execution unter{" "}
+                  <a href="https://n8n.neuronic-automation.ai/workflow/Jwl2xHatoq1gZlZ4/executions" target="_blank" rel="noopener noreferrer" className="underline">
+                    Sales — Start Sales Calls
+                  </a>.
+                </div>
+              )}
+            </div>
+          </div>
+          <button onClick={() => setTriggerError(null)} className="material-symbols-outlined text-outline hover:text-on-surface text-sm">close</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-7 space-y-5">
