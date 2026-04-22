@@ -15,7 +15,7 @@ Four workflows that mirror the Recruiting call-automation, adapted for AI-driven
 
 1. **Supabase credential** — create once in n8n (`Credentials → New → Supabase`), supply URL + service-role key. Replace every occurrence of `REPLACE_SUPABASE_CREDENTIAL_ID` in the imported workflows with the actual credential ID (n8n also shows a "Select credential" dropdown after import).
 2. **Twilio credential** (HTTP Basic Auth — Account SID + Auth Token). Used in `start-sales-calls.json`. Replace `REPLACE_TWILIO_CREDENTIAL_ID`.
-3. **Twilio Studio Flow SID** — replace `REPLACE_TWILIO_STUDIO_FLOW_SID` in `start-sales-calls.json` with the Flow SID that plays the consent prompt and routes to Vapi SIP.
+3. **Twilio Studio Flow SID** — already set in `start-sales-calls.json` to `FWf3b5573e6cfff5829c85c7a260073154` ("Sales Call" Studio Flow). Flow plays consent prompt and routes to Vapi SIP for the Sales-Assistant.
 4. **Meta Graph credential** (HTTP Header Auth — `Authorization: Bearer <PAGE_ACCESS_TOKEN>`). Used in `meta-leadgen-matcher.json`. Replace `REPLACE_META_GRAPH_CREDENTIAL_ID`.
 5. **App URL** — the HTTP Request nodes currently hardcode `https://ki-recruiting.vercel.app`. If you move off Vercel or use a branch deploy URL, update the three matching URLs:
    - `vapi-sales-call-processing.json` → `POST /api/sales/call-analyse`
