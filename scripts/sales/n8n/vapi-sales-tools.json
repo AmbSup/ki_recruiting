@@ -21,9 +21,36 @@
       "name": "Extract Tool & Args",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [480, 300],
+      "position": [440, 300],
       "parameters": {
-        "jsCode": "// Vapi tool-call webhook payload shape:\n// body.message.toolCalls[].function.{name, arguments}\n// `.arguments` ist in n8n-Expressions reserviert → hier im Code extrahieren.\nconst msg = $input.first().json.body?.message ?? {};\nconst toolCalls = msg.toolCalls ?? [];\nconst call = msg.call ?? {};\nconst vars = call?.assistantOverrides?.variableValues ?? {};\n\n// Wir nehmen den ersten Tool-Call je Request (Vapi kann mehrere bündeln)\nconst first = toolCalls[0]?.function ?? {};\nconst toolName = first.name ?? null;\nconst toolArgs = first.arguments ?? {};\n\nreturn [{\n  json: {\n    tool_name: toolName,\n    tool_args: toolArgs,\n    tool_call_id: toolCalls[0]?.id ?? null,\n    sales_lead_id: vars.sales_lead_id ?? toolArgs.sales_lead_id ?? null,\n    sales_program_id: vars.sales_program_id ?? toolArgs.sales_program_id ?? null,\n    sales_call_id: vars.sales_call_id ?? null\n  }\n}];"
+        "jsCode": "const msg = $input.first().json.body?.message ?? {};\nconst toolCalls = msg.toolCalls ?? [];\nconst call = msg.call ?? {};\nconst vars = call?.assistantOverrides?.variableValues ?? {};\nconst phone = call?.customer?.number ?? null;\n\nconst first = toolCalls[0]?.function ?? {};\nconst toolName = first.name ?? null;\nconst toolArgs = first.arguments ?? {};\n\nreturn [{\n  json: {\n    tool_name: toolName,\n    tool_args: toolArgs,\n    tool_call_id: toolCalls[0]?.id ?? null,\n    phone,\n    sales_lead_id: vars.sales_lead_id ?? toolArgs.sales_lead_id ?? null,\n    sales_program_id: vars.sales_program_id ?? toolArgs.sales_program_id ?? null,\n    sales_call_id: vars.sales_call_id ?? null\n  }\n}];"
+      }
+    },
+    {
+      "id": "resolve-context",
+      "name": "Resolve Lead + Program by Phone",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [640, 300],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_leads?phone=eq.{{ $json.phone }}&select=id,first_name,last_name,full_name,email,company_name,role,notes,custom_fields,sales_program_id,program:sales_programs(id,name,product_pitch,value_proposition,booking_link,target_persona)&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": { "timeout": 10000, "response": { "response": { "neverError": true } } }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "build-context",
+      "name": "Build Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [840, 300],
+      "parameters": {
+        "jsCode": "const extracted = $('Extract Tool & Args').first().json;\nconst raw = $input.first().json;\nlet rows = [];\nif (Array.isArray(raw)) rows = raw;\nelse if (Array.isArray(raw && raw.body)) rows = raw.body;\nelse if (raw && typeof raw === 'object' && raw.id) rows = [raw];\nconst lead = rows[0] || null;\nconst program = lead && lead.program ? lead.program : null;\n\nreturn [{\n  json: {\n    tool_name: extracted.tool_name,\n    tool_args: extracted.tool_args,\n    tool_call_id: extracted.tool_call_id,\n    sales_lead_id: (lead && lead.id) || extracted.sales_lead_id,\n    sales_program_id: (program && program.id) || extracted.sales_program_id,\n    sales_call_id: extracted.sales_call_id,\n    phone: extracted.phone,\n    lead: lead,\n    program: program\n  }\n}];"
       }
     },
     {
@@ -31,7 +58,7 @@
       "name": "Route by Tool",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [720, 300],
+      "position": [1040, 300],
       "parameters": {
         "rules": {
           "values": [
@@ -45,53 +72,11 @@
       }
     },
     {
-      "id": "fetch-program",
-      "name": "Fetch Program",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [960, 100],
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "sales_programs",
-        "returnAll": true,
-        "filterType": "manual",
-        "filters": {
-          "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.sales_program_id }}" }
-          ]
-        }
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
-      "id": "fetch-lead",
-      "name": "Fetch Lead",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [960, 260],
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "sales_leads",
-        "returnAll": true,
-        "filterType": "manual",
-        "filters": {
-          "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.sales_lead_id }}" }
-          ]
-        }
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
       "id": "book-meeting",
       "name": "Persist Meeting (book_meeting)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [960, 420],
+      "position": [1240, 460],
       "parameters": {
         "method": "POST",
         "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_call_analyses",
@@ -105,6 +90,7 @@
           ]
         },
         "sendBody": true,
+        "contentType": "json",
         "specifyBody": "json",
         "jsonBody": "={{ JSON.stringify({ sales_call_id: $json.sales_call_id, meeting_booked: true, meeting_datetime: $json.tool_args.datetime }) }}",
         "options": { "timeout": 15000 }
@@ -118,7 +104,7 @@
       "name": "Log Objection (noop — appended by analyzer)",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [960, 580],
+      "position": [1240, 620],
       "parameters": {}
     },
     {
@@ -126,10 +112,10 @@
       "name": "Respond get_program",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1200, 100],
+      "position": [1240, 140],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"result\": {\n    \"name\": \"{{ $json.name }}\",\n    \"product_pitch\": {{ JSON.stringify($json.product_pitch ?? '') }},\n    \"value_proposition\": {{ JSON.stringify($json.value_proposition ?? '') }},\n    \"booking_link\": {{ JSON.stringify($json.booking_link ?? '') }}\n  }\n}"
+        "responseBody": "={{ JSON.stringify({ result: { name: ($json.program && $json.program.name) || '', product_pitch: ($json.program && $json.program.product_pitch) || '', value_proposition: ($json.program && $json.program.value_proposition) || '', booking_link: ($json.program && $json.program.booking_link) || '' } }) }}"
       }
     },
     {
@@ -137,10 +123,10 @@
       "name": "Respond get_lead_context",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1200, 260],
+      "position": [1240, 300],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={\n  \"result\": {\n    \"full_name\": {{ JSON.stringify($json.full_name ?? '') }},\n    \"first_name\": {{ JSON.stringify($json.first_name ?? '') }},\n    \"company_name\": {{ JSON.stringify($json.company_name ?? '') }},\n    \"role\": {{ JSON.stringify($json.role ?? '') }},\n    \"notes\": {{ JSON.stringify($json.notes ?? '') }},\n    \"custom_fields\": {{ JSON.stringify($json.custom_fields ?? {}) }}\n  }\n}"
+        "responseBody": "={{ JSON.stringify({ result: { full_name: ($json.lead && $json.lead.full_name) || '', first_name: ($json.lead && $json.lead.first_name) || '', company_name: ($json.lead && $json.lead.company_name) || '', role: ($json.lead && $json.lead.role) || '', notes: ($json.lead && $json.lead.notes) || '', custom_fields: ($json.lead && $json.lead.custom_fields) || {} } }) }}"
       }
     },
     {
@@ -148,7 +134,7 @@
       "name": "Respond book_meeting",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1200, 420],
+      "position": [1440, 460],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"result\": { \"booked\": true } }"
@@ -159,7 +145,7 @@
       "name": "Respond log_objection",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1200, 580],
+      "position": [1440, 620],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"result\": { \"logged\": true } }"
@@ -170,7 +156,7 @@
       "name": "Respond unknown tool",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1200, 740],
+      "position": [1240, 780],
       "parameters": {
         "respondWith": "json",
         "responseBody": "={ \"result\": null, \"error\": \"unknown_tool\" }"
@@ -179,18 +165,18 @@
   ],
   "connections": {
     "Vapi Sales-Tools Webhook": { "main": [[{ "node": "Extract Tool & Args", "type": "main", "index": 0 }]] },
-    "Extract Tool & Args": { "main": [[{ "node": "Route by Tool", "type": "main", "index": 0 }]] },
+    "Extract Tool & Args": { "main": [[{ "node": "Resolve Lead + Program by Phone", "type": "main", "index": 0 }]] },
+    "Resolve Lead + Program by Phone": { "main": [[{ "node": "Build Context", "type": "main", "index": 0 }]] },
+    "Build Context": { "main": [[{ "node": "Route by Tool", "type": "main", "index": 0 }]] },
     "Route by Tool": {
       "main": [
-        [{ "node": "Fetch Program", "type": "main", "index": 0 }],
-        [{ "node": "Fetch Lead", "type": "main", "index": 0 }],
+        [{ "node": "Respond get_program", "type": "main", "index": 0 }],
+        [{ "node": "Respond get_lead_context", "type": "main", "index": 0 }],
         [{ "node": "Persist Meeting (book_meeting)", "type": "main", "index": 0 }],
         [{ "node": "Log Objection (noop — appended by analyzer)", "type": "main", "index": 0 }],
         [{ "node": "Respond unknown tool", "type": "main", "index": 0 }]
       ]
     },
-    "Fetch Program": { "main": [[{ "node": "Respond get_program", "type": "main", "index": 0 }]] },
-    "Fetch Lead": { "main": [[{ "node": "Respond get_lead_context", "type": "main", "index": 0 }]] },
     "Persist Meeting (book_meeting)": { "main": [[{ "node": "Respond book_meeting", "type": "main", "index": 0 }]] },
     "Log Objection (noop — appended by analyzer)": { "main": [[{ "node": "Respond log_objection", "type": "main", "index": 0 }]] }
   },
