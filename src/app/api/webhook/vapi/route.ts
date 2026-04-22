@@ -37,18 +37,39 @@ export async function POST(req: NextRequest) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const phoneNumber = (call?.customer as any)?.number as string | undefined;
 
+    // SIP headers — Twilio Studio forwards X-sales-lead-id / X-sales-call-id /
+    // X-sales-program-id when routing into Vapi. Case-insensitive lookup.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rawSipHeaders = ((call as any)?.sipHeaders
+      ?? (call?.customer as any)?.sipHeaders
+      ?? {}) as Record<string, unknown>;
+    const sipHeaders: Record<string, string> = {};
+    for (const [k, v] of Object.entries(rawSipHeaders)) {
+      if (typeof v === "string") sipHeaders[k.toLowerCase()] = v;
+    }
+    const sipSalesLeadId = sipHeaders["x-sales-lead-id"] ?? null;
+    const sipSalesCallId = sipHeaders["x-sales-call-id"] ?? null;
+
+    console.log(
+      "[vapi-webhook] assistant-request | phone:", phoneNumber,
+      "| sip x-sales-lead-id:", sipSalesLeadId,
+      "| sip x-sales-call-id:", sipSalesCallId,
+    );
+
     const supabase = createAdminClient();
 
-    // ── Sales first ────────────────────────────────────────────────────────
-    if (phoneNumber) {
-      const { data: salesSession } = await supabase
+    // ── Sales first: lookup by SIP header (authoritative), then by phone ────
+    if (sipSalesLeadId || phoneNumber) {
+      const query = supabase
         .from("sales_call_sessions")
         .select("sales_lead_id, sales_call_id, cached_data")
-        .eq("phone_number", phoneNumber)
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+
+      const { data: salesSession } = sipSalesLeadId
+        ? await query.eq("sales_lead_id", sipSalesLeadId).maybeSingle()
+        : await query.eq("phone_number", phoneNumber!).maybeSingle();
 
       if (salesSession) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
