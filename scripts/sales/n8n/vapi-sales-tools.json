@@ -79,7 +79,7 @@
       "position": [1240, 460],
       "parameters": {
         "method": "POST",
-        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_call_analyses",
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_call_analyses?on_conflict=sales_call_id",
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "supabaseApi",
         "sendHeaders": true,
@@ -115,7 +115,7 @@
       "position": [1240, 140],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ result: { name: ($json.program && $json.program.name) || '', product_pitch: ($json.program && $json.program.product_pitch) || '', value_proposition: ($json.program && $json.program.value_proposition) || '', booking_link: ($json.program && $json.program.booking_link) || '' } }) }}"
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, result: JSON.stringify({ name: ($json.program && $json.program.name) || '', product_pitch: ($json.program && $json.program.product_pitch) || '', value_proposition: ($json.program && $json.program.value_proposition) || '', booking_link: ($json.program && $json.program.booking_link) || '' }) }] }) }}"
       }
     },
     {
@@ -126,7 +126,7 @@
       "position": [1240, 300],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ result: { full_name: ($json.lead && $json.lead.full_name) || '', first_name: ($json.lead && $json.lead.first_name) || '', company_name: ($json.lead && $json.lead.company_name) || '', role: ($json.lead && $json.lead.role) || '', notes: ($json.lead && $json.lead.notes) || '', custom_fields: ($json.lead && $json.lead.custom_fields) || {} } }) }}"
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, result: JSON.stringify({ full_name: ($json.lead && $json.lead.full_name) || '', first_name: ($json.lead && $json.lead.first_name) || '', company_name: ($json.lead && $json.lead.company_name) || '', role: ($json.lead && $json.lead.role) || '', notes: ($json.lead && $json.lead.notes) || '', custom_fields: ($json.lead && $json.lead.custom_fields) || {} }) }] }) }}"
       }
     },
     {
@@ -137,7 +137,7 @@
       "position": [1440, 460],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={ \"result\": { \"booked\": true } }"
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: 'Meeting booked successfully.' }] }) }}"
       }
     },
     {
@@ -148,7 +148,7 @@
       "position": [1440, 620],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={ \"result\": { \"logged\": true } }"
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: 'Objection logged.' }] }) }}"
       }
     },
     {
@@ -159,7 +159,7 @@
       "position": [1240, 780],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={ \"result\": null, \"error\": \"unknown_tool\" }"
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, error: 'unknown_tool' }] }) }}"
       }
     }
   ],
