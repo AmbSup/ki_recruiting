@@ -144,11 +144,43 @@
       }
     },
     {
+      "id": "build-session-payload",
+      "name": "Build Session Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2100, 180],
+      "parameters": {
+        "jsCode": "const merged = $('Merge Lead & Program').first().json;\nconst lead = merged.lead;\nconst program = merged.program;\nconst call = $('Insert sales_calls').first().json;\n\n// cached_data wird vom /api/webhook/vapi (assistant-request) gelesen\n// und als variableValues an den Vapi-Sales-Assistant übergeben.\nreturn [{\n  json: {\n    sales_lead_id: lead.id,\n    sales_call_id: call.id,\n    phone_number: lead.phone,\n    cached_data: {\n      lead: {\n        first_name: lead.first_name ?? null,\n        last_name: lead.last_name ?? null,\n        full_name: lead.full_name ?? null,\n        email: lead.email ?? null,\n        company_name: lead.company_name ?? null,\n        role: lead.role ?? null,\n        notes: lead.notes ?? null,\n        custom_fields: lead.custom_fields ?? {}\n      },\n      program: {\n        id: program.id,\n        name: program.name,\n        product_pitch: program.product_pitch ?? null,\n        value_proposition: program.value_proposition ?? null,\n        target_persona: program.target_persona ?? null,\n        booking_link: program.booking_link ?? null,\n        vapi_assistant_id: program.vapi_assistant_id ?? null\n      }\n    }\n  }\n}];"
+      }
+    },
+    {
+      "id": "upsert-session",
+      "name": "Upsert sales_call_sessions",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2280, 180],
+      "parameters": {
+        "operation": "upsert",
+        "tableId": "sales_call_sessions",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "sales_lead_id", "fieldValue": "={{ $json.sales_lead_id }}" },
+            { "fieldId": "sales_call_id", "fieldValue": "={{ $json.sales_call_id }}" },
+            { "fieldId": "phone_number", "fieldValue": "={{ $json.phone_number }}" },
+            { "fieldId": "cached_data", "fieldValue": "={{ JSON.stringify($json.cached_data) }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+      }
+    },
+    {
       "id": "twilio-call",
       "name": "Twilio — Outbound Call",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2160, 180],
+      "position": [2460, 180],
       "parameters": {
         "method": "POST",
         "url": "=https://studio.twilio.com/v2/Flows/FWf3b5573e6cfff5829c85c7a260073154/Executions",
@@ -156,7 +188,7 @@
         "genericAuthType": "httpBasicAuth",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"To\": \"{{ $('Merge Lead & Program').first().json.lead.phone }}\",\n  \"From\": \"{{ $('Merge Lead & Program').first().json.program.caller_phone_number }}\",\n  \"Parameters\": {\n    \"sales_lead_id\": \"{{ $('Merge Lead & Program').first().json.lead.id }}\",\n    \"sales_call_id\": \"{{ $json.id }}\",\n    \"sales_program_id\": \"{{ $('Merge Lead & Program').first().json.program.id }}\",\n    \"vapi_assistant_id\": \"{{ $('Merge Lead & Program').first().json.program.vapi_assistant_id }}\"\n  }\n}",
+        "jsonBody": "={\n  \"To\": \"{{ $('Merge Lead & Program').first().json.lead.phone }}\",\n  \"From\": \"{{ $('Merge Lead & Program').first().json.program.caller_phone_number }}\",\n  \"Parameters\": {\n    \"sales_lead_id\": \"{{ $('Merge Lead & Program').first().json.lead.id }}\",\n    \"sales_call_id\": \"{{ $('Insert sales_calls').first().json.id }}\",\n    \"sales_program_id\": \"{{ $('Merge Lead & Program').first().json.program.id }}\",\n    \"vapi_assistant_id\": \"{{ $('Merge Lead & Program').first().json.program.vapi_assistant_id }}\"\n  }\n}",
         "options": { "timeout": 30000 }
       },
       "credentials": {
@@ -168,7 +200,7 @@
       "name": "Lead status → calling",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [2400, 180],
+      "position": [2640, 180],
       "parameters": {
         "operation": "update",
         "tableId": "sales_leads",
@@ -222,7 +254,9 @@
         [{ "node": "Skip (already calling)", "type": "main", "index": 0 }]
       ]
     },
-    "Insert sales_calls": { "main": [[{ "node": "Twilio — Outbound Call", "type": "main", "index": 0 }]] },
+    "Insert sales_calls": { "main": [[{ "node": "Build Session Payload", "type": "main", "index": 0 }]] },
+    "Build Session Payload": { "main": [[{ "node": "Upsert sales_call_sessions", "type": "main", "index": 0 }]] },
+    "Upsert sales_call_sessions": { "main": [[{ "node": "Twilio — Outbound Call", "type": "main", "index": 0 }]] },
     "Twilio — Outbound Call": { "main": [[{ "node": "Lead status → calling", "type": "main", "index": 0 }]] }
   },
   "settings": { "executionOrder": "v1" }

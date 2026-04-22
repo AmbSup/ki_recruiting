@@ -403,7 +403,9 @@ create table sales_call_analyses (
 create table sales_call_sessions (
   sales_lead_id uuid primary key references sales_leads(id) on delete cascade,
   sales_call_id uuid references sales_calls(id) on delete set null,
-  resume_url text not null,
+  -- resume_url ist Sales-Flow aktuell nicht genutzt (kein Wait-Node), bleibt
+  -- aber für spätere Retry-Schleifen vorhanden.
+  resume_url text,
   phone_number text,
   cached_data jsonb,
   created_at timestamptz not null default now(),

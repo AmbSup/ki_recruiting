@@ -310,8 +310,11 @@ Dieser Report ist **nur Vorab-Hinweis**. Der endgültige Analyzer (Claude, `/api
 
 | Event | URL | Zweck |
 |---|---|---|
+| Assistant-Request (Inbound SIP) | `https://ki-recruiting.vercel.app/api/webhook/vapi` | Phone-Lookup in `sales_call_sessions` → liefert Assistant-ID + Template-Variablen dynamisch |
 | Alle Tool-Aufrufe | `https://n8n.neuronic-automation.ai/webhook/vapi-sales-tools` | n8n routet per Tool-Name, antwortet synchron |
 | End-of-Call-Report | `https://n8n.neuronic-automation.ai/webhook/vapi-sales-end` | Triggert Transkript-Extraktion + `/api/sales/call-analyse` |
+
+**Assistant-Routing:** Recruiting- und Sales-Calls teilen sich den SIP-User `aiprofis@sip.vapi.ai`. Die Assistant-Wahl passiert dynamisch im `/api/webhook/vapi`-Endpoint anhand des Phone-Lookups (`sales_call_sessions` wird vor `call_sessions` geprüft). Deshalb muss jeder Sales-Call beim n8n-Trigger zusätzlich eine Zeile in `sales_call_sessions` schreiben — mit `cached_data`, aus dem die Template-Variablen gelesen werden.
 
 ---
 
