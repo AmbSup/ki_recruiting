@@ -85,43 +85,6 @@
       }
     },
     {
-      "id": "dedupe-check",
-      "name": "Check Active Call",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [1440, 240],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_calls?sales_lead_id=eq.{{ $json.lead.id }}&status=in.(initiated,ringing,in_progress)&select=id&limit=1",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "options": {
-          "timeout": 15000,
-          "splitIntoItems": false,
-          "response": { "response": { "neverError": true } }
-        }
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
-      "id": "gate-no-active",
-      "name": "No Active Call?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1680, 240],
-      "parameters": {
-        "conditions": {
-          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
-          "conditions": [
-            { "leftValue": "={{ $json.length }}", "rightValue": "0", "operator": { "type": "number", "operation": "equals" } }
-          ],
-          "combinator": "and"
-        }
-      }
-    },
-    {
       "id": "insert-call",
       "name": "Insert sales_calls",
       "type": "n8n-nodes-base.supabase",
@@ -230,14 +193,6 @@
       "typeVersion": 1,
       "position": [1440, 420],
       "parameters": {}
-    },
-    {
-      "id": "skip-active",
-      "name": "Skip (already calling)",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [1920, 360],
-      "parameters": {}
     }
   ],
   "connections": {
@@ -247,15 +202,8 @@
     "Merge Lead & Program": { "main": [[{ "node": "Has Consent?", "type": "main", "index": 0 }]] },
     "Has Consent?": {
       "main": [
-        [{ "node": "Check Active Call", "type": "main", "index": 0 }],
-        [{ "node": "Skip (no consent)", "type": "main", "index": 0 }]
-      ]
-    },
-    "Check Active Call": { "main": [[{ "node": "No Active Call?", "type": "main", "index": 0 }]] },
-    "No Active Call?": {
-      "main": [
         [{ "node": "Insert sales_calls", "type": "main", "index": 0 }],
-        [{ "node": "Skip (already calling)", "type": "main", "index": 0 }]
+        [{ "node": "Skip (no consent)", "type": "main", "index": 0 }]
       ]
     },
     "Insert sales_calls": { "main": [[{ "node": "Build Session Payload", "type": "main", "index": 0 }]] },
