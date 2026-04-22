@@ -36,14 +36,14 @@ Recruiting null-safety: every read of `funnel.job_id` / `ad_campaign.job_id` mus
 | `oGQSqZsJKqx74wR9` | Twilio Call Status | Handles Twilio call status callbacks |
 
 ### Sales
-Skeleton JSONs in [`scripts/sales/n8n/`](scripts/sales/n8n/) (import into n8n, then fill credentials). Webhook paths:
+Three workflows deployed in n8n (2026-04-22), one pending Meta-Graph credential. JSON sources in [`scripts/sales/n8n/`](scripts/sales/n8n/).
 
-| Workflow | Webhook | Triggered by | Purpose |
-|---|---|---|---|
-| Start Sales Calls | `/webhook/start-sales-call` | `/api/sales/trigger-call`, funnel apply, Meta-matcher | Consent + dedupe gates, insert `sales_calls`, Twilio Studio outbound |
-| Vapi Sales-End | `/webhook/vapi-sales-end` | Vapi end-of-call report | Extract transcript, POST to `/api/sales/call-analyse` |
-| Vapi Sales-Tools | `/webhook/vapi-sales-tools` | Vapi tool calls | Routes `get_program`, `get_lead_context`, `book_meeting`, `log_objection` |
-| Meta Leadgen Matcher | `/webhook/meta-leadgen-matcher` | `/api/webhook/meta-leadgen` post-insert | Graph-API fetch → route recruiting vs sales → upsert `sales_leads` → optional auto-dial |
+| ID | Name | Webhook | Triggered by | Purpose |
+|---|---|---|---|---|
+| `Jwl2xHatoq1gZlZ4` | Sales — Start Sales Calls | `/webhook/start-sales-call` | `/api/sales/trigger-call`, funnel apply, Meta-matcher | Consent + dedupe gates, insert `sales_calls`, upsert `sales_call_sessions` (phone → Vapi-Kontext), Twilio Studio outbound (flow `FWf3b55…`) |
+| `7MsShq4LLuDbCQVK` | Sales — Vapi Call Processing | `/webhook/vapi-sales-end` | Vapi end-of-call report | Extract transcript, POST to `/api/sales/call-analyse` |
+| `72ExZxrN1Q4BmiEU` | Sales — Vapi Data Tools | `/webhook/vapi-sales-tools` | Vapi tool calls | Routes `get_program`, `get_lead_context`, `book_meeting`, `log_objection` |
+| — | Sales — Meta Leadgen Matcher | `/webhook/meta-leadgen-matcher` | `/api/webhook/meta-leadgen` post-insert | Graph-API fetch → route recruiting vs sales → upsert `sales_leads` → optional auto-dial. **Not yet deployed** — needs Meta Graph credential in n8n first. |
 
 **n8n API key:** in `.mcp.json`
 

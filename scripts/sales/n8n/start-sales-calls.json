@@ -34,7 +34,7 @@
         "filterType": "manual"
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -55,7 +55,7 @@
         "filterType": "manual"
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -78,7 +78,7 @@
         "conditions": {
           "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
           "conditions": [
-            { "leftValue": "={{ $json.lead.consent_given }}", "rightValue": true, "operator": { "type": "boolean", "operation": "true" } }
+            { "leftValue": "={{ $json.lead.consent_given }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
           ],
           "combinator": "and"
         }
@@ -103,7 +103,7 @@
         "filterType": "manual"
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -140,7 +140,7 @@
         }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -156,23 +156,28 @@
     {
       "id": "upsert-session",
       "name": "Upsert sales_call_sessions",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [2280, 180],
       "parameters": {
-        "operation": "upsert",
-        "tableId": "sales_call_sessions",
-        "fieldsUi": {
-          "fieldValues": [
-            { "fieldId": "sales_lead_id", "fieldValue": "={{ $json.sales_lead_id }}" },
-            { "fieldId": "sales_call_id", "fieldValue": "={{ $json.sales_call_id }}" },
-            { "fieldId": "phone_number", "fieldValue": "={{ $json.phone_number }}" },
-            { "fieldId": "cached_data", "fieldValue": "={{ JSON.stringify($json.cached_data) }}" }
+        "method": "POST",
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_call_sessions",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=representation" }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sales_lead_id: $json.sales_lead_id, sales_call_id: $json.sales_call_id, phone_number: $json.phone_number, cached_data: $json.cached_data }) }}",
+        "options": { "timeout": 15000 }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -184,15 +189,15 @@
       "parameters": {
         "method": "POST",
         "url": "=https://studio.twilio.com/v2/Flows/FWf3b5573e6cfff5829c85c7a260073154/Executions",
-        "authentication": "genericCredentialType",
-        "genericAuthType": "httpBasicAuth",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "twilioApi",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"To\": \"{{ $('Merge Lead & Program').first().json.lead.phone }}\",\n  \"From\": \"{{ $('Merge Lead & Program').first().json.program.caller_phone_number }}\",\n  \"Parameters\": {\n    \"sales_lead_id\": \"{{ $('Merge Lead & Program').first().json.lead.id }}\",\n    \"sales_call_id\": \"{{ $('Insert sales_calls').first().json.id }}\",\n    \"sales_program_id\": \"{{ $('Merge Lead & Program').first().json.program.id }}\",\n    \"vapi_assistant_id\": \"{{ $('Merge Lead & Program').first().json.program.vapi_assistant_id }}\"\n  }\n}",
         "options": { "timeout": 30000 }
       },
       "credentials": {
-        "httpBasicAuth": { "id": "REPLACE_TWILIO_CREDENTIAL_ID", "name": "Twilio (KI Recruiting)" }
+        "twilioApi": { "id": "AGT4eJcf8gZIc8pO", "name": "Twilio account" }
       }
     },
     {
@@ -216,7 +221,7 @@
         }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {

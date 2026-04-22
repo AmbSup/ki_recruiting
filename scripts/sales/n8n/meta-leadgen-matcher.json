@@ -45,7 +45,7 @@
         }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -93,7 +93,7 @@
         }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -115,31 +115,28 @@
     {
       "id": "upsert-sales-lead",
       "name": "Upsert sales_lead",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [1920, 360],
       "parameters": {
-        "operation": "upsert",
-        "tableId": "sales_leads",
-        "fieldsUi": {
-          "fieldValues": [
-            { "fieldId": "sales_program_id", "fieldValue": "={{ $json.sales_program_id }}" },
-            { "fieldId": "phone", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.phone }}" },
-            { "fieldId": "first_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.first_name }}" },
-            { "fieldId": "last_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.last_name }}" },
-            { "fieldId": "full_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.full_name }}" },
-            { "fieldId": "email", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.email }}" },
-            { "fieldId": "company_name", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.company_name }}" },
-            { "fieldId": "role", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.role }}" },
-            { "fieldId": "source", "fieldValue": "meta_ads" },
-            { "fieldId": "source_ref", "fieldValue": "={{ $('Parse field_data + Determine Target').first().json.ad_lead_id }}" },
-            { "fieldId": "consent_given", "fieldValue": true },
-            { "fieldId": "consent_source", "fieldValue": "meta_form" }
+        "method": "POST",
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_leads",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Prefer", "value": "resolution=merge-duplicates,return=representation" }
           ]
-        }
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sales_program_id: $json.sales_program_id, phone: $('Parse field_data + Determine Target').first().json.phone, first_name: $('Parse field_data + Determine Target').first().json.first_name, last_name: $('Parse field_data + Determine Target').first().json.last_name, full_name: $('Parse field_data + Determine Target').first().json.full_name, email: $('Parse field_data + Determine Target').first().json.email, company_name: $('Parse field_data + Determine Target').first().json.company_name, role: $('Parse field_data + Determine Target').first().json.role, source: 'meta_ads', source_ref: $('Parse field_data + Determine Target').first().json.ad_lead_id, consent_given: true, consent_source: 'meta_form' }) }}",
+        "options": { "timeout": 15000 }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
@@ -165,7 +162,7 @@
         }
       },
       "credentials": {
-        "supabaseApi": { "id": "REPLACE_SUPABASE_CREDENTIAL_ID", "name": "Supabase (KI Recruiting)" }
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
