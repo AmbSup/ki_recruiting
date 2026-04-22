@@ -155,7 +155,7 @@
         "authentication": "predefinedCredentialType",
         "nodeCredentialType": "twilioApi",
         "sendBody": true,
-        "specifyBody": "form",
+        "contentType": "form-urlencoded",
         "bodyParameters": {
           "parameters": [
             { "name": "To", "value": "={{ $('Merge Lead & Program').first().json.lead.phone }}" },
