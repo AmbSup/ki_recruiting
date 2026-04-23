@@ -5,9 +5,10 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 // Audio-Streaming für Sales-Call-Recordings. Priorität:
-//   1. Supabase Storage (sales-recordings/<path>) — gemirrort vom Claude-Analyzer
+//   1. Supabase Storage via Signed URL → 307-Redirect (voller Range-Support,
+//      CDN-Streaming, kein Memory-Overhead im Vercel-Worker)
 //   2. Vapi-Storage-URL (Fallback bei alten Calls, die noch nicht migriert sind)
-// Same-Origin-Endpoint → Browser kann Range-Requests zuverlässig nutzen (seek/scrub).
+//      → Proxy-Stream (Vapi unterstützt Range-Requests nicht immer direkt)
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const supabase = createAdminClient();
@@ -22,48 +23,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Call nicht gefunden" }, { status: 404 });
   }
 
-  const range = req.headers.get("range") ?? undefined;
-
-  // ── 1. Supabase Storage wenn verfügbar ────────────────────────────────────
+  // ── 1. Supabase Storage via Signed URL ────────────────────────────────────
   if (call.recording_storage_path) {
-    const { data: blob, error } = await supabase.storage
+    const { data, error } = await supabase.storage
       .from("sales-recordings")
-      .download(call.recording_storage_path);
+      .createSignedUrl(call.recording_storage_path, 3600); // 1 Stunde gültig
 
-    if (!error && blob) {
-      const buf = Buffer.from(await blob.arrayBuffer());
-      const total = buf.byteLength;
-      const contentType = (blob as Blob).type || "audio/wav";
-
-      // Range-Request handhaben (Browser seekt/scrubbt über Range)
-      if (range) {
-        const match = /bytes=(\d+)-(\d*)/.exec(range);
-        if (match) {
-          const start = parseInt(match[1], 10);
-          const end = match[2] ? parseInt(match[2], 10) : total - 1;
-          const slice = buf.subarray(start, end + 1);
-          return new Response(slice, {
-            status: 206,
-            headers: {
-              "content-type": contentType,
-              "content-length": String(slice.byteLength),
-              "content-range": `bytes ${start}-${end}/${total}`,
-              "accept-ranges": "bytes",
-            },
-          });
-        }
-      }
-
-      return new Response(buf, {
-        status: 200,
-        headers: {
-          "content-type": contentType,
-          "content-length": String(total),
-          "accept-ranges": "bytes",
-        },
-      });
+    if (!error && data?.signedUrl) {
+      return NextResponse.redirect(data.signedUrl, 307);
     }
-    console.error("[recording proxy] storage download failed:", error);
+    console.error("[recording proxy] signed URL failed:", error);
     // Fall through zum Vapi-Fallback
   }
 
@@ -72,6 +41,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Keine Aufnahme verfügbar" }, { status: 404 });
   }
 
+  const range = req.headers.get("range") ?? undefined;
   const upstream = await fetch(call.recording_url, {
     headers: range ? { range } : undefined,
     cache: "no-store",
