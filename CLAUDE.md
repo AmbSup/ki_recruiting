@@ -126,11 +126,12 @@ Trigger (Funnel apply / CSV / Meta-matcher / manual UI "Call starten")
 - `call_sessions` — stores `{application_id, resume_url}` for Wait-node resume
 
 ### Sales
-- `sales_programs` — Sales anchor, parallel to `jobs` (pitch, value prop, `target_persona`, `vapi_assistant_id`, `caller_phone_number` (Twilio-owned E.164!), `booking_link`, `meta_form_ids`, `auto_dial`)
-- `sales_leads` — per-program, dedupe via `unique(sales_program_id, phone)`. Normalized phone via `src/lib/phone.ts`.
+- `sales_programs` — Sales anchor, parallel to `jobs`. Core: name, `product_pitch`, `value_proposition`, `target_persona`, `vapi_assistant_id`, `caller_phone_number` (Twilio-owned E.164!), `booking_link`, `meta_form_ids`, `auto_dial`. **Use-case-extensions (migration `20260424_sales_use_cases`)**: `program_type sales_program_type` (enum: generic/recruiting/real_estate/coaching/ecommerce_highticket/handwerk, default generic), `call_strategy jsonb` (hook_promise, opener_mode, reverse_qualify, hard_qualifier_questions[], require_file_upload, file_upload_type, verbal_commitment_required, show_rate_confirmation_phrase, on_disqualify, fallback_resource_url), `custom_field_schema jsonb` (optional serialised shape, falls back to code-side Zod).
+- `sales_leads` — per-program, dedupe via `unique(sales_program_id, phone)`. Normalized phone via `src/lib/phone.ts`. `custom_fields` is validated on POST/PATCH against the program's Zod schema (see below).
 - `sales_calls` — outbound call chain. `recording_url` points at Vapi storage (original); `recording_storage_path` points at Supabase Storage bucket `sales-recordings` (mirrored by analyzer).
-- `sales_call_analyses` — Claude output (meeting_booked, meeting_datetime, interest_level, call_rating, sentiment, summary, objections[], pain_points[], next_action, next_action_at, key_quotes[]). Unique on `sales_call_id` → upserts via PostgREST `?on_conflict=sales_call_id` + `Prefer: resolution=merge-duplicates`.
+- `sales_call_analyses` — Claude output (meeting_booked, meeting_datetime, interest_level, call_rating, sentiment, summary, objections[], pain_points[], next_action, next_action_at, key_quotes[]). Unique on `sales_call_id` → upserts via PostgREST `?on_conflict=sales_call_id` + `Prefer: resolution=merge-duplicates`. **`use_case_analysis jsonb`** field (nullable) holds use-case-specific Claude output (see Phase 6 plan).
 - `sales_call_sessions` — phone → Vapi-assistant-request context. `sales_lead_id` PK, `cached_data` JSONB with lead + program snapshot (first_name, company_name, product_pitch, booking_link, …). Written by n8n Start-Sales-Calls after insert. `resume_url` nullable — Sales doesn't use Wait nodes.
+- `sales_lead_uploads` — Foto/PDF-Uploads, die die KI während oder nach dem Call per SMS anfordert (Phase 4 Tool `request_file_upload`). Columns: id, sales_lead_id, sales_call_id (nullable), file_type (photo|document), context_hint, upload_token (UNIQUE, Signed-URL-Fallback), status (pending|uploaded|expired), storage_path, content_type, size_bytes, created_at, uploaded_at, expires_at (default +24h). RLS: operator/admin/viewer SELECT; Writes via Admin-Client / Service-Role.
 
 ### Supabase Storage
 - **Bucket `sales-recordings`** (private, 50 MB file limit, `audio/*` mime whitelist)
@@ -139,6 +140,11 @@ Trigger (Funnel apply / CSV / Meta-matcher / manual UI "Call starten")
   - Path format: `<sales_call_id>.<ext>` where ext ∈ wav/mp3/ogg/m4a based on upstream content-type
   - Analyzer mirrors on end-of-call (Vapi → Supabase); if upload fails, analysis still proceeds and UI falls back to Vapi URL via the proxy
   - Retrieval: `/api/sales/calls/[id]/recording` creates 1h signed URL + `307` redirects — browser streams from Supabase CDN with full Range support
+- **Bucket `lead-uploads`** (private, 20 MB file limit, `image/jpeg|image/png|image/webp|image/heic|image/heif|application/pdf`)
+  - Created by migration `20260424_sales_use_cases`
+  - RLS: operator/admin/viewer SELECT (for preview / download in UI)
+  - Path format: `<upload_token>/<filename>`
+  - Public uploads go via Supabase `createSignedUploadUrl` from the `/uploads/[token]` public route (no anon policy on `storage.objects` needed)
 
 ### Polymorphic
 - `funnels`, `ad_campaigns`, `ad_leads` — see Dual-Anchor-Polymorphism above
@@ -201,6 +207,16 @@ src/
     phone.ts        — E.164 normalization + isTerminalSalesStatus
     csv.ts          — Minimal RFC 4180 parser (no dep)
     utils.ts
+    vapi-prompts/
+      schemas/
+        index.ts              — SalesProgramType union + schemasByProgramType +
+                                fieldMetaByProgramType + validateCustomFields()
+        generic.ts            — open record, no strict validation
+        recruiting.ts         — position, shift, Führerschein, start-date, …
+        real_estate.ts        — property_type, Baujahr, m², PLZ, sale_timeline, …
+        coaching.ts           — revenue, goal, budget, time, existing_offer
+        ecommerce_highticket.ts — product_category, price, quiz_result, cart_value
+        handwerk.ts           — trade_type, address_hint, urgency, site_visit
   services/
     claude/         — Claude API client
     meta/           — Meta Ads API (campaigns, adsets, ads, insights)
@@ -224,7 +240,7 @@ docs/
 
 ### Sales
 - `GET/POST /api/sales/programs` + `[id]` — Programs CRUD
-- `GET/POST /api/sales/leads` + `[id]` — Leads CRUD
+- `GET/POST /api/sales/leads` + `[id]` — Leads CRUD. POST + PATCH validieren `custom_fields` gegen das Zod-Schema des `sales_programs.program_type` (`src/lib/vapi-prompts/schemas/*`). Fehler → 400 `{error:"custom_fields_validation_failed", program_type, issues:[{path,message}]}`.
 - `POST /api/sales/leads/import` — CSV import (multipart/form-data, `consent_confirmed=true` required)
 - `POST /api/sales/trigger-call` — consent + stale-cleanup (>30s `initiated` → `failed`) + status-lock (409 with `{error, sales_call_id, status}` if active `ringing`/`in_progress`) + n8n hand-off
 - `POST /api/sales/call-analyse` — Claude analyzer (maxDuration: 60s). Resolves `sales_call_id` via fallback chain: body → `vapi_call_id` lookup → `customer_phone` → latest active sales_calls for that lead. Returns 422 only if none resolves.
@@ -312,6 +328,8 @@ Until Meta Leadgen ingest is turned on, the two `META_*` vars can stay unset —
 - Phone numbers can only be bound to **one inbound Studio Flow** — irrelevant for outbound (n8n calls flows by SID). For Sales outbound calls on the Recruiting phone number, no re-binding needed; "Connected phone numbers" = `--` on the Sales Flow is correct.
 
 ### Sales-specific
+- `sales_programs.program_type` ist der Discriminator für spezialisierte Use-Cases. `generic` = bisheriges Verhalten. Andere Werte ziehen unterschiedliche Prompt-Templates, custom-field-Schemas und Analyzer-Felder (siehe `src/lib/vapi-prompts/*` + Plan-Phasen 2-8).
+- `sales_leads.custom_fields` ist je nach program_type **strict validiert** (`.strict()` auf dem Zod-Schema). Alle Use-Case-Felder sind optional, aber unbekannte Keys werfen 400. Generic-Programs akzeptieren beliebige Keys.
 - `sales_leads` dedupe on `(sales_program_id, phone)` — every ingest path (Funnel, CSV, Meta-match, manual) must lookup-or-update, never blind-insert. Catch PG `23505` and retry as update for race-safety.
 - Terminal statuses (`contacted`, `meeting_booked`, `not_interested`, `do_not_call`) are never regressed to `new` on re-submission — prevents re-dialing a lead that already said no.
 - Consent is mandatory: `/api/sales/trigger-call` returns 403 if `consent_given=false`. CSV import requires `consent_confirmed=true` form field. LeadModal disables Submit until the consent checkbox is ticked.
