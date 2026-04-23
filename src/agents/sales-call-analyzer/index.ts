@@ -82,7 +82,17 @@ export async function analyzeSalesCall(options: {
     ? `\n**Vapi-Auswertung (Vorab-Hinweis, nicht final):** ${JSON.stringify(options.vapi_end_report)}\n`
     : "";
 
+  // Aktuelles Datum explizit, weil Claude sonst Termine/Deadlines halluziniert
+  // (z.B. „Fällig 03.02.2025" statt in der Zukunft).
+  const today = new Date();
+  const todayIso = today.toISOString().slice(0, 10); // YYYY-MM-DD
+  const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][today.getDay()];
+
   const systemPrompt = `Du bist ein erfahrener Sales-Analyst und bewertest Outbound-Sales-Calls.
+HEUTE: ${weekdayDe}, ${todayIso}. Alle Datumswerte in deiner Antwort
+(meeting_datetime, next_action_at) MÜSSEN in der Zukunft liegen — niemals in
+der Vergangenheit. Wenn der Agent/Lead einen Wochentag nennt ("Freitag"),
+nimm den NÄCHSTEN zukünftigen mit vollem ISO-Datum. Bei Unsicherheit: null.
 Antworte IMMER als valides JSON ohne Markdown-Codeblöcke.`;
 
   const userPrompt = `Analysiere diesen Sales-Call zwischen KI-Agent und ${leadName}.
@@ -97,7 +107,7 @@ ${transcriptFormatted}
 Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
 {
   "meeting_booked": <boolean — wurde ein konkreter Termin vereinbart?>,
-  "meeting_datetime": "<ISO-Timestamp oder null>",
+  "meeting_datetime": "<ISO-Timestamp in der ZUKUNFT (nach ${todayIso}) oder null>",
   "interest_level": "<high|medium|low|none>",
   "call_rating": <Zahl 1-10, Gesamtqualität des Calls>,
   "sentiment": "<positive|neutral|negative>",
@@ -105,7 +115,7 @@ Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
   "objections": ["<Einwand 1>", ...],
   "pain_points": ["<Pain Point 1>", ...],
   "next_action": "<send_email|call_back|send_proposal|dead_lead|nurture>",
-  "next_action_at": "<ISO-Timestamp oder null — wann die next_action fällig ist>",
+  "next_action_at": "<ISO-Timestamp in der ZUKUNFT (nach ${todayIso}) oder null>",
   "key_quotes": [
     { "speaker": "lead", "quote": "<wörtliches Zitat>" },
     { "speaker": "agent", "quote": "<wörtliches Zitat>" }

@@ -153,13 +153,13 @@ export default function SalesCallDetailPage({ params }: { params: Promise<{ id: 
                 className="w-full"
               />
               <a
-                href={call.recording_url}
+                href={`/api/sales/calls/${call.id}/recording`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 font-label text-xs text-primary hover:underline mt-2"
               >
-                <span className="material-symbols-outlined text-xs">open_in_new</span>
-                Original (Vapi-Storage)
+                <span className="material-symbols-outlined text-xs">download</span>
+                Audio herunterladen
               </a>
             </Card>
           )}
