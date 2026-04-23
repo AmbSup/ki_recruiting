@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildSystemPrompt, buildFirstMessage } from "@/lib/vapi-prompts/builder";
+import { salesTools } from "@/lib/vapi-prompts/tool-definitions";
+import type { SalesProgramType } from "@/lib/vapi-prompts/schemas";
 
 // ---------------------------------------------------------------------------
 // POST /api/webhook/vapi
 //
 // Two purposes:
 //   1. "assistant-request" — Vapi asks which assistant to use for an incoming
-//      SIP call. We look up the active call session by phone number. Sales is
-//      checked first (sales_call_sessions), Recruiting is the fallback
-//      (call_sessions). The routing happens here because both sides share the
-//      same Vapi SIP user (aiprofis@sip.vapi.ai).
+//      SIP call. For Sales we return a transient-override assistant with
+//      model.messages = rendered system prompt + firstMessage + tools. For
+//      Recruiting we keep the legacy {id, variableValues} shape.
 //
 //   2. "end-of-call-report" — forwarded here if n8n is not used. Currently
 //      we return 200 and let n8n handle it via its own webhook.
@@ -17,6 +19,36 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const VAPI_ASSISTANT_ID = process.env.VAPI_ASSISTANT_ID!;
 const VAPI_SALES_ASSISTANT_ID = process.env.VAPI_SALES_ASSISTANT_ID;
+
+type CachedProgram = {
+  id?: string;
+  name?: string;
+  product_pitch?: string;
+  value_proposition?: string;
+  target_persona?: string;
+  booking_link?: string;
+  vapi_assistant_id?: string;
+  program_type?: SalesProgramType;
+  call_strategy?: {
+    hook_promise?: string;
+    caller_name?: string;
+    fallback_resource_url?: string;
+    hard_qualifier_questions?: string[];
+    show_rate_confirmation_phrase?: string;
+  };
+};
+
+type CachedLead = {
+  first_name?: string;
+  last_name?: string;
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  company_name?: string;
+  role?: string;
+  notes?: string;
+  custom_fields?: Record<string, unknown>;
+};
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>;
@@ -33,12 +65,9 @@ export async function POST(req: NextRequest) {
   if (messageType === "assistant-request") {
     const call = message?.call as Record<string, unknown> | undefined;
 
-    // Phone number of the callee (outbound call: call.customer.number)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const phoneNumber = (call?.customer as any)?.number as string | undefined;
 
-    // SIP headers — Twilio Studio forwards X-sales-lead-id / X-sales-call-id /
-    // X-sales-program-id when routing into Vapi. Case-insensitive lookup.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const rawSipHeaders = ((call as any)?.sipHeaders
       ?? (call?.customer as any)?.sipHeaders
@@ -72,46 +101,69 @@ export async function POST(req: NextRequest) {
         : await query.eq("phone_number", phoneNumber!).maybeSingle();
 
       if (salesSession) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const cached = salesSession.cached_data as any;
-        const lead = cached?.lead ?? {};
-        const program = cached?.program ?? {};
-        const assistantId = program?.vapi_assistant_id ?? VAPI_SALES_ASSISTANT_ID;
+        const cached = salesSession.cached_data as { lead?: CachedLead; program?: CachedProgram } | null;
+        const lead: CachedLead = cached?.lead ?? {};
+        const program: CachedProgram = cached?.program ?? {};
+        const programType = (program.program_type ?? "generic") as SalesProgramType;
+        const assistantId = program.vapi_assistant_id ?? VAPI_SALES_ASSISTANT_ID;
+
+        const callStrategy = program.call_strategy ?? {};
+        const now = new Date();
+        const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][now.getDay()];
+
+        const vars = {
+          first_name: lead.first_name ?? "",
+          last_name: lead.last_name ?? "",
+          full_name: lead.full_name ?? "",
+          email: lead.email ?? "",
+          phone: lead.phone ?? "",
+          company_name: lead.company_name ?? "",
+          role: lead.role ?? "",
+          notes: lead.notes ?? "",
+          custom_fields_json: JSON.stringify(lead.custom_fields ?? {}),
+          program_name: program.name ?? "",
+          product_pitch: program.product_pitch ?? "",
+          value_proposition: program.value_proposition ?? "",
+          target_persona: program.target_persona ?? "",
+          booking_link: program.booking_link ?? "",
+          hook_promise: callStrategy.hook_promise ?? "",
+          caller_name: callStrategy.caller_name ?? "Jonas",
+          fallback_resource_url: callStrategy.fallback_resource_url ?? "",
+          hard_qualifier_questions_list: (callStrategy.hard_qualifier_questions ?? []).join(" / "),
+          show_rate_confirmation_phrase: callStrategy.show_rate_confirmation_phrase ?? "",
+          sales_lead_id: salesSession.sales_lead_id ?? "",
+          sales_call_id: salesSession.sales_call_id ?? "",
+          sales_program_id: program.id ?? "",
+          today_iso: now.toISOString().slice(0, 10),
+          today_weekday_de: weekdayDe,
+        };
+
+        const systemPrompt = buildSystemPrompt(programType, vars);
+        const firstMessage = buildFirstMessage(programType, vars);
 
         console.log(
           "[vapi-webhook] assistant-request (sales) | phone:", phoneNumber,
           "| sales_lead_id:", salesSession.sales_lead_id,
+          "| program_type:", programType,
           "| assistant_id:", assistantId,
+          "| prompt_chars:", systemPrompt.length,
         );
 
         return NextResponse.json({
           assistant: {
             ...(assistantId ? { id: assistantId } : {}),
-            variableValues: {
-              // Template-Variablen aus docs/vapi-sales-agent.md
-              first_name: lead.first_name ?? "",
-              last_name: lead.last_name ?? "",
-              full_name: lead.full_name ?? "",
-              company_name: lead.company_name ?? "",
-              role: lead.role ?? "",
-              notes: lead.notes ?? "",
-              custom_fields_json: JSON.stringify(lead.custom_fields ?? {}),
-              program_name: program.name ?? "",
-              product_pitch: program.product_pitch ?? "",
-              value_proposition: program.value_proposition ?? "",
-              target_persona: program.target_persona ?? "",
-              booking_link: program.booking_link ?? "",
-              // IDs für Tool-Calls + End-of-Call-Processing
-              sales_lead_id: salesSession.sales_lead_id,
-              sales_call_id: salesSession.sales_call_id,
-              sales_program_id: program.id ?? null,
+            model: {
+              messages: [{ role: "system", content: systemPrompt }],
+              tools: salesTools,
             },
+            firstMessage,
+            variableValues: vars,
           },
         });
       }
     }
 
-    // ── Recruiting fallback ────────────────────────────────────────────────
+    // ── Recruiting fallback (unchanged) ────────────────────────────────────
     let session: Record<string, unknown> | null = null;
     if (phoneNumber) {
       const { data } = await supabase
