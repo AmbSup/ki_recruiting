@@ -149,19 +149,21 @@ export async function POST(req: NextRequest) {
           "| prompt_chars:", systemPrompt.length,
         );
 
-        // Hybrid-Shape {assistant: {id, ...overrides}}: Vapi löst id auf den
-        // Dashboard-Assistant auf (Voice, Transcriber, Silence-Timeout, End-
-        // Call-Phrases) und legt unsere model.messages / firstMessage / tools
-        // / variableValues oben drauf. Diese Shape ist die, die Recruiting
-        // seit Monaten fehlerfrei nutzt.
-        //
-        // Die "canonical" {assistantId, assistantOverrides} Shape aus Vapi-
-        // docs liefert in der Praxis "Could not get Assistant" zurück — Vapi
-        // akzeptiert sie am SIP-Credential offenbar nur inkonsistent. Bleiben
-        // wir beim bewährten Hybrid-Shape.
+        // DIAGNOSE-MODE: Gibt beide Vapi-Shapes ab, damit Vapi mind. eine
+        // akzeptiert. Bei "Could not get Assistant"-Errors isolieren wir
+        // damit ob Shape oder Assistant-Referenz das Problem ist.
+        // Wichtig: Die canonical-Vapi-Shape ist {assistantId, assistantOverrides}.
+        // Falls die weiterhin scheitert, ist der Assistant-ID selbst das Problem
+        // (gelöscht, falsche Org, etc.).
+        console.log(
+          "[vapi-webhook] returning canonical assistantId =",
+          assistantId,
+          "| programType =",
+          programType,
+        );
         return NextResponse.json({
-          assistant: {
-            ...(assistantId ? { id: assistantId } : {}),
+          assistantId,
+          assistantOverrides: {
             model: {
               messages: [{ role: "system", content: systemPrompt }],
               tools: salesTools,
