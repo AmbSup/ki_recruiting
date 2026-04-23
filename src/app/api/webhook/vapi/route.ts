@@ -149,17 +149,36 @@ export async function POST(req: NextRequest) {
           "| prompt_chars:", systemPrompt.length,
         );
 
-        return NextResponse.json({
-          assistant: {
-            ...(assistantId ? { id: assistantId } : {}),
-            model: {
-              messages: [{ role: "system", content: systemPrompt }],
-              tools: salesTools,
+        // Canonical Vapi response shape: pointer an existierenden Assistant
+        // + overrides für die Felder, die wir dynamisch pro Call rendern.
+        // Vapi lädt Voice/Transcriber/Silence-Timeout aus dem Dashboard-Assistant
+        // und merged unsere overrides on top. Falls assistantId fehlt, fallen
+        // wir zurück auf den full-transient-assistant Shape (der aber voice
+        // + transcriber voraussetzt, das wir nicht pflegen).
+        if (assistantId) {
+          return NextResponse.json({
+            assistantId,
+            assistantOverrides: {
+              model: {
+                messages: [{ role: "system", content: systemPrompt }],
+                tools: salesTools,
+              },
+              firstMessage,
+              variableValues: vars,
             },
-            firstMessage,
-            variableValues: vars,
+          });
+        }
+
+        // Edge-Case: weder sales_programs.vapi_assistant_id noch
+        // VAPI_SALES_ASSISTANT_ID gesetzt → wir können keinen Base-Assistant
+        // referenzieren. Return 500 mit klarer Message, damit Vapi eindeutig
+        // failt und der Debug-Hinweis in den Logs landet.
+        return NextResponse.json(
+          {
+            error: "No Sales Assistant ID configured. Set sales_programs.vapi_assistant_id or VAPI_SALES_ASSISTANT_ID env.",
           },
-        });
+          { status: 500 },
+        );
       }
     }
 
