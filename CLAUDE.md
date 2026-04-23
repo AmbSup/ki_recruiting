@@ -192,10 +192,13 @@ src/
         call-analyse/    — Sales call analysis via Claude (with ID-resolution fallback)
         calls/      — GET list + [id] detail (with analysis join) + [id]/recording (audio proxy)
       webhook/
-        vapi/            — Vapi assistant-request handler: checks sales_call_sessions
-                           (SIP header X-sales-lead-id > phone lookup) first, then
-                           falls back to Recruiting call_sessions. Returns
-                           {assistant:{id, variableValues:{...}}} for whichever side matches.
+        vapi/            — Vapi assistant-request handler. Sales-Zweig rendert
+                           pro Call einen System-Prompt + FirstMessage aus
+                           src/lib/vapi-prompts/ (program_type-basiert),
+                           returniert assistant.model.messages[0] + .firstMessage
+                           + .tools + variableValues. Recruiting-Zweig bleibt
+                           beim alten {id, variableValues}-Shape. Lookup-
+                           Priorität: SIP-Header X-sales-lead-id > Phone.
         involveme/       — involve.me webhook (Recruiting only)
         meta-leadgen/    — Meta Leadgen signature-verify + raw insert + n8n hand-off
       meta/         — Meta Ads API endpoints
@@ -208,6 +211,21 @@ src/
     csv.ts          — Minimal RFC 4180 parser (no dep)
     utils.ts
     vapi-prompts/
+      types.ts              — UseCaseTemplate + PromptVariables
+      base-prompt.ts        — universeller Header (EU-AI-Act-Transparenz,
+                              call-start get_lead_context, sauberes Auflegen)
+      builder.ts            — buildSystemPrompt + buildFirstMessage,
+                              Mustache-light {{var}} + {{custom_fields.foo}}
+      tool-definitions.ts   — 6 Vapi-Custom-Tools (get_program, get_lead_context,
+                              book_meeting, log_objection, request_file_upload,
+                              qualify_lead), alle → /webhook/vapi-sales-tools
+      use-cases/
+        generic.ts           — bestehender B2B-Sales-Prompt, extrahiert
+        recruiting.ts        — Schicht/Führerschein/Starttermin-Qualifikation
+        real_estate.ts       — Technik-Daten + Tire-Kicker-Filter
+        coaching.ts          — harte Budget/Zeit-Qualifizierung + Fallback-SMS
+        ecommerce_highticket.ts — Quiz-Hook + Kauf-Barriere
+        handwerk.ts          — Gewerk-Fragen + Foto-Upload-Pflicht
       schemas/
         index.ts              — SalesProgramType union + schemasByProgramType +
                                 fieldMetaByProgramType + validateCustomFields()
@@ -268,10 +286,13 @@ Vapi serves both pipelines via **two SIP credentials** on the same Vapi account.
 
 Schemas in [docs/vapi-sales-agent.md](docs/vapi-sales-agent.md).
 
-**Static-binding side-effect:** With `neuronic-sales` statically bound to the Sales-Assistant, Vapi skips the assistant-request webhook → `variableValues` stays empty → the Vapi system prompt's `{{first_name}}`/`{{company_name}}` etc. don't get substituted. The agent talks with literal placeholders. Mitigations:
+**Static-binding side-effect:** With `neuronic-sales` statically bound to the Sales-Assistant, Vapi skips the assistant-request webhook. Seit PR 2 (Phase 2) ist das ein **Blocker**, nicht nur ein Komfort-Problem: Der System-Prompt wird pro Call serverseitig aus `src/lib/vapi-prompts/builder.ts` gerendert (program_type-spezifisch). Ohne webhook-Aufruf fällt Vapi auf den Dashboard-Prompt zurück, der wieder `{{first_name}}`-Platzhalter unersetzt durchspricht.
+
+**Fix:** Assistant + Workflow am SIP-Credential `neuronic-sales` im Vapi-Dashboard leeren (X-Chip am ausgewählten Assistant → speichern). Voice/Transcriber/Silence-Timeout bleiben unverändert, weil wir `id` in der Response mitschicken.
+
+**Fallbacks falls das Leeren nicht klappt:**
 - Tools (`get_lead_context`, `get_program`) populate context on-demand mid-conversation.
 - n8n tools + call-processing workflows resolve the call via `call.customer.number` + `call.customer.sipHeaders['x-sales-lead-id']` (headers forwarded from the Twilio Studio SIP URI).
-- To fully fix: clear the Assistant/Workflow selection on the SIP credential in Vapi so the webhook fires. Vapi UI sometimes requires clicking an X-chip or refreshing to allow empty selection.
 
 ## Development
 ```bash
