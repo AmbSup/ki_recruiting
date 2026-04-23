@@ -135,7 +135,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ sales_lead_id: $json.sales_lead_id, sales_call_id: $json.sales_call_id, phone_number: $json.phone_number, cached_data: $json.cached_data }) }}",
+        "jsonBody": "={{ JSON.stringify({ sales_lead_id: $json.sales_lead_id, sales_call_id: $json.sales_call_id, phone_number: $json.phone_number, cached_data: $json.cached_data, expires_at: new Date(Date.now() + 2*60*60*1000).toISOString() }) }}",
         "options": { "timeout": 15000 }
       },
       "credentials": {
