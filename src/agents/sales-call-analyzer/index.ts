@@ -182,6 +182,36 @@ export async function runSalesCallAnalysis(options: {
       }
     : null;
 
+  // Recording nach Supabase Storage mirroren (Vapi-Storage hat Retention-Limit).
+  // Fire-and-forget auf Fehler-Level, damit die Hauptanalyse nicht blockiert.
+  let recordingStoragePath: string | null = null;
+  if (options.recording_url) {
+    try {
+      const resp = await fetch(options.recording_url);
+      if (resp.ok) {
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const contentType = resp.headers.get("content-type") ?? "audio/wav";
+        const ext = contentType.includes("mpeg") ? "mp3"
+          : contentType.includes("ogg") ? "ogg"
+          : contentType.includes("mp4") ? "m4a"
+          : "wav";
+        const path = `${options.sales_call_id}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("sales-recordings")
+          .upload(path, buf, { contentType, upsert: true });
+        if (upErr) {
+          console.error("[sales-call-analyzer] storage upload error:", upErr);
+        } else {
+          recordingStoragePath = path;
+        }
+      } else {
+        console.error("[sales-call-analyzer] recording fetch failed:", resp.status);
+      }
+    } catch (e) {
+      console.error("[sales-call-analyzer] recording mirror error:", e);
+    }
+  }
+
   await supabase
     .from("sales_calls")
     .update({
@@ -190,6 +220,7 @@ export async function runSalesCallAnalysis(options: {
       ended_at: options.ended_at ?? undefined,
       duration_seconds: durationSeconds ?? undefined,
       recording_url: options.recording_url ?? undefined,
+      recording_storage_path: recordingStoragePath ?? undefined,
       end_reason: options.end_reason ?? undefined,
       ...(transcriptJson ? { transcript: transcriptJson } : {}),
     })
