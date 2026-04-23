@@ -146,10 +146,20 @@ export default function SalesCallDetailPage({ params }: { params: Promise<{ id: 
 
           {call.recording_url && (
             <Card label="Aufnahme" icon="mic">
-              <audio src={call.recording_url} controls className="w-full" />
-              <a href={call.recording_url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 font-label text-xs text-primary hover:underline mt-2">
+              <audio
+                src={`/api/sales/calls/${call.id}/recording`}
+                controls
+                preload="metadata"
+                className="w-full"
+              />
+              <a
+                href={call.recording_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 font-label text-xs text-primary hover:underline mt-2"
+              >
                 <span className="material-symbols-outlined text-xs">open_in_new</span>
-                In neuem Tab öffnen
+                Original (Vapi-Storage)
               </a>
             </Card>
           )}
