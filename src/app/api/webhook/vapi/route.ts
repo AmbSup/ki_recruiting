@@ -149,36 +149,27 @@ export async function POST(req: NextRequest) {
           "| prompt_chars:", systemPrompt.length,
         );
 
-        // Canonical Vapi response shape: pointer an existierenden Assistant
-        // + overrides für die Felder, die wir dynamisch pro Call rendern.
-        // Vapi lädt Voice/Transcriber/Silence-Timeout aus dem Dashboard-Assistant
-        // und merged unsere overrides on top. Falls assistantId fehlt, fallen
-        // wir zurück auf den full-transient-assistant Shape (der aber voice
-        // + transcriber voraussetzt, das wir nicht pflegen).
-        if (assistantId) {
-          return NextResponse.json({
-            assistantId,
-            assistantOverrides: {
-              model: {
-                messages: [{ role: "system", content: systemPrompt }],
-                tools: salesTools,
-              },
-              firstMessage,
-              variableValues: vars,
+        // Hybrid-Shape {assistant: {id, ...overrides}}: Vapi löst id auf den
+        // Dashboard-Assistant auf (Voice, Transcriber, Silence-Timeout, End-
+        // Call-Phrases) und legt unsere model.messages / firstMessage / tools
+        // / variableValues oben drauf. Diese Shape ist die, die Recruiting
+        // seit Monaten fehlerfrei nutzt.
+        //
+        // Die "canonical" {assistantId, assistantOverrides} Shape aus Vapi-
+        // docs liefert in der Praxis "Could not get Assistant" zurück — Vapi
+        // akzeptiert sie am SIP-Credential offenbar nur inkonsistent. Bleiben
+        // wir beim bewährten Hybrid-Shape.
+        return NextResponse.json({
+          assistant: {
+            ...(assistantId ? { id: assistantId } : {}),
+            model: {
+              messages: [{ role: "system", content: systemPrompt }],
+              tools: salesTools,
             },
-          });
-        }
-
-        // Edge-Case: weder sales_programs.vapi_assistant_id noch
-        // VAPI_SALES_ASSISTANT_ID gesetzt → wir können keinen Base-Assistant
-        // referenzieren. Return 500 mit klarer Message, damit Vapi eindeutig
-        // failt und der Debug-Hinweis in den Logs landet.
-        return NextResponse.json(
-          {
-            error: "No Sales Assistant ID configured. Set sales_programs.vapi_assistant_id or VAPI_SALES_ASSISTANT_ID env.",
+            firstMessage,
+            variableValues: vars,
           },
-          { status: 500 },
-        );
+        });
       }
     }
 
