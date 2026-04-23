@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/phone";
+import { validateCustomFields, SalesProgramType } from "@/lib/vapi-prompts/schemas";
 
 export const maxDuration = 60;
 
@@ -41,6 +42,29 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const normalized = normalizePhone(body.phone as string);
     if (!normalized) return NextResponse.json({ error: "Telefonnummer ungültig" }, { status: 422 });
     update.phone = normalized;
+  }
+
+  // Bei custom_fields-Update gegen das Schema des zugehörigen Programs validieren
+  if ("custom_fields" in update) {
+    const { data: lead } = await supabase
+      .from("sales_leads")
+      .select("sales_program_id, program:sales_programs(program_type)")
+      .eq("id", id)
+      .maybeSingle();
+    const programRaw = (lead as unknown as { program: { program_type?: string } | null } | null)?.program;
+    const programType = (programRaw?.program_type ?? "generic") as SalesProgramType;
+    const validation = validateCustomFields(programType, update.custom_fields);
+    if (!validation.ok) {
+      return NextResponse.json(
+        {
+          error: "custom_fields_validation_failed",
+          program_type: programType,
+          issues: validation.issues,
+        },
+        { status: 400 },
+      );
+    }
+    update.custom_fields = validation.data;
   }
 
   if (Object.keys(update).length === 0) {

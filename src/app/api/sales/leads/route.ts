@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/phone";
+import { validateCustomFields, SalesProgramType } from "@/lib/vapi-prompts/schemas";
 
 export const maxDuration = 60;
 
@@ -41,6 +42,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Telefonnummer ungültig" }, { status: 422 });
   }
 
+  // Program laden um program_type zu kennen → custom_fields validieren
+  const { data: program, error: progErr } = await supabase
+    .from("sales_programs")
+    .select("program_type")
+    .eq("id", sales_program_id)
+    .maybeSingle();
+  if (progErr || !program) {
+    return NextResponse.json({ error: "Sales Program nicht gefunden" }, { status: 404 });
+  }
+
+  const programType = (program.program_type ?? "generic") as SalesProgramType;
+  const rawCustomFields = (body.custom_fields ?? {}) as Record<string, unknown>;
+  const validation = validateCustomFields(programType, rawCustomFields);
+  if (!validation.ok) {
+    return NextResponse.json(
+      {
+        error: "custom_fields_validation_failed",
+        program_type: programType,
+        issues: validation.issues,
+      },
+      { status: 400 },
+    );
+  }
+
   const { data, error } = await supabase
     .from("sales_leads")
     .insert({
@@ -56,7 +81,7 @@ export async function POST(req: NextRequest) {
       source: (body.source as string | undefined) ?? "manual",
       source_ref: body.source_ref ?? null,
       funnel_responses: body.funnel_responses ?? {},
-      custom_fields: body.custom_fields ?? {},
+      custom_fields: validation.data,
       consent_given: Boolean(body.consent_given),
       consent_source: body.consent_source ?? null,
       consent_timestamp: body.consent_given ? new Date().toISOString() : null,
