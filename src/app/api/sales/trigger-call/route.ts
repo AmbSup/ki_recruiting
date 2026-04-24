@@ -205,12 +205,20 @@ export async function POST(req: NextRequest) {
   const systemPrompt = buildSystemPrompt(programType, vars);
   const firstMessage = buildFirstMessage(programType, vars);
 
+  // Vapi requires full model object in assistantOverrides (provider + model,
+  // nicht nur messages). Defaults entsprechen der typischen Dashboard-Config;
+  // pro Program override-bar via call_strategy.llm_provider / call_strategy.llm_model.
+  const llmProvider = (callStrategy.llm_provider as string | undefined) ?? "openai";
+  const llmModel = (callStrategy.llm_model as string | undefined) ?? "gpt-4o";
+
   const vapiPayload = {
     phoneNumberId,
     customer: { number: lead.phone },
     assistantId,
     assistantOverrides: {
       model: {
+        provider: llmProvider,
+        model: llmModel,
         messages: [{ role: "system", content: systemPrompt }],
         tools: salesTools,
       },
