@@ -17,164 +17,38 @@
       "webhookId": "sales-start-call"
     },
     {
-      "id": "fetch-lead",
-      "name": "Fetch Lead + Program",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [480, 300],
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "sales_leads",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.body.sales_lead_id }}" }
-          ]
-        },
-        "filterType": "manual"
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
-      "id": "fetch-program",
-      "name": "Fetch Program",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [720, 300],
-      "parameters": {
-        "operation": "getAll",
-        "tableId": "sales_programs",
-        "returnAll": true,
-        "filters": {
-          "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $json.sales_program_id }}" }
-          ]
-        },
-        "filterType": "manual"
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
-      "id": "merge-lead-program",
-      "name": "Merge Lead & Program",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [960, 300],
-      "parameters": {
-        "jsCode": "const lead = $('Fetch Lead + Program').first().json;\nconst program = $('Fetch Program').first().json;\nreturn [{ json: { lead, program } }];"
-      }
-    },
-    {
-      "id": "gate-consent",
-      "name": "Has Consent?",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [1200, 300],
-      "parameters": {
-        "conditions": {
-          "options": { "version": 2, "caseSensitive": true, "typeValidation": "strict", "leftValue": "" },
-          "conditions": [
-            { "leftValue": "={{ $json.lead.consent_given }}", "operator": { "type": "boolean", "operation": "true", "singleValue": true } }
-          ],
-          "combinator": "and"
-        }
-      }
-    },
-    {
-      "id": "insert-call",
-      "name": "Insert sales_calls",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [1920, 180],
-      "parameters": {
-        "operation": "create",
-        "tableId": "sales_calls",
-        "fieldsUi": {
-          "fieldValues": [
-            { "fieldId": "sales_lead_id", "fieldValue": "={{ $('Merge Lead & Program').first().json.lead.id }}" },
-            { "fieldId": "sales_program_id", "fieldValue": "={{ $('Merge Lead & Program').first().json.program.id }}" },
-            { "fieldId": "status", "fieldValue": "initiated" }
-          ]
-        }
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
-      "id": "build-session-payload",
-      "name": "Build Session Payload",
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [2100, 180],
-      "parameters": {
-        "jsCode": "const merged = $('Merge Lead & Program').first().json;\nconst lead = merged.lead;\nconst program = merged.program;\nconst call = $('Insert sales_calls').first().json;\n\n// cached_data wird vom /api/webhook/vapi (assistant-request) gelesen\n// und als Basis für den gerenderten System-Prompt genutzt.\nreturn [{\n  json: {\n    sales_lead_id: lead.id,\n    sales_call_id: call.id,\n    phone_number: lead.phone,\n    cached_data: {\n      lead: {\n        first_name: lead.first_name ?? null,\n        last_name: lead.last_name ?? null,\n        full_name: lead.full_name ?? null,\n        email: lead.email ?? null,\n        phone: lead.phone ?? null,\n        company_name: lead.company_name ?? null,\n        role: lead.role ?? null,\n        notes: lead.notes ?? null,\n        custom_fields: lead.custom_fields ?? {}\n      },\n      program: {\n        id: program.id,\n        name: program.name,\n        product_pitch: program.product_pitch ?? null,\n        value_proposition: program.value_proposition ?? null,\n        target_persona: program.target_persona ?? null,\n        booking_link: program.booking_link ?? null,\n        vapi_assistant_id: program.vapi_assistant_id ?? null,\n        // PR 2: use-case-spezifische Felder für den Prompt-Renderer\n        program_type: program.program_type ?? 'generic',\n        call_strategy: program.call_strategy ?? {}\n      }\n    }\n  }\n}];"
-      }
-    },
-    {
-      "id": "upsert-session",
-      "name": "Upsert sales_call_sessions",
+      "id": "vapi-create-call",
+      "name": "Vapi — Create Call",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [2280, 180],
+      "position": [480, 300],
+      "onError": "continueErrorOutput",
       "parameters": {
         "method": "POST",
-        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_call_sessions",
+        "url": "https://api.vapi.ai/call",
         "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
+        "nodeCredentialType": "httpHeaderAuth",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "resolution=merge-duplicates,return=representation" }
+            { "name": "Content-Type", "value": "application/json" }
           ]
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ sales_lead_id: $json.sales_lead_id, sales_call_id: $json.sales_call_id, phone_number: $json.phone_number, cached_data: $json.cached_data, expires_at: new Date(Date.now() + 2*60*60*1000).toISOString() }) }}",
+        "jsonBody": "={{ JSON.stringify($json.body.vapi_payload) }}",
         "options": { "timeout": 15000 }
       },
       "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
+        "httpHeaderAuth": { "id": "REPLACE_VAPI_API_CREDENTIAL_ID", "name": "Vapi API" }
       }
     },
     {
-      "id": "twilio-call",
-      "name": "Twilio — Outbound Call",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [2460, 180],
-      "onError": "continueErrorOutput",
-      "parameters": {
-        "method": "POST",
-        "url": "=https://studio.twilio.com/v2/Flows/FWf3b5573e6cfff5829c85c7a260073154/Executions",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "twilioApi",
-        "sendBody": true,
-        "contentType": "form-urlencoded",
-        "bodyParameters": {
-          "parameters": [
-            { "name": "To", "value": "={{ $('Merge Lead & Program').first().json.lead.phone }}" },
-            { "name": "From", "value": "={{ $('Merge Lead & Program').first().json.program.caller_phone_number }}" },
-            { "name": "Parameters", "value": "={{ JSON.stringify({ sales_lead_id: $('Merge Lead & Program').first().json.lead.id, sales_call_id: $('Insert sales_calls').first().json.id, sales_program_id: $('Merge Lead & Program').first().json.program.id, vapi_assistant_id: $('Merge Lead & Program').first().json.program.vapi_assistant_id }) }}" }
-          ]
-        },
-        "options": { "timeout": 30000 }
-      },
-      "credentials": {
-        "twilioApi": { "id": "AGT4eJcf8gZIc8pO", "name": "Twilio account" }
-      }
-    },
-    {
-      "id": "mark-call-failed",
-      "name": "Mark Call Failed",
+      "id": "mark-ringing",
+      "name": "sales_calls → ringing",
       "type": "n8n-nodes-base.supabase",
       "typeVersion": 1,
-      "position": [2640, 320],
+      "position": [720, 220],
       "parameters": {
         "operation": "update",
         "tableId": "sales_calls",
@@ -182,71 +56,54 @@
         "matchType": "anyFilter",
         "filters": {
           "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Insert sales_calls').first().json.id }}" }
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Start Sales Call Webhook').first().json.body.sales_call_id }}" }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "status", "fieldValue": "ringing" },
+            { "fieldId": "vapi_call_id", "fieldValue": "={{ $json.id }}" }
+          ]
+        }
+      },
+      "credentials": {
+        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
+      }
+    },
+    {
+      "id": "mark-failed",
+      "name": "sales_calls → failed",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [720, 400],
+      "parameters": {
+        "operation": "update",
+        "tableId": "sales_calls",
+        "filterType": "manual",
+        "matchType": "anyFilter",
+        "filters": {
+          "conditions": [
+            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Start Sales Call Webhook').first().json.body.sales_call_id }}" }
           ]
         },
         "fieldsUi": {
           "fieldValues": [
             { "fieldId": "status", "fieldValue": "failed" },
-            { "fieldId": "end_reason", "fieldValue": "={{ 'Twilio error: ' + ($json.error && $json.error.message ? $json.error.message : $json.message ? $json.message : JSON.stringify($json).slice(0, 400)) }}" }
+            { "fieldId": "end_reason", "fieldValue": "={{ 'Vapi API error: ' + ($json.error && $json.error.message ? $json.error.message : $json.message ? $json.message : JSON.stringify($json).slice(0, 400)) }}" }
           ]
         }
       },
       "credentials": {
         "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
-    },
-    {
-      "id": "update-lead-status",
-      "name": "Lead status → calling",
-      "type": "n8n-nodes-base.supabase",
-      "typeVersion": 1,
-      "position": [2640, 180],
-      "parameters": {
-        "operation": "update",
-        "tableId": "sales_leads",
-        "filterType": "manual",
-        "matchType": "anyFilter",
-        "filters": {
-          "conditions": [
-            { "keyName": "id", "condition": "eq", "keyValue": "={{ $('Merge Lead & Program').first().json.lead.id }}" }
-          ]
-        },
-        "fieldsUi": {
-          "fieldValues": [ { "fieldId": "status", "fieldValue": "calling" } ]
-        }
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
-    },
-    {
-      "id": "skip-no-consent",
-      "name": "Skip (no consent)",
-      "type": "n8n-nodes-base.noOp",
-      "typeVersion": 1,
-      "position": [1440, 420],
-      "parameters": {}
     }
   ],
   "connections": {
-    "Start Sales Call Webhook": { "main": [[{ "node": "Fetch Lead + Program", "type": "main", "index": 0 }]] },
-    "Fetch Lead + Program": { "main": [[{ "node": "Fetch Program", "type": "main", "index": 0 }]] },
-    "Fetch Program": { "main": [[{ "node": "Merge Lead & Program", "type": "main", "index": 0 }]] },
-    "Merge Lead & Program": { "main": [[{ "node": "Has Consent?", "type": "main", "index": 0 }]] },
-    "Has Consent?": {
+    "Start Sales Call Webhook": { "main": [[{ "node": "Vapi — Create Call", "type": "main", "index": 0 }]] },
+    "Vapi — Create Call": {
       "main": [
-        [{ "node": "Insert sales_calls", "type": "main", "index": 0 }],
-        [{ "node": "Skip (no consent)", "type": "main", "index": 0 }]
-      ]
-    },
-    "Insert sales_calls": { "main": [[{ "node": "Build Session Payload", "type": "main", "index": 0 }]] },
-    "Build Session Payload": { "main": [[{ "node": "Upsert sales_call_sessions", "type": "main", "index": 0 }]] },
-    "Upsert sales_call_sessions": { "main": [[{ "node": "Twilio — Outbound Call", "type": "main", "index": 0 }]] },
-    "Twilio — Outbound Call": {
-      "main": [
-        [{ "node": "Lead status → calling", "type": "main", "index": 0 }],
-        [{ "node": "Mark Call Failed", "type": "main", "index": 0 }]
+        [{ "node": "sales_calls → ringing", "type": "main", "index": 0 }],
+        [{ "node": "sales_calls → failed", "type": "main", "index": 0 }]
       ]
     }
   },

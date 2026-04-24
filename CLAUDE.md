@@ -40,7 +40,7 @@ Three workflows deployed + live in n8n (first deploy 2026-04-22, refined through
 
 | ID | Name | Webhook | Triggered by | Purpose |
 |---|---|---|---|---|
-| `Jwl2xHatoq1gZlZ4` | Sales — Start Sales Calls | `/webhook/start-sales-call` | `/api/sales/trigger-call`, funnel apply, Meta-matcher | Consent gate, insert `sales_calls`, upsert `sales_call_sessions`, Twilio Studio Execute **form-urlencoded** (flow `FWf3b557…`), `onError`-branch marks `sales_calls.status='failed'` + `end_reason`. No dedupe gate (handled server-side in `/api/sales/trigger-call`). |
+| `Jwl2xHatoq1gZlZ4` | Sales — Start Sales Calls | `/webhook/start-sales-call` | `/api/sales/trigger-call` | **4 Nodes (seit 2026-04-24):** POST `https://api.vapi.ai/call` mit vapi_payload aus Next.js → success: UPDATE `sales_calls` SET vapi_call_id + status='ringing'; error-branch: status='failed' + Vapi-error in end_reason. Braucht n8n-Credential "Vapi API" (httpHeaderAuth, `Authorization: Bearer $VAPI_API_KEY`). |
 | `7MsShq4LLuDbCQVK` | Sales — Vapi Call Processing | `/webhook/vapi-sales-end` | Vapi end-of-call report | IF `end-of-call-report` → extract transcript + 4 identifiers (`sales_call_id`, `sales_lead_id`, `customer_phone`, `vapi_call_id`) → POST `/api/sales/call-analyse`. The call-analyse endpoint does the final ID resolution. |
 | `72ExZxrN1Q4BmiEU` | Sales — Vapi Data Tools | `/webhook/vapi-sales-tools` | Vapi tool calls | Extract → **Resolve Lead + Program + recent_calls by phone** (PostgREST embedded-relation join) → Build Context with fallback call ID → Route by Tool → respond in Vapi-compliant `{results:[{toolCallId, result}]}` format. `book_meeting` upserts `sales_call_analyses` with `?on_conflict=sales_call_id`. |
 | — | Sales — Meta Leadgen Matcher | `/webhook/meta-leadgen-matcher` | `/api/webhook/meta-leadgen` post-insert | Graph-API fetch → route recruiting vs sales → upsert `sales_leads` → optional auto-dial. **Not yet deployed** — needs Meta Graph credential in n8n first. |
@@ -61,35 +61,37 @@ n8n Start Calls
   → Call ends → Vapi Call Processing reads resume_url from call_sessions → resumes Wait node
 ```
 
-### Sales
-No Wait-Node pattern — fire-and-analyze flow:
+### Sales (Vapi-API-Direct seit 2026-04-24)
+Fire-and-analyze flow. Twilio-Studio-SIP-Bridge wurde ersetzt durch direkten `POST https://api.vapi.ai/call` — Vapi dialt die importierte Twilio-Nummer selbst. Recruiting nutzt weiterhin die alte Studio-Bridge.
+
 ```
 Trigger (Funnel apply / CSV / Meta-matcher / manual UI "Call starten")
   → POST /api/sales/trigger-call
       ├─ consent gate (403 if no consent_given)
       ├─ auto-cleanup: stale 'initiated' rows >30s old → 'failed'
       ├─ status-lock: 409 if active ringing/in_progress call
-      └─ POST n8n /webhook/start-sales-call
+      ├─ load lead + program (program_type, call_strategy etc.)
+      ├─ buildSystemPrompt(programType, vars)     ← src/lib/vapi-prompts/builder.ts
+      ├─ buildFirstMessage(programType, vars)
+      ├─ INSERT sales_calls (status=initiated) → sales_call_id
+      ├─ compose vapi_payload {
+      │      phoneNumberId: program.vapi_phone_number_id || env,
+      │      customer.number: lead.phone,
+      │      assistantId: program.vapi_assistant_id || env,
+      │      assistantOverrides: { model.messages, firstMessage,
+      │                            model.tools, variableValues }
+      │   }
+      └─ POST n8n /webhook/start-sales-call { sales_lead_id, sales_call_id, vapi_payload }
 
-  → n8n "Start Sales Calls":
-      ├─ fetch lead + program
-      ├─ consent IF-gate (belt-and-suspenders)
-      ├─ insert sales_calls (status=initiated)
-      ├─ build + upsert sales_call_sessions (phone → cached_data{lead, program})
-      ├─ Twilio Studio Execute (FWf3b557…) with form-urlencoded body
-      │    From=caller_phone_number, To=lead.phone,
-      │    Parameters={sales_lead_id, sales_call_id, sales_program_id, vapi_assistant_id}
-      ├─ success → update sales_leads.status='calling'
-      └─ error   → update sales_calls.status='failed' + end_reason
+  → n8n "Sales — Start Sales Calls" (4 Nodes):
+      ├─ Vapi — Create Call: POST https://api.vapi.ai/call
+      │   Authorization: Bearer $VAPI_API_KEY (via n8n httpHeaderAuth-Credential "Vapi API")
+      │   Body: = vapi_payload
+      ├─ success → UPDATE sales_calls SET vapi_call_id, status='ringing'
+      └─ error   → UPDATE sales_calls SET status='failed', end_reason='Vapi API error: ...'
 
-  → Twilio Studio "Sales Call" Flow
-      → SIP URI: sip:neuronic-sales@sip.vapi.ai
-                 ;X-sales-lead-id={{trigger.parameters.sales_lead_id}}
-                 ;X-sales-call-id={{trigger.parameters.sales_call_id}}
-                 ;X-sales-program-id={{trigger.parameters.sales_program_id}}
-
-  → Vapi (SIP credential neuronic-sales, statically bound to Sales-Assistant)
-      ├─ Assistant spricht mit Lead
+  → Vapi dialt Lead direkt (inklusive ihrer Voice/Transcriber-Dashboard-Config)
+      ├─ Assistant spricht mit Lead mit vollem gerenderten Prompt
       └─ Tool-Calls → POST n8n /webhook/vapi-sales-tools
           (phone-based lookup, returns {results:[{toolCallId, result}]})
 
@@ -112,7 +114,9 @@ Trigger (Funnel apply / CSV / Meta-matcher / manual UI "Call starten")
 
 **Consent** must be documented at ingest time (`sales_leads.consent_given = true`, `consent_source ∈ funnel_checkbox | meta_form | manual_import`). **Terminal statuses** (`contacted`, `meeting_booked`, `not_interested`, `do_not_call`) never regress to `new` on re-submission.
 
-**Twilio Studio body format:** The HTTP call to Studio Executions API must be `application/x-www-form-urlencoded`, NOT JSON — Twilio silently rejects JSON with 400 "Missing required parameter". The n8n node uses `contentType: "form-urlencoded"` + keypair `bodyParameters` (`specifyBody: "form"` is not valid in HTTP Request v4.2).
+**Keine DTMF-"Press 1"-Consent-Gate mehr.** EU-AI-Act-Art.-50-Transparenz wird durch den base-prompt.ts-Block abgedeckt ("Ich bin ein KI-Assistent im Auftrag von ..."). Für B2C-Use-Cases mit strikterer Consent-Anforderung kann `call_strategy.require_dtmf_consent` + Vapi-`keypadInputPlan` nachgerüstet werden (Backlog).
+
+**Deprecated:** Twilio Studio Flow "Sales Call" (`FWf3b5573e6cfff5829c85c7a260073154`), SIP-Credential `neuronic-sales-v2`, `sales_call_sessions` (Outbound-Branch). Wird nicht gelöscht, nur nicht mehr befüllt / genutzt. Reaktivierbar falls Inbound-Sales jemals gewünscht.
 
 ## Supabase Tables (key ones)
 
@@ -321,7 +325,9 @@ curl -X PUT -H "..." .../workflows/ID -d @workflow_put.json
 
 | Var | Required? | Purpose |
 |---|---|---|
-| `VAPI_SALES_ASSISTANT_ID` | **Optional fallback** | Vapi assistant used if `sales_programs.vapi_assistant_id` is null when `/api/webhook/vapi` resolves an incoming SIP call. Current known Sales-Assistant ID: `998f169b-6a78-4eb0-a516-350a64968a8e`. Recommended: set this as a global safety net in Vercel. |
+| **`VAPI_API_KEY`** | **Required** (Vapi-API-Direct) | Private Key aus Vapi-Dashboard → API Keys. Server-only. Wird zwar nicht direkt von Next.js gerufen (der POST passiert in n8n), muss aber in n8n als httpHeaderAuth-Credential "Vapi API" (`Authorization: Bearer $VAPI_API_KEY`) angelegt sein. |
+| **`VAPI_SALES_PHONE_NUMBER_ID`** | **Optional fallback** | Vapi-phoneNumberId der importierten Twilio-Nummer. Wird genutzt wenn `sales_programs.vapi_phone_number_id` null. |
+| `VAPI_SALES_ASSISTANT_ID` | **Optional fallback** | Sales-Assistant, wenn `sales_programs.vapi_assistant_id` null. Current known: `998f169b-6a78-4eb0-a516-350a64968a8e`. |
 | `META_APP_SECRET` | **Required only** if `/api/webhook/meta-leadgen` is wired in Meta | Used to verify the `x-hub-signature-256` HMAC of incoming Meta Leadgen events. If not set, route returns 500. |
 | `META_VERIFY_TOKEN` | **Required only** if subscribing the webhook in Meta Developer console | Must match the `hub.verify_token` query string Meta sends during the subscription-challenge handshake. User-chosen string, copy into both Meta app + Vercel. |
 

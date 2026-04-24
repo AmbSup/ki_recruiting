@@ -1,7 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { buildSystemPrompt, buildFirstMessage } from "@/lib/vapi-prompts/builder";
+import { salesTools } from "@/lib/vapi-prompts/tool-definitions";
+import type { SalesProgramType } from "@/lib/vapi-prompts/schemas";
 
 export const maxDuration = 60;
+
+const VAPI_SALES_PHONE_NUMBER_ID = process.env.VAPI_SALES_PHONE_NUMBER_ID;
+const VAPI_SALES_ASSISTANT_ID = process.env.VAPI_SALES_ASSISTANT_ID;
+
+type Program = {
+  id: string;
+  name: string;
+  product_pitch: string | null;
+  value_proposition: string | null;
+  target_persona: string | null;
+  booking_link: string | null;
+  vapi_assistant_id: string | null;
+  vapi_phone_number_id: string | null;
+  caller_phone_number: string | null;
+  program_type: SalesProgramType | null;
+  call_strategy: Record<string, unknown> | null;
+  auto_dial: boolean;
+};
+
+type Lead = {
+  id: string;
+  sales_program_id: string;
+  phone: string;
+  consent_given: boolean;
+  status: string;
+  first_name: string | null;
+  last_name: string | null;
+  full_name: string | null;
+  email: string | null;
+  company_name: string | null;
+  role: string | null;
+  notes: string | null;
+  custom_fields: Record<string, unknown> | null;
+  program: Program | null;
+};
 
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
@@ -14,15 +52,35 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "sales_lead_id fehlt" }, { status: 422 });
   }
 
-  // Load lead + program
-  const { data: lead, error: leadErr } = await supabase
+  // Load lead + program (alle Felder, die der Prompt-Renderer braucht)
+  const { data: leadRaw, error: leadErr } = await supabase
     .from("sales_leads")
-    .select("id, sales_program_id, phone, consent_given, status, first_name, last_name, full_name, email, company_name, role, program:sales_programs(id, name, vapi_assistant_id, caller_phone_number, booking_link, auto_dial)")
+    .select(`
+      id, sales_program_id, phone, consent_given, status,
+      first_name, last_name, full_name, email, company_name, role, notes, custom_fields,
+      program:sales_programs(
+        id, name, product_pitch, value_proposition, target_persona, booking_link,
+        vapi_assistant_id, vapi_phone_number_id, caller_phone_number,
+        program_type, call_strategy, auto_dial
+      )
+    `)
     .eq("id", sales_lead_id)
     .single();
 
-  if (leadErr || !lead) {
+  if (leadErr || !leadRaw) {
     return NextResponse.json({ error: "Lead nicht gefunden" }, { status: 404 });
+  }
+
+  // program kann vom Supabase-Client als array-of-1 kommen — defensiv flatten
+  const leadObj = leadRaw as unknown as Record<string, unknown>;
+  const programRaw = leadObj.program;
+  const program: Program | null = Array.isArray(programRaw)
+    ? (programRaw[0] as Program | undefined) ?? null
+    : (programRaw as Program | null);
+  const lead: Lead = { ...(leadObj as unknown as Lead), program };
+
+  if (!program) {
+    return NextResponse.json({ error: "Sales Program nicht gefunden" }, { status: 404 });
   }
 
   // Consent-Gate
@@ -30,10 +88,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kein dokumentiertes Opt-In — Call blockiert" }, { status: 403 });
   }
 
-  // Status-Lock: kein doppeltes Dialing wenn schon aktiv.
-  // `initiated`-Rows, die älter als 30s sind, sind fast sicher tot (Twilio
-  // Studio Executions schlagen sofort fehl oder wechseln rasch in `ringing`).
-  // Wir markieren die als `failed` und lassen den neuen Trigger durch.
+  // Status-Lock + Stale-Cleanup (unverändert)
   const STALE_THRESHOLD_MS = 30_000;
   const staleCutoff = new Date(Date.now() - STALE_THRESHOLD_MS).toISOString();
 
@@ -75,7 +130,97 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Trigger n8n
+  // Vapi-Assistant + Phone-Number aus Program (mit Env-Fallback)
+  const assistantId = program.vapi_assistant_id ?? VAPI_SALES_ASSISTANT_ID;
+  const phoneNumberId = program.vapi_phone_number_id ?? VAPI_SALES_PHONE_NUMBER_ID;
+  if (!assistantId) {
+    return NextResponse.json(
+      { error: "Vapi Assistant ID fehlt — setz sales_programs.vapi_assistant_id oder VAPI_SALES_ASSISTANT_ID" },
+      { status: 500 },
+    );
+  }
+  if (!phoneNumberId) {
+    return NextResponse.json(
+      { error: "Vapi Phone Number ID fehlt — setz sales_programs.vapi_phone_number_id oder VAPI_SALES_PHONE_NUMBER_ID" },
+      { status: 500 },
+    );
+  }
+
+  // Prompt rendern — use-case-spezifisch via builder
+  const programType = (program.program_type ?? "generic") as SalesProgramType;
+  const callStrategy = (program.call_strategy ?? {}) as Record<string, unknown>;
+  const now = new Date();
+  const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][now.getDay()];
+
+  const vars = {
+    first_name: lead.first_name ?? "",
+    last_name: lead.last_name ?? "",
+    full_name: lead.full_name ?? "",
+    email: lead.email ?? "",
+    phone: lead.phone ?? "",
+    company_name: lead.company_name ?? "",
+    role: lead.role ?? "",
+    notes: lead.notes ?? "",
+    custom_fields_json: JSON.stringify(lead.custom_fields ?? {}),
+    program_name: program.name ?? "",
+    product_pitch: program.product_pitch ?? "",
+    value_proposition: program.value_proposition ?? "",
+    target_persona: program.target_persona ?? "",
+    booking_link: program.booking_link ?? "",
+    hook_promise: (callStrategy.hook_promise as string | undefined) ?? "",
+    caller_name: (callStrategy.caller_name as string | undefined) ?? "Jonas",
+    fallback_resource_url: (callStrategy.fallback_resource_url as string | undefined) ?? "",
+    hard_qualifier_questions_list: Array.isArray(callStrategy.hard_qualifier_questions)
+      ? (callStrategy.hard_qualifier_questions as string[]).join(" / ")
+      : "",
+    show_rate_confirmation_phrase: (callStrategy.show_rate_confirmation_phrase as string | undefined) ?? "",
+    sales_lead_id: lead.id,
+    sales_call_id: "", // gleich gesetzt nach Insert
+    sales_program_id: program.id,
+    today_iso: now.toISOString().slice(0, 10),
+    today_weekday_de: weekdayDe,
+  };
+
+  // sales_calls-Row jetzt anlegen, damit wir die ID in variableValues einbauen können
+  const { data: callRow, error: callErr } = await supabase
+    .from("sales_calls")
+    .insert({
+      sales_lead_id: lead.id,
+      sales_program_id: program.id,
+      status: "initiated",
+    })
+    .select("id")
+    .single();
+
+  if (callErr || !callRow) {
+    return NextResponse.json(
+      { error: `sales_calls insert failed: ${callErr?.message ?? "unknown"}` },
+      { status: 500 },
+    );
+  }
+
+  const salesCallId = callRow.id as string;
+  vars.sales_call_id = salesCallId;
+
+  const systemPrompt = buildSystemPrompt(programType, vars);
+  const firstMessage = buildFirstMessage(programType, vars);
+
+  const vapiPayload = {
+    phoneNumberId,
+    customer: { number: lead.phone },
+    assistantId,
+    assistantOverrides: {
+      model: {
+        messages: [{ role: "system", content: systemPrompt }],
+        tools: salesTools,
+      },
+      firstMessage,
+      variableValues: vars,
+    },
+  };
+
+  // Hand off an n8n — der macht den Vapi-API-Call und updatet sales_calls.vapi_call_id
+  // bzw. markiert failed bei Fehler. Wir behalten die n8n-Visibility/Retry bewusst.
   const n8nBase = process.env.N8N_BASE_URL;
   if (!n8nBase) {
     return NextResponse.json({ error: "N8N_BASE_URL nicht konfiguriert" }, { status: 500 });
@@ -84,7 +229,11 @@ export async function POST(req: NextRequest) {
   const triggerRes = await fetch(`${n8nBase}/webhook/start-sales-call`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sales_lead_id }),
+    body: JSON.stringify({
+      sales_lead_id: lead.id,
+      sales_call_id: salesCallId,
+      vapi_payload: vapiPayload,
+    }),
   }).catch((err) => {
     console.error("[sales/trigger-call] n8n fetch failed:", err);
     return null;
@@ -92,14 +241,28 @@ export async function POST(req: NextRequest) {
 
   if (!triggerRes || !triggerRes.ok) {
     const msg = triggerRes ? await triggerRes.text().catch(() => "") : "n8n unreachable";
+    // sales_calls auf failed setzen, damit die UI den Retry freigibt
+    await supabase
+      .from("sales_calls")
+      .update({
+        status: "failed",
+        end_reason: `n8n trigger failed: ${msg.slice(0, 200)}`,
+        ended_at: new Date().toISOString(),
+      })
+      .eq("id", salesCallId);
     return NextResponse.json({ error: `n8n trigger failed: ${msg}` }, { status: 502 });
   }
 
-  // Optimistic: Lead-Status auf "calling" setzen (n8n aktualisiert später auf contacted/…)
+  // Optimistic: Lead-Status auf "calling" (Vapi updatet später via end-of-call-report)
   await supabase
     .from("sales_leads")
     .update({ status: "calling" })
     .eq("id", sales_lead_id);
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    sales_call_id: salesCallId,
+    vapi_assistant_id: assistantId,
+    vapi_phone_number_id: phoneNumberId,
+  });
 }
