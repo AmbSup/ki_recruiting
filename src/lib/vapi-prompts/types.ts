@@ -40,6 +40,7 @@ export type PromptVariables = {
   fallback_resource_url: string;
   hard_qualifier_questions_list: string;
   show_rate_confirmation_phrase: string;
+  require_consent: boolean; // true → DTMF-Consent-Gate im Prompt (default true)
 
   // IDs (für Audit im Prompt, i.d.R. unverwendet)
   sales_lead_id: string;

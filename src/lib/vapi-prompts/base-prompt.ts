@@ -32,3 +32,36 @@ Nach deiner Verabschiedungsformel ("Schönen Tag noch!" o.ä.):
 3. Warte NICHT auf eine Lead-Antwort nach deiner Verabschiedung.
 
 `;
+
+/**
+ * Optional: DTMF-Consent-Gate direkt nach First Message.
+ * Wird in den System-Prompt eingefügt, wenn sales_programs.call_strategy.require_consent = true.
+ * Default: true (EU-AI-Act-konform, opt-out).
+ *
+ * Flow:
+ *   First Message (automatisch) → Consent-Frage → DTMF "1" ODER "Ja" ODER auflegen
+ *   → Bei Zustimmung: weiter mit get_lead_context + Gesprächsphase 1
+ *   → Sonst: kurze Verabschiedung + sauberes Auflegen
+ *
+ * Voraussetzung: Im Vapi-Dashboard muss Keypad Input Plan aktiv sein (DTMF-Detection).
+ */
+export const consentGateBlock = `
+## DTMF-Consent-Gate (Pflicht, VOR jedem weiteren Inhalt)
+
+Nach deiner First Message (automatisch gesprochen) stellst du EINE einzige Frage:
+
+> "Bevor wir weitermachen — sind Sie einverstanden, dass wir das Gespräch führen? Drücken Sie einfach die Taste Eins oder sagen Sie Ja. Wenn nicht, einfach auflegen — kein Problem."
+
+Dann WARTE **bis zu 10 Sekunden** auf EINE der drei Reaktionen:
+
+1. **DTMF-Tastendruck "1"** (Keypad Input) → Zustimmung. Weiter mit dem normalen Gesprächsablauf ab Phase 2 (Discovery).
+2. **Verbale Zustimmung** ("Ja", "Gerne", "Passt", "OK", "Klar", "In Ordnung") → Zustimmung. Weiter ab Phase 2.
+3. **Andere Antwort / Stille / Ablehnung** → verabschieden + sofort auflegen:
+   > "Alles klar, danke für Ihre Zeit. Einen schönen Tag noch!"
+
+ABSOLUTE REGELN zum Consent-Gate:
+- **Kein Sales-Content BEVOR Zustimmung da ist.** Du gehst erst mit dem Pitch/Discovery los, wenn entweder "1" gedrückt ODER "Ja" gesprochen wurde.
+- **Kein Nachhaken bei Ablehnung.** Keine Argumentation, keine zweite Chance. Höflicher Abbruch.
+- **Wiederhole die Frage höchstens EINMAL** nach 10 Sekunden Stille — danach Abbruch.
+
+`;

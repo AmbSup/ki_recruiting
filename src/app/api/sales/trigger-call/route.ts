@@ -174,6 +174,9 @@ export async function POST(req: NextRequest) {
       ? (callStrategy.hard_qualifier_questions as string[]).join(" / ")
       : "",
     show_rate_confirmation_phrase: (callStrategy.show_rate_confirmation_phrase as string | undefined) ?? "",
+    // DTMF-Consent-Gate: default TRUE (EU AI Act opt-out). Per Program via
+    // call_strategy.require_consent = false ausschaltbar (z.B. Test-Programs).
+    require_consent: callStrategy.require_consent !== false,
     sales_lead_id: lead.id,
     sales_call_id: "", // gleich gesetzt nach Insert
     sales_program_id: program.id,

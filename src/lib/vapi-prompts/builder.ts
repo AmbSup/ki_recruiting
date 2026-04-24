@@ -1,4 +1,4 @@
-import { basePromptHeader } from "./base-prompt";
+import { basePromptHeader, consentGateBlock } from "./base-prompt";
 import { genericUseCase } from "./use-cases/generic";
 import { recruitingUseCase } from "./use-cases/recruiting";
 import { realEstateUseCase } from "./use-cases/real_estate";
@@ -59,8 +59,12 @@ export function buildSystemPrompt(
   vars: Partial<PromptVariables>,
 ): string {
   const template = templatesByType[programType] ?? genericUseCase;
+  // DTMF-Consent-Gate wird direkt nach Base-Header eingehängt, falls aktiv.
+  // require_consent default = true (opt-out), damit EU-AI-Act-konform.
+  const consentEnabled = vars.require_consent !== false;
   const raw =
     interpolate(basePromptHeader, vars) +
+    (consentEnabled ? interpolate(consentGateBlock, vars) : "") +
     interpolate(template.systemPromptBody, vars) +
     buildContextBlock(vars);
   return raw;
