@@ -70,13 +70,31 @@ export function buildSystemPrompt(
   return raw;
 }
 
-/** Rendert die First Message (erste Zeile, die der Assistant spricht). */
+/**
+ * Rendert die First Message.
+ * Struktur (auto-assembled):
+ *   1. Use-Case-spezifischer Opener (Begrüßung + Grund)
+ *   2. KI-Disclosure (wortgetreu, EU AI Act Art. 50 — immer)
+ *   3. Consent-Frage (nur wenn require_consent !== false)
+ * Damit ist die Reihenfolge garantiert, unabhängig davon ob der LLM den
+ * System-Prompt strikt befolgt.
+ */
 export function buildFirstMessage(
   programType: SalesProgramType,
   vars: Partial<PromptVariables>,
 ): string {
   const template = templatesByType[programType] ?? genericUseCase;
-  return interpolate(template.firstMessageTemplate, vars);
+  const opener = interpolate(template.firstMessageTemplate, vars).trim();
+
+  const disclosure =
+    "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird verarbeitet und ausgewertet.";
+
+  const consentEnabled = vars.require_consent !== false;
+  const consentQuestion = consentEnabled
+    ? " Sind Sie damit einverstanden, dass wir das Gespräch führen? Drücken Sie einfach die Eins auf Ihrer Tastatur oder sagen Sie einfach Ja. Wenn nicht, legen Sie einfach auf — kein Problem."
+    : "";
+
+  return `${opener} ${disclosure}${consentQuestion}`;
 }
 
 export { templatesByType };
