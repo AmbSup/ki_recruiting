@@ -325,7 +325,7 @@ curl -X PUT -H "..." .../workflows/ID -d @workflow_put.json
 
 | Var | Required? | Purpose |
 |---|---|---|
-| **`VAPI_API_KEY`** | **Required** (Vapi-API-Direct) | Private Key aus Vapi-Dashboard → API Keys. Server-only. Wird zwar nicht direkt von Next.js gerufen (der POST passiert in n8n), muss aber in n8n als httpHeaderAuth-Credential "Vapi API" (`Authorization: Bearer $VAPI_API_KEY`) angelegt sein. |
+| **`VAPI_API_KEY`** | **Nicht in Vercel nötig** | Der POST /call passiert in n8n, nicht in Next.js. Der Key lebt als httpHeaderAuth-Credential "Vapi API" (ID `gRoTW0Zg4KstZ6AH`, Header: `Authorization: Bearer <key>`) in n8n. Nur in Vercel setzen, falls später Direkt-Calls aus Next.js gewünscht sind. |
 | **`VAPI_SALES_PHONE_NUMBER_ID`** | **Optional fallback** | Vapi-phoneNumberId der importierten Twilio-Nummer. Wird genutzt wenn `sales_programs.vapi_phone_number_id` null. |
 | `VAPI_SALES_ASSISTANT_ID` | **Optional fallback** | Sales-Assistant, wenn `sales_programs.vapi_assistant_id` null. Current known: `998f169b-6a78-4eb0-a516-350a64968a8e`. |
 | `META_APP_SECRET` | **Required only** if `/api/webhook/meta-leadgen` is wired in Meta | Used to verify the `x-hub-signature-256` HMAC of incoming Meta Leadgen events. If not set, route returns 500. |
