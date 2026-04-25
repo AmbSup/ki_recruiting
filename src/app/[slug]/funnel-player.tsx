@@ -57,6 +57,33 @@ const fontVarMap: Record<string, string> = {
   bebas: "var(--font-bebas)",
 };
 
+// Tile-Label-Style: identische Logik wie ts() im Editor, lokal nachgebaut.
+// Liest tile_label_size / _font_size / _font / _color / _align / _line_height aus block.content.
+function tileLabelStyle(c: BlockContent, defaults: { color?: string; align?: "left" | "center" | "right"; lineHeight?: number }): React.CSSProperties {
+  const pxSize = c.tile_label_font_size as number | undefined;
+  const fontKey = c.tile_label_font as string | undefined;
+  const fontVar = fontKey ? fontVarMap[fontKey] : undefined;
+  const lh = c.tile_label_line_height as number | undefined;
+  return {
+    fontSize: pxSize ? `${pxSize}px` : sizeMap[(c.tile_label_size as string) ?? "sm"],
+    color: (c.tile_label_color as string) || defaults.color || "#111827",
+    textAlign: ((c.tile_label_align as string) || defaults.align || "center") as "left" | "center" | "right",
+    ...(fontVar ? { fontFamily: fontVar } : {}),
+    ...(lh != null ? { lineHeight: lh } : (defaults.lineHeight != null ? { lineHeight: defaults.lineHeight } : {})),
+  };
+}
+
+// Hex → rgba (für Tile-Bar-Hintergrund mit Opacity).
+function hexToRgba(hex: string, opacityPercent: number): string {
+  const clean = (hex || "").replace("#", "");
+  const r = parseInt(clean.length === 3 ? clean[0] + clean[0] : clean.slice(0, 2), 16);
+  const g = parseInt(clean.length === 3 ? clean[1] + clean[1] : clean.slice(2, 4), 16);
+  const b = parseInt(clean.length === 3 ? clean[2] + clean[2] : clean.slice(4, 6), 16);
+  const a = Math.max(0, Math.min(100, opacityPercent)) / 100;
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return hex;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
 type Block = { id: string; type: BlockType; content: BlockContent };
 
 type FunnelPage = {
@@ -454,7 +481,7 @@ function BlockRenderer({
                 style={{ borderColor: selected ? color : "#E5E7EB", background: selected ? color + "15" : "white" }}
               >
                 <span className="material-symbols-outlined text-base" style={{ color: selected ? color : "#9CA3AF" }}>{item.icon || "check"}</span>
-                <span className="text-xs font-semibold text-gray-900 leading-tight">{item.label}</span>
+                <span style={{ ...tileLabelStyle(c, { color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 600 }}>{item.label}</span>
               </button>
             );
           })}
@@ -494,8 +521,15 @@ function BlockRenderer({
                     <span className="text-3xl text-gray-300">🖼</span>
                   </div>
                 )}
-                <div className="absolute bottom-0 left-0 right-0 py-1.5 text-center" style={{ background: color }}>
-                  <span className="font-bold text-xs" style={{ color: textColor }}>{item.label}</span>
+                <div
+                  className="absolute bottom-0 left-0 right-0"
+                  style={{
+                    background: hexToRgba(color, (c.tile_bar_bg_opacity as number | undefined) ?? 100),
+                    paddingTop: `${(c.tile_bar_padding_y as number | undefined) ?? 6}px`,
+                    paddingBottom: `${(c.tile_bar_padding_y as number | undefined) ?? 6}px`,
+                  }}
+                >
+                  <span style={{ ...tileLabelStyle(c, { color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block" }}>{item.label}</span>
                 </div>
               </button>
             );

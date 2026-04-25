@@ -485,16 +485,18 @@ function BlockPreview({
   const color = branding.primary_color;
   const textColor = branding.button_text_color;
 
-  // Helper: get style for a text field (supports px override + per-element font)
-  const ts = (fieldKey: string, defaults: { size?: string; color?: string; align?: string }) => {
+  // Helper: get style for a text field (supports px override + per-element font + line-height)
+  const ts = (fieldKey: string, defaults: { size?: string; color?: string; align?: string; lineHeight?: number | string }) => {
     const pxSize = c[`${fieldKey}_font_size`] as number | undefined;
     const fontKey = c[`${fieldKey}_font`] as string | undefined;
     const fontVar = fontKey ? availableFonts.find(f => f.key === fontKey)?.var : undefined;
+    const lh = c[`${fieldKey}_line_height`] as number | undefined;
     return {
       fontSize: pxSize ? `${pxSize}px` : (fieldKey === "headline" ? headlineSizeMap : sizeMap)[(c[`${fieldKey}_size`] as string) ?? defaults.size ?? "md"],
       color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
       textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "center") as "left" | "center" | "right",
       ...(fontVar ? { fontFamily: fontVar } : {}),
+      ...(lh != null ? { lineHeight: lh } : (defaults.lineHeight != null ? { lineHeight: defaults.lineHeight } : {})),
     };
   };
   // Helper: inner block container style with gap
@@ -603,7 +605,7 @@ function BlockPreview({
               <div key={item.id} className="flex items-center gap-2 rounded-xl px-3 py-2.5 border-2 cursor-pointer"
                 style={{ borderColor: i === 0 ? color : "#E5E7EB", background: i === 0 ? color + "15" : "white" }}>
                 <span className="material-symbols-outlined text-sm text-gray-700">{item.icon || "check"}</span>
-                <span className="text-xs font-semibold text-gray-900 leading-tight">{item.label}</span>
+                <span style={{ ...ts("tile_label", { size: "sm", color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 600 }}>{item.label}</span>
               </div>
             ))}
           </div>
@@ -619,20 +621,24 @@ function BlockPreview({
         <div className="px-4 py-3">
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           <div className="grid grid-cols-2 gap-1.5">
-            {(c.items ?? []).slice(0, 4).map((item, i) => (
-              <div key={item.id} className="relative rounded-xl overflow-hidden border-2 cursor-pointer" style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}>
-                {item.image_url ? (
-                  <img src={item.image_url} className="w-full h-full object-cover" alt={item.label} />
-                ) : (
-                  <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-2xl text-gray-300">image</span>
+            {(c.items ?? []).slice(0, 4).map((item, i) => {
+              const padY = (c.tile_bar_padding_y as number | undefined) ?? 4;
+              const opacity = (c.tile_bar_bg_opacity as number | undefined) ?? 100;
+              return (
+                <div key={item.id} className="relative rounded-xl overflow-hidden border-2 cursor-pointer" style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}>
+                  {item.image_url ? (
+                    <img src={item.image_url} className="w-full h-full object-cover" alt={item.label} />
+                  ) : (
+                    <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-2xl text-gray-300">image</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-0 left-0 right-0" style={{ background: hexToRgba(color, opacity), paddingTop: `${padY}px`, paddingBottom: `${padY}px` }}>
+                    <span style={{ ...ts("tile_label", { size: "sm", color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block" }}>{item.label}</span>
                   </div>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 py-1 text-center" style={{ background: color }}>
-                  <span className="font-bold text-[9px]" style={{ color: textColor }}>{item.label}</span>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -911,19 +917,35 @@ function BlockPickerInline({ onAdd }: { onAdd: (type: BlockType) => void }) {
 
 // ─── Text Style Controls ────────────────────────────────────────────────────────
 
-function TextStyleControls({ label, sizeKey, colorKey, alignKey, content, onUpdate, sizes = ["sm", "md", "lg", "xl"] as const }: {
+function TextStyleControls({ label, sizeKey, colorKey, alignKey, fontKey, lineHeightKey, fontSizeKey, content, onUpdate, sizes = ["sm", "md", "lg", "xl"] as const, showFont = false, showLineHeight = false, showFontSize = false }: {
   label: string;
   sizeKey: string; colorKey: string; alignKey: string;
+  fontKey?: string; lineHeightKey?: string; fontSizeKey?: string;
   content: BlockContent;
   onUpdate: (c: Partial<BlockContent>) => void;
   sizes?: readonly string[];
+  showFont?: boolean;
+  showLineHeight?: boolean;
+  showFontSize?: boolean;
 }) {
   const currentSize = (content as Record<string, unknown>)[sizeKey] as string ?? "md";
   const currentColor = (content as Record<string, unknown>)[colorKey] as string ?? "";
   const currentAlign = (content as Record<string, unknown>)[alignKey] as string ?? "center";
+  const currentFont = fontKey ? (content as Record<string, unknown>)[fontKey] as string ?? "" : "";
+  const currentLh = lineHeightKey ? (content as Record<string, unknown>)[lineHeightKey] as number | undefined : undefined;
+  const currentFontSize = fontSizeKey ? (content as Record<string, unknown>)[fontSizeKey] as number | undefined : undefined;
   return (
     <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
       <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</span>
+      {/* Font Family (optional) */}
+      {showFont && fontKey && (
+        <select value={currentFont} onChange={(e) => onUpdate({ [fontKey]: e.target.value })}
+          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary">
+          {availableFonts.map((f) => (
+            <option key={f.key} value={f.key}>{f.label}</option>
+          ))}
+        </select>
+      )}
       {/* Size */}
       <div className="flex gap-1">
         {sizes.map((s) => (
@@ -933,6 +955,27 @@ function TextStyleControls({ label, sizeKey, colorKey, alignKey, content, onUpda
           </button>
         ))}
       </div>
+      {/* Custom px font-size (optional) */}
+      {showFontSize && fontSizeKey && (
+        <div className="flex items-center gap-2">
+          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline w-14">px</span>
+          <input type="number" min={6} max={120} value={currentFontSize ?? ""} onChange={(e) => onUpdate({ [fontSizeKey]: e.target.value === "" ? undefined : Number(e.target.value) })}
+            placeholder="auto"
+            className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1 text-xs focus:outline-none focus:border-primary" />
+          {currentFontSize != null && (
+            <button onClick={() => onUpdate({ [fontSizeKey]: undefined })} className="material-symbols-outlined text-outline text-sm hover:text-error">close</button>
+          )}
+        </div>
+      )}
+      {/* Line-Height (optional) */}
+      {showLineHeight && lineHeightKey && (
+        <div className="flex items-center gap-2">
+          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline w-14">Zeilen</span>
+          <input type="range" min={0.8} max={2.0} step={0.05} value={currentLh ?? 1.2} onChange={(e) => onUpdate({ [lineHeightKey]: Number(e.target.value) })}
+            className="flex-1" />
+          <span className="font-label text-[10px] font-mono w-10 text-right">{(currentLh ?? 1.2).toFixed(2)}</span>
+        </div>
+      )}
       {/* Align */}
       <div className="flex gap-1">
         {(["left", "center", "right"] as const).map((a) => (
@@ -952,6 +995,37 @@ function TextStyleControls({ label, sizeKey, colorKey, alignKey, content, onUpda
       </div>
     </div>
   );
+}
+
+// ─── Number-Slider Helper (für padding-y, line-height, opacity etc.) ────────
+function NumberSlider({ label, min, max, step = 1, value, onChange, suffix }: {
+  label: string;
+  min: number;
+  max: number;
+  step?: number;
+  value: number;
+  onChange: (v: number) => void;
+  suffix?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline flex-shrink-0 min-w-0">{label}</span>
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))}
+        className="flex-1" />
+      <span className="font-label text-[10px] font-mono w-12 text-right text-on-surface-variant">{value}{suffix ?? ""}</span>
+    </div>
+  );
+}
+
+// ─── Hex → rgba (für Bar-Hintergrund mit Opacity) ───────────────────────────
+function hexToRgba(hex: string, opacityPercent: number): string {
+  const clean = hex.replace("#", "");
+  const r = parseInt(clean.length === 3 ? clean[0] + clean[0] : clean.slice(0, 2), 16);
+  const g = parseInt(clean.length === 3 ? clean[1] + clean[1] : clean.slice(2, 4), 16);
+  const b = parseInt(clean.length === 3 ? clean[2] + clean[2] : clean.slice(4, 6), 16);
+  const a = Math.max(0, Math.min(100, opacityPercent)) / 100;
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return hex;
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
 }
 
 // ─── Properties Panel ──────────────────────────────────────────────────────────
@@ -1131,6 +1205,20 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
               ))}
             </div>
           </div>
+          <TextStyleControls
+            label="Kachel-Beschriftung"
+            sizeKey="tile_label_size"
+            colorKey="tile_label_color"
+            alignKey="tile_label_align"
+            fontKey="tile_label_font"
+            lineHeightKey="tile_label_line_height"
+            fontSizeKey="tile_label_font_size"
+            content={c}
+            onUpdate={onUpdate}
+            showFont
+            showLineHeight
+            showFontSize
+          />
           {block.type === "multiple_choice" && field("CTA Button", c.cta ?? "", (v) => onUpdate({ cta: v }), "Absenden und weiter")}
         </>
       )}
@@ -1158,6 +1246,41 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
                 </div>
               ))}
             </div>
+          </div>
+          <TextStyleControls
+            label="Kachel-Beschriftung"
+            sizeKey="tile_label_size"
+            colorKey="tile_label_color"
+            alignKey="tile_label_align"
+            fontKey="tile_label_font"
+            lineHeightKey="tile_label_line_height"
+            fontSizeKey="tile_label_font_size"
+            content={c}
+            onUpdate={onUpdate}
+            showFont
+            showLineHeight
+            showFontSize
+          />
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Label-Bar</span>
+            <NumberSlider
+              label="Höhe"
+              min={0}
+              max={40}
+              step={1}
+              value={(c.tile_bar_padding_y as number | undefined) ?? 4}
+              onChange={(v) => onUpdate({ tile_bar_padding_y: v })}
+              suffix="px"
+            />
+            <NumberSlider
+              label="Deckkraft"
+              min={0}
+              max={100}
+              step={5}
+              value={(c.tile_bar_bg_opacity as number | undefined) ?? 100}
+              onChange={(v) => onUpdate({ tile_bar_bg_opacity: v })}
+              suffix="%"
+            />
           </div>
         </>
       )}
