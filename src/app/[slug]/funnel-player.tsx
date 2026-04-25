@@ -88,6 +88,26 @@ function tileLabelStyle(c: BlockContent, defaults: { color?: string; align?: "le
   };
 }
 
+// Vertical-Tile-Typografie: gleiche Logik wie tileLabelStyle, aber für beliebigen
+// fieldKey-Prefix (vtile_label / vtile_sublabel).
+function vtileTextStyle(
+  c: BlockContent,
+  fieldKey: string,
+  defaults: { color?: string; align?: "left" | "center" | "right"; lineHeight?: number }
+): React.CSSProperties {
+  const pxSize = c[`${fieldKey}_font_size`] as number | undefined;
+  const fontKey = c[`${fieldKey}_font`] as string | undefined;
+  const fontVar = fontKey ? fontVarMap[fontKey] : undefined;
+  const lh = c[`${fieldKey}_line_height`] as number | undefined;
+  return {
+    fontSize: pxSize ? `${pxSize}px` : sizeMap[(c[`${fieldKey}_size`] as string) ?? "md"],
+    color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
+    textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "left") as "left" | "center" | "right",
+    ...(fontVar ? { fontFamily: fontVar } : {}),
+    ...(lh != null ? { lineHeight: lh } : (defaults.lineHeight != null ? { lineHeight: defaults.lineHeight } : {})),
+  };
+}
+
 // Hex → rgba (für Tile-Bar-Hintergrund mit Opacity).
 function hexToRgba(hex: string, opacityPercent: number): string {
   const clean = (hex || "").replace("#", "");
@@ -894,7 +914,9 @@ function BlockRenderer({
     const bg = (c.vtile_bg as string) || "#ffffff";
     const borderColor = (c.vtile_border as string) || "#E5E7EB";
     const labelColor = (c.vtile_label_color as string) || "#111827";
-    const sublabelColor = (c.vtile_sublabel_color as string) || "#6B7280";
+    const imgSize = (c.vtile_image_size as number | undefined) ?? 48;
+    const labelStyle = vtileTextStyle(c, "vtile_label", { color: "#111827", align: "left", lineHeight: 1.2 });
+    const sublabelStyle = vtileTextStyle(c, "vtile_sublabel", { color: "#6B7280", align: "left", lineHeight: 1.2 });
     return (
       <div className="px-5 py-6">
         <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
@@ -922,7 +944,7 @@ function BlockRenderer({
                 }}
               >
                 {showImg ? (
-                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden">
+                  <div className="flex-shrink-0 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden" style={{ width: `${imgSize}px`, height: `${imgSize}px` }}>
                     {item.image_url ? (
                       <img src={item.image_url} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -935,8 +957,8 @@ function BlockRenderer({
                   )
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="font-bold text-sm leading-tight" style={{ color: labelColor }}>{item.label}</div>
-                  {item.sublabel && <div className="text-xs leading-tight mt-0.5" style={{ color: sublabelColor }}>{item.sublabel}</div>}
+                  <div className="truncate" style={{ ...labelStyle, fontWeight: 700 }}>{item.label}</div>
+                  {item.sublabel && <div className="truncate" style={{ ...sublabelStyle, marginTop: 2 }}>{item.sublabel}</div>}
                 </div>
                 <span className="material-symbols-outlined text-xl flex-shrink-0" style={{ color: selected ? color : "#9CA3AF", fontVariationSettings: selected ? "'FILL' 1" : undefined }}>
                   {selected ? "check_circle" : "chevron_right"}

@@ -1049,8 +1049,8 @@ function BlockPreview({
               const widthVal = (c.vtile_width as string) || "100%";
               const bg = (c.vtile_bg as string) || "#ffffff";
               const border = isSelected ? color : ((c.vtile_border as string) || "#E5E7EB");
-              const labelColor = (c.vtile_label_color as string) || "#111827";
-              const sublabelColor = (c.vtile_sublabel_color as string) || "#6B7280";
+              const imgSize = (c.vtile_image_size as number | undefined) ?? 48;
+              const previewImgSize = Math.max(20, Math.round(imgSize * 0.66));
               return (
                 <div key={item.id} className="flex items-center gap-2 mx-auto"
                   style={{
@@ -1063,7 +1063,7 @@ function BlockPreview({
                     maxWidth: "100%",
                   }}>
                   {showImg && (
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                    <div className="flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden" style={{ width: `${previewImgSize}px`, height: `${previewImgSize}px` }}>
                       {item.image_url ? (
                         <img src={item.image_url} alt="" className="w-full h-full object-cover" />
                       ) : (
@@ -1072,11 +1072,11 @@ function BlockPreview({
                     </div>
                   )}
                   {!showImg && item.icon && (
-                    <span className="material-symbols-outlined flex-shrink-0 text-base" style={{ color: labelColor }}>{item.icon}</span>
+                    <span className="material-symbols-outlined flex-shrink-0 text-base" style={{ color: (c.vtile_label_color as string) || "#111827" }}>{item.icon}</span>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="font-bold text-[10px] leading-tight truncate" style={{ color: labelColor }}>{item.label}</div>
-                    {item.sublabel && <div className="text-[9px] leading-tight truncate" style={{ color: sublabelColor }}>{item.sublabel}</div>}
+                    <div className="truncate" style={{ ...ts("vtile_label", { size: "sm", color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 700 }}>{item.label}</div>
+                    {item.sublabel && <div className="truncate" style={ts("vtile_sublabel", { size: "sm", color: "#6B7280", align: "left", lineHeight: 1.2 })}>{item.sublabel}</div>}
                   </div>
                   <span className="material-symbols-outlined text-sm flex-shrink-0" style={{ color: isSelected ? color : "#9CA3AF" }}>
                     {isSelected ? "check_circle" : "chevron_right"}
@@ -1864,7 +1864,38 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
             </div>
             <NumberSlider label="Padding" min={4} max={32} step={1} value={(c.vtile_padding as number | undefined) ?? 16} onChange={(v) => onUpdate({ vtile_padding: v })} suffix="px" />
             <NumberSlider label="Eckenradius" min={0} max={32} step={1} value={(c.vtile_radius as number | undefined) ?? 16} onChange={(v) => onUpdate({ vtile_radius: v })} suffix="px" />
+            <NumberSlider label="Bildgröße" min={16} max={80} step={1} value={(c.vtile_image_size as number | undefined) ?? 48} onChange={(v) => onUpdate({ vtile_image_size: v })} suffix="px" />
           </div>
+
+          <TextStyleControls
+            label="Titel-Typografie"
+            sizeKey="vtile_label_size"
+            colorKey="vtile_label_color"
+            alignKey="vtile_label_align"
+            fontKey="vtile_label_font"
+            lineHeightKey="vtile_label_line_height"
+            fontSizeKey="vtile_label_font_size"
+            content={c}
+            onUpdate={onUpdate}
+            showFont
+            showLineHeight
+            showFontSize
+          />
+
+          <TextStyleControls
+            label="Untertitel-Typografie"
+            sizeKey="vtile_sublabel_size"
+            colorKey="vtile_sublabel_color"
+            alignKey="vtile_sublabel_align"
+            fontKey="vtile_sublabel_font"
+            lineHeightKey="vtile_sublabel_line_height"
+            fontSizeKey="vtile_sublabel_font_size"
+            content={c}
+            onUpdate={onUpdate}
+            showFont
+            showLineHeight
+            showFontSize
+          />
 
           <div className="grid grid-cols-2 gap-2">
             <div>
@@ -1882,24 +1913,6 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
                 <input type="color" value={(c.vtile_border as string) || "#E5E7EB"} onChange={(e) => onUpdate({ vtile_border: e.target.value })}
                   className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
                 <input type="text" value={(c.vtile_border as string) || ""} onChange={(e) => onUpdate({ vtile_border: e.target.value })} placeholder="#E5E7EB"
-                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
-              </div>
-            </div>
-            <div>
-              <label className="font-label text-[10px] text-outline block mb-1">Text</label>
-              <div className="flex items-center gap-1">
-                <input type="color" value={(c.vtile_label_color as string) || "#111827"} onChange={(e) => onUpdate({ vtile_label_color: e.target.value })}
-                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
-                <input type="text" value={(c.vtile_label_color as string) || ""} onChange={(e) => onUpdate({ vtile_label_color: e.target.value })} placeholder="#111827"
-                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
-              </div>
-            </div>
-            <div>
-              <label className="font-label text-[10px] text-outline block mb-1">Untertitel</label>
-              <div className="flex items-center gap-1">
-                <input type="color" value={(c.vtile_sublabel_color as string) || "#6B7280"} onChange={(e) => onUpdate({ vtile_sublabel_color: e.target.value })}
-                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
-                <input type="text" value={(c.vtile_sublabel_color as string) || ""} onChange={(e) => onUpdate({ vtile_sublabel_color: e.target.value })} placeholder="#6B7280"
                   className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
               </div>
             </div>
