@@ -215,6 +215,7 @@ const fieldLabels: Record<string, string> = {
   name: "Name", title: "Titel", headline: "Headline", subtext: "Beschreibung",
   cta: "CTA Button", question: "Frage", text: "Text", size: "Text", content: "Text",
   btn: "Button", textarea_field: "Textfeld", card_item: "Kachel",
+  vtile_label: "Titel", vtile_sublabel: "Untertitel",
 };
 
 function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
@@ -241,6 +242,9 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
   const textKey = textFieldMap[fieldKey] ?? fieldKey;
   const textValue = (content[textKey] as string) ?? "";
   const isContainer = ["btn", "textarea_field", "card_item"].includes(fieldKey);
+  // Style-only fields: text content lives per-item (e.g. vtile_label/vtile_sublabel
+  // are styling prefixes for item.label/item.sublabel) — hide the textarea + icon-picker.
+  const styleOnly = fieldKey === "vtile_label" || fieldKey === "vtile_sublabel";
 
   const [showIcons, setShowIcons] = useState(false);
 
@@ -257,16 +261,18 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
         <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface text-sm">close</button>
       </div>
 
-      {/* Text Content — larger textarea */}
-      <div>
-        <textarea
-          value={textValue}
-          onChange={(e) => onUpdate({ [textKey]: e.target.value })}
-          rows={4}
-          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y min-h-[80px]"
-          placeholder="Text eingeben…"
-        />
-      </div>
+      {/* Text Content — larger textarea (skipped for style-only fields like vtile_label) */}
+      {!styleOnly && (
+        <div>
+          <textarea
+            value={textValue}
+            onChange={(e) => onUpdate({ [textKey]: e.target.value })}
+            rows={4}
+            className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2.5 font-body text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors resize-y min-h-[80px]"
+            placeholder="Text eingeben…"
+          />
+        </div>
+      )}
 
       {/* Compact toolbar row: Size presets + px + alignment */}
       <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
@@ -356,28 +362,30 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
         </div>
       )}
 
-      {/* Icon Picker — collapsible */}
-      <div>
-        <button onClick={() => setShowIcons(!showIcons)}
-          className="w-full flex items-center justify-between py-2 font-label text-xs font-bold uppercase tracking-widest text-outline hover:text-on-surface transition-colors">
-          <span className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-sm">add_reaction</span>
-            Icon einfügen
-          </span>
-          <span className={`material-symbols-outlined text-sm transition-transform ${showIcons ? "rotate-180" : ""}`}>expand_more</span>
-        </button>
-        {showIcons && (
-          <div className="grid grid-cols-6 gap-1 mt-1">
-            {popularIcons.map((icon) => (
-              <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
-                className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
-                title={icon}>
-                <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      {/* Icon Picker — collapsible (skipped for style-only fields where text is per-item) */}
+      {!styleOnly && (
+        <div>
+          <button onClick={() => setShowIcons(!showIcons)}
+            className="w-full flex items-center justify-between py-2 font-label text-xs font-bold uppercase tracking-widest text-outline hover:text-on-surface transition-colors">
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-sm">add_reaction</span>
+              Icon einfügen
+            </span>
+            <span className={`material-symbols-outlined text-sm transition-transform ${showIcons ? "rotate-180" : ""}`}>expand_more</span>
+          </button>
+          {showIcons && (
+            <div className="grid grid-cols-6 gap-1 mt-1">
+              {popularIcons.map((icon) => (
+                <button key={icon} onClick={() => onUpdate({ [textKey]: textValue + ` {{${icon}}}` })}
+                  className="p-1.5 rounded-lg border border-outline-variant/10 hover:bg-primary-container/20 hover:border-primary/30 transition-colors flex items-center justify-center"
+                  title={icon}>
+                  <span className="material-symbols-outlined text-base text-on-surface-variant">{icon}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Back to block */}
       <button onClick={onClose}
@@ -1048,14 +1056,14 @@ function BlockPreview({
               const minH = (c.vtile_height as number | undefined) ?? 64;
               const widthVal = (c.vtile_width as string) || "100%";
               const bg = (c.vtile_bg as string) || "#ffffff";
-              const border = isSelected ? color : ((c.vtile_border as string) || "#E5E7EB");
+              const borderColor = (c.vtile_border as string) || "#E5E7EB";
               const imgSize = (c.vtile_image_size as number | undefined) ?? 48;
               const previewImgSize = Math.max(20, Math.round(imgSize * 0.66));
               return (
                 <div key={item.id} className="flex items-center gap-2 mx-auto"
                   style={{
                     background: bg,
-                    border: `${isSelected ? 2 : 1}px solid ${border}`,
+                    border: `1px solid ${borderColor}`,
                     borderRadius: `${radius}px`,
                     padding: `${Math.max(6, Math.round(padding * 0.6))}px`,
                     minHeight: `${Math.max(44, Math.round(minH * 0.7))}px`,
@@ -1075,11 +1083,17 @@ function BlockPreview({
                     <span className="material-symbols-outlined flex-shrink-0 text-base" style={{ color: (c.vtile_label_color as string) || "#111827" }}>{item.icon}</span>
                   )}
                   <div className="flex-1 min-w-0">
-                    <div className="truncate" style={{ ...ts("vtile_label", { size: "sm", color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 700 }}>{item.label}</div>
-                    {item.sublabel && <div className="truncate" style={ts("vtile_sublabel", { size: "sm", color: "#6B7280", align: "left", lineHeight: 1.2 })}>{item.sublabel}</div>}
+                    {(() => {
+                      const lp = tp("vtile_label");
+                      return <div onClick={lp.onClick} className={`truncate ${lp.className}`} style={{ ...ts("vtile_label", { size: "sm", color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 700 }}>{item.label}</div>;
+                    })()}
+                    {item.sublabel && (() => {
+                      const sp = tp("vtile_sublabel");
+                      return <div onClick={sp.onClick} className={`truncate ${sp.className}`} style={ts("vtile_sublabel", { size: "sm", color: "#6B7280", align: "left", lineHeight: 1.2 })}>{item.sublabel}</div>;
+                    })()}
                   </div>
                   <span className="material-symbols-outlined text-sm flex-shrink-0" style={{ color: isSelected ? color : "#9CA3AF" }}>
-                    {isSelected ? "check_circle" : "chevron_right"}
+                    {isSelected ? "radio_button_checked" : "radio_button_unchecked"}
                   </span>
                 </div>
               );

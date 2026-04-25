@@ -935,7 +935,7 @@ function BlockRenderer({
                 className="flex items-center gap-4 mx-auto w-full transition-all active:scale-[0.98] text-left"
                 style={{
                   background: bg,
-                  border: `${selected ? 2 : 1}px solid ${selected ? color : borderColor}`,
+                  border: `1px solid ${borderColor}`,
                   borderRadius: `${radius}px`,
                   padding: `${padding}px`,
                   minHeight: `${height}px`,
@@ -960,8 +960,8 @@ function BlockRenderer({
                   <div className="truncate" style={{ ...labelStyle, fontWeight: 700 }}>{item.label}</div>
                   {item.sublabel && <div className="truncate" style={{ ...sublabelStyle, marginTop: 2 }}>{item.sublabel}</div>}
                 </div>
-                <span className="material-symbols-outlined text-xl flex-shrink-0" style={{ color: selected ? color : "#9CA3AF", fontVariationSettings: selected ? "'FILL' 1" : undefined }}>
-                  {selected ? "check_circle" : "chevron_right"}
+                <span className="material-symbols-outlined text-xl flex-shrink-0" style={{ color: selected ? color : "#9CA3AF" }}>
+                  {selected ? "radio_button_checked" : "radio_button_unchecked"}
                 </span>
               </button>
             );
