@@ -7,9 +7,24 @@ import { useState, useEffect, useRef } from "react";
 type BlockType =
   | "profile_header" | "multiple_choice" | "image_choice" | "list_choice"
   | "contact_form" | "text" | "button" | "image" | "divider" | "rating"
-  | "welcome" | "loading_screen" | "thank_you" | "icon_cards" | "free_text";
+  | "welcome" | "loading_screen" | "thank_you" | "icon_cards" | "vertical_tiles" | "free_text";
 
-type ChoiceItem = { id: string; label: string; icon: string; value: string; image_url?: string };
+type ChoiceItem = {
+  id: string;
+  label: string;
+  icon: string;
+  value: string;
+  image_url?: string;
+  sublabel?: string;
+  // Per-item Bar-Overrides (image_choice). Fallback: item → block → default.
+  tile_bar_padding_x?: number;
+  tile_bar_padding_y?: number;
+  tile_bar_height?: number;
+  tile_bar_width?: number;
+  tile_bar_radius?: number;
+  tile_bar_bg_color?: string;
+  tile_bar_bg_opacity?: number;
+};
 
 type BlockContent = {
   image_url?: string; name?: string; title_text?: string;
@@ -82,6 +97,19 @@ function hexToRgba(hex: string, opacityPercent: number): string {
   const a = Math.max(0, Math.min(100, opacityPercent)) / 100;
   if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return hex;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// Bar-Werte auflösen: item → block → default (image_choice).
+function resolveBar(item: ChoiceItem, c: BlockContent) {
+  return {
+    padX: item.tile_bar_padding_x ?? (c.tile_bar_padding_x as number | undefined) ?? 6,
+    padY: item.tile_bar_padding_y ?? (c.tile_bar_padding_y as number | undefined) ?? 6,
+    height: item.tile_bar_height ?? (c.tile_bar_height as number | undefined),
+    width: item.tile_bar_width ?? (c.tile_bar_width as number | undefined) ?? 100,
+    radius: item.tile_bar_radius ?? (c.tile_bar_radius as number | undefined) ?? 0,
+    bgColor: item.tile_bar_bg_color ?? (c.tile_bar_bg_color as string | undefined),
+    opacity: item.tile_bar_bg_opacity ?? (c.tile_bar_bg_opacity as number | undefined) ?? 100,
+  };
 }
 
 type Block = { id: string; type: BlockType; content: BlockContent };
@@ -507,6 +535,8 @@ function BlockRenderer({
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
+            const bar = resolveBar(item, c);
+            const widthInset = (100 - bar.width) / 2;
             return (
               <button
                 key={item.id}
@@ -522,14 +552,20 @@ function BlockRenderer({
                   </div>
                 )}
                 <div
-                  className="absolute bottom-0 left-0 right-0"
+                  className="absolute bottom-0 flex items-center justify-center"
                   style={{
-                    background: hexToRgba(color, (c.tile_bar_bg_opacity as number | undefined) ?? 100),
-                    paddingTop: `${(c.tile_bar_padding_y as number | undefined) ?? 6}px`,
-                    paddingBottom: `${(c.tile_bar_padding_y as number | undefined) ?? 6}px`,
+                    left: `${widthInset}%`,
+                    right: `${widthInset}%`,
+                    background: hexToRgba(bar.bgColor ?? color, bar.opacity),
+                    paddingTop: `${bar.padY}px`,
+                    paddingBottom: `${bar.padY}px`,
+                    paddingLeft: `${bar.padX}px`,
+                    paddingRight: `${bar.padX}px`,
+                    borderRadius: `${bar.radius}px`,
+                    ...(bar.height != null ? { height: `${bar.height}px` } : {}),
                   }}
                 >
-                  <span style={{ ...tileLabelStyle(c, { color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block" }}>{item.label}</span>
+                  <span style={{ ...tileLabelStyle(c, { color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block", width: "100%" }}>{item.label}</span>
                 </div>
               </button>
             );
@@ -840,6 +876,71 @@ function BlockRenderer({
                 style={{ background: (c.card_bg as string) || color, minHeight: 100 }}>
                 <span className="material-symbols-outlined text-4xl mb-2" style={{ color: (c.card_icon_color as string) || "#ffffff", fontVariationSettings: "'FILL' 1" }}>{item.icon || "check"}</span>
                 <span className="text-sm font-black" style={{ color: (c.card_icon_color as string) || "#ffffff" }}>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ── VERTICAL TILES ──
+  if (block.type === "vertical_tiles") {
+    const showImg = (c.show_vtile_image as boolean) ?? true;
+    const height = (c.vtile_height as number | undefined) ?? 88;
+    const width = (c.vtile_width as string) || "100%";
+    const padding = (c.vtile_padding as number | undefined) ?? 16;
+    const radius = (c.vtile_radius as number | undefined) ?? 16;
+    const bg = (c.vtile_bg as string) || "#ffffff";
+    const borderColor = (c.vtile_border as string) || "#E5E7EB";
+    const labelColor = (c.vtile_label_color as string) || "#111827";
+    const sublabelColor = (c.vtile_sublabel_color as string) || "#6B7280";
+    return (
+      <div className="px-5 py-6">
+        <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <div className="flex flex-col gap-3">
+          {(c.items ?? []).map((item) => {
+            const selected = answers.includes(item.value);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => {
+                  if (selected) return;
+                  onToggleChoice(item.value, "single");
+                  setTimeout(onAdvance, 300);
+                }}
+                className="flex items-center gap-4 mx-auto w-full transition-all active:scale-[0.98] text-left"
+                style={{
+                  background: bg,
+                  border: `${selected ? 2 : 1}px solid ${selected ? color : borderColor}`,
+                  borderRadius: `${radius}px`,
+                  padding: `${padding}px`,
+                  minHeight: `${height}px`,
+                  width,
+                  maxWidth: "100%",
+                }}
+              >
+                {showImg ? (
+                  <div className="flex-shrink-0 w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden">
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="material-symbols-outlined text-2xl text-gray-400">{item.icon || "image"}</span>
+                    )}
+                  </div>
+                ) : (
+                  item.icon && (
+                    <span className="material-symbols-outlined flex-shrink-0 text-2xl" style={{ color: labelColor }}>{item.icon}</span>
+                  )
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-bold text-sm leading-tight" style={{ color: labelColor }}>{item.label}</div>
+                  {item.sublabel && <div className="text-xs leading-tight mt-0.5" style={{ color: sublabelColor }}>{item.sublabel}</div>}
+                </div>
+                <span className="material-symbols-outlined text-xl flex-shrink-0" style={{ color: selected ? color : "#9CA3AF", fontVariationSettings: selected ? "'FILL' 1" : undefined }}>
+                  {selected ? "check_circle" : "chevron_right"}
+                </span>
               </button>
             );
           })}

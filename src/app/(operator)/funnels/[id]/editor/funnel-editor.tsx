@@ -22,9 +22,25 @@ type BlockType =
   | "loading_screen"
   | "thank_you"
   | "icon_cards"
+  | "vertical_tiles"
   | "free_text";
 
-type ChoiceItem = { id: string; label: string; icon: string; value: string; image_url?: string };
+type ChoiceItem = {
+  id: string;
+  label: string;
+  icon: string;
+  value: string;
+  image_url?: string;
+  sublabel?: string;
+  // Per-item Bar-Overrides (image_choice). Fallback: item → block → default.
+  tile_bar_padding_x?: number;
+  tile_bar_padding_y?: number;
+  tile_bar_height?: number;
+  tile_bar_width?: number;
+  tile_bar_radius?: number;
+  tile_bar_bg_color?: string;
+  tile_bar_bg_opacity?: number;
+};
 
 type BlockContent = {
   // profile_header
@@ -180,6 +196,7 @@ const headlineSizeMap: Record<string, string> = { sm: "14px", md: "18px", lg: "2
 // ─── Floating Text Toolbar ──────────────────────────────────────────────────
 
 type ActiveTextField = { blockId: string; fieldKey: string; rect: DOMRect } | null;
+type ActiveImageItem = { blockId: string; itemId: string } | null;
 
 // ─── Element Properties Panel (shown in right sidebar when sub-element is selected) ──
 
@@ -372,6 +389,148 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
   );
 }
 
+function ImageItemPanel({ item, blockContent, onUpdate, onClose }: {
+  item: ChoiceItem;
+  blockContent: BlockContent;
+  onUpdate: (patch: Partial<ChoiceItem>) => void;
+  onClose: () => void;
+}) {
+  const blockPadX = (blockContent.tile_bar_padding_x as number | undefined) ?? 6;
+  const blockPadY = (blockContent.tile_bar_padding_y as number | undefined) ?? 4;
+  const blockHeight = blockContent.tile_bar_height as number | undefined;
+  const blockWidth = (blockContent.tile_bar_width as number | undefined) ?? 100;
+  const blockRadius = (blockContent.tile_bar_radius as number | undefined) ?? 0;
+  const blockOpacity = (blockContent.tile_bar_bg_opacity as number | undefined) ?? 100;
+  const blockBg = (blockContent.tile_bar_bg_color as string | undefined) ?? "";
+
+  const padX = item.tile_bar_padding_x ?? blockPadX;
+  const padY = item.tile_bar_padding_y ?? blockPadY;
+  const height = item.tile_bar_height ?? blockHeight ?? 0;
+  const width = item.tile_bar_width ?? blockWidth;
+  const radius = item.tile_bar_radius ?? blockRadius;
+  const opacity = item.tile_bar_bg_opacity ?? blockOpacity;
+  const bgColor = item.tile_bar_bg_color ?? blockBg;
+
+  const hasOverrides = (
+    item.tile_bar_padding_x !== undefined ||
+    item.tile_bar_padding_y !== undefined ||
+    item.tile_bar_height !== undefined ||
+    item.tile_bar_width !== undefined ||
+    item.tile_bar_radius !== undefined ||
+    item.tile_bar_bg_color !== undefined ||
+    item.tile_bar_bg_opacity !== undefined
+  );
+
+  const resetAll = () => onUpdate({
+    tile_bar_padding_x: undefined,
+    tile_bar_padding_y: undefined,
+    tile_bar_height: undefined,
+    tile_bar_width: undefined,
+    tile_bar_radius: undefined,
+    tile_bar_bg_color: undefined,
+    tile_bar_bg_opacity: undefined,
+  });
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="material-symbols-outlined text-primary text-sm flex-shrink-0">image</span>
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-on-surface truncate">
+            Kachel: {item.label || "(unbenannt)"}
+          </span>
+        </div>
+        <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface text-sm flex-shrink-0">close</button>
+      </div>
+
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Label</label>
+        <input
+          value={item.label}
+          onChange={(e) => onUpdate({ label: e.target.value })}
+          className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary"
+        />
+      </div>
+
+      <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+        <div className="flex items-center justify-between">
+          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Label-Bar (nur diese Kachel)</span>
+          {hasOverrides && (
+            <button onClick={resetAll} className="font-label text-[9px] font-bold text-primary hover:underline">Auf Standard</button>
+          )}
+        </div>
+        <NumberSlider
+          label="Padding oben/unten"
+          min={0} max={40} step={1}
+          value={padY}
+          onChange={(v) => onUpdate({ tile_bar_padding_y: v })}
+          suffix="px"
+        />
+        <NumberSlider
+          label="Padding seitlich"
+          min={0} max={40} step={1}
+          value={padX}
+          onChange={(v) => onUpdate({ tile_bar_padding_x: v })}
+          suffix="px"
+        />
+        <NumberSlider
+          label="Höhe (0 = auto)"
+          min={0} max={120} step={1}
+          value={height}
+          onChange={(v) => onUpdate({ tile_bar_height: v === 0 ? undefined : v })}
+          suffix="px"
+        />
+        <NumberSlider
+          label="Breite"
+          min={20} max={100} step={1}
+          value={width}
+          onChange={(v) => onUpdate({ tile_bar_width: v })}
+          suffix="%"
+        />
+        <NumberSlider
+          label="Eckenradius"
+          min={0} max={30} step={1}
+          value={radius}
+          onChange={(v) => onUpdate({ tile_bar_radius: v })}
+          suffix="px"
+        />
+        <NumberSlider
+          label="Deckkraft"
+          min={0} max={100} step={5}
+          value={opacity}
+          onChange={(v) => onUpdate({ tile_bar_bg_opacity: v })}
+          suffix="%"
+        />
+        <div className="flex items-center gap-2">
+          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline w-14">Farbe</span>
+          <input
+            type="color"
+            value={bgColor || "#FFC107"}
+            onChange={(e) => onUpdate({ tile_bar_bg_color: e.target.value })}
+            className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5"
+          />
+          <input
+            type="text"
+            value={bgColor}
+            onChange={(e) => onUpdate({ tile_bar_bg_color: e.target.value || undefined })}
+            placeholder="Standard (Block)"
+            className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary"
+          />
+          {item.tile_bar_bg_color !== undefined && (
+            <button onClick={() => onUpdate({ tile_bar_bg_color: undefined })} className="material-symbols-outlined text-outline text-sm hover:text-error">close</button>
+          )}
+        </div>
+      </div>
+
+      <button onClick={onClose}
+        className="w-full flex items-center justify-center gap-1.5 py-2 rounded-xl border border-outline-variant/20 text-on-surface-variant font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors">
+        <span className="material-symbols-outlined text-sm">arrow_back</span>
+        Zurück zum Block
+      </button>
+    </div>
+  );
+}
+
 function blockDefaults(type: BlockType): Block {
   const id = uid();
   const defaults: Record<BlockType, BlockContent> = {
@@ -393,6 +552,24 @@ function blockDefaults(type: BlockType): Block {
       { id: uid(), label: "Weiter bewerben!", icon: "check", value: "yes", image_url: "" },
       { id: uid(), label: "Bewerbung abbrechen!", icon: "close", value: "no", image_url: "" },
     ], question: "Was ist Dein nächster Schritt?", card_bg: "#22d3ee", card_icon_color: "#ffffff", card_columns: "2" },
+    vertical_tiles: {
+      question: "Welchen Bildungshintergrund hast du?",
+      show_vtile_image: true,
+      vtile_height: 88,
+      vtile_width: "100%",
+      vtile_padding: 16,
+      vtile_radius: 16,
+      vtile_bg: "#ffffff",
+      vtile_border: "#E5E7EB",
+      vtile_label_color: "#111827",
+      vtile_sublabel_color: "#6B7280",
+      items: [
+        { id: uid(), label: "Ja, abgeschlossenes Studium", sublabel: "Bachelor, Master oder höher", icon: "school", value: "studium", image_url: "" },
+        { id: uid(), label: "Berufsausbildung", sublabel: "Lehre oder Fachausbildung", icon: "engineering", value: "berufsausbildung", image_url: "" },
+        { id: uid(), label: "Noch in Ausbildung", sublabel: "Aktuell Schule oder Studium", icon: "menu_book", value: "in_ausbildung", image_url: "" },
+        { id: uid(), label: "Autodidakt", sublabel: "Selbst gelernt, ohne Abschluss", icon: "self_improvement", value: "autodidakt", image_url: "" },
+      ],
+    },
   };
   return { id, type, content: defaults[type] };
 }
@@ -449,6 +626,7 @@ const blockConfig: Record<BlockType, { label: string; icon: string; category: "i
   thank_you:       { label: "Danke-Seite",       icon: "celebration",    category: "simple" },
   free_text:       { label: "Freitext-Antwort",   icon: "edit_note",      category: "interactive" },
   icon_cards:      { label: "Icon-Kacheln",      icon: "dashboard",      category: "interactive" },
+  vertical_tiles:  { label: "Vertikale Kacheln",  icon: "view_agenda",    category: "interactive" },
 };
 
 // ─── Block Preview Renderer ───────────────────────────────────────────────────
@@ -466,6 +644,8 @@ function BlockPreview({
   isLast,
   activeFieldKey,
   onTextClick,
+  activeItemId,
+  onItemClick,
 }: {
   block: Block;
   branding: FunnelBranding;
@@ -479,6 +659,8 @@ function BlockPreview({
   isLast: boolean;
   activeFieldKey: string | null;
   onTextClick: (fieldKey: string, e: React.MouseEvent) => void;
+  activeItemId: string | null;
+  onItemClick: (itemId: string, e: React.MouseEvent) => void;
 }) {
   const [hovered, setHovered] = useState(false);
   const c = block.content;
@@ -622,10 +804,16 @@ function BlockPreview({
           <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
           <div className="grid grid-cols-2 gap-1.5">
             {(c.items ?? []).slice(0, 4).map((item, i) => {
-              const padY = (c.tile_bar_padding_y as number | undefined) ?? 4;
-              const opacity = (c.tile_bar_bg_opacity as number | undefined) ?? 100;
+              const bar = resolveBar(item, c);
+              const widthInset = (100 - bar.width) / 2;
+              const isItemActive = activeItemId === item.id;
               return (
-                <div key={item.id} className="relative rounded-xl overflow-hidden border-2 cursor-pointer" style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}>
+                <div
+                  key={item.id}
+                  className={`relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${isItemActive ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+                  style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}
+                  onClick={(e) => { e.stopPropagation(); onItemClick(item.id, e); }}
+                >
                   {item.image_url ? (
                     <img src={item.image_url} className="w-full h-full object-cover" alt={item.label} />
                   ) : (
@@ -633,8 +821,21 @@ function BlockPreview({
                       <span className="material-symbols-outlined text-2xl text-gray-300">image</span>
                     </div>
                   )}
-                  <div className="absolute bottom-0 left-0 right-0" style={{ background: hexToRgba(color, opacity), paddingTop: `${padY}px`, paddingBottom: `${padY}px` }}>
-                    <span style={{ ...ts("tile_label", { size: "sm", color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block" }}>{item.label}</span>
+                  <div
+                    className="absolute bottom-0 flex items-center justify-center"
+                    style={{
+                      left: `${widthInset}%`,
+                      right: `${widthInset}%`,
+                      background: hexToRgba(bar.bgColor ?? color, bar.opacity),
+                      paddingTop: `${bar.padY}px`,
+                      paddingBottom: `${bar.padY}px`,
+                      paddingLeft: `${bar.padX}px`,
+                      paddingRight: `${bar.padX}px`,
+                      borderRadius: `${bar.radius}px`,
+                      ...(bar.height != null ? { height: `${bar.height}px` } : {}),
+                    }}
+                  >
+                    <span style={{ ...ts("tile_label", { size: "sm", color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block", width: "100%" }}>{item.label}</span>
                   </div>
                 </div>
               );
@@ -833,6 +1034,59 @@ function BlockPreview({
           </div>
         </div>
       )}
+
+      {/* ── VERTICAL TILES ── */}
+      {block.type === "vertical_tiles" && (
+        <div className="px-4 py-3">
+          <h3 {...tp("question")} style={{ ...ts("question", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.2, marginBottom: 8 }}>{renderTextWithIcons((c.question as string) || "Frage")}</h3>
+          <div {...tp("vtile_item")} className={`flex flex-col gap-1.5 cursor-pointer transition-all rounded-lg ${activeFieldKey === "vtile_item" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}>
+            {(c.items ?? []).slice(0, 4).map((item, i) => {
+              const showImg = (c.show_vtile_image as boolean) ?? true;
+              const isSelected = i === 1;
+              const padding = (c.vtile_padding as number | undefined) ?? 12;
+              const radius = (c.vtile_radius as number | undefined) ?? 12;
+              const minH = (c.vtile_height as number | undefined) ?? 64;
+              const widthVal = (c.vtile_width as string) || "100%";
+              const bg = (c.vtile_bg as string) || "#ffffff";
+              const border = isSelected ? color : ((c.vtile_border as string) || "#E5E7EB");
+              const labelColor = (c.vtile_label_color as string) || "#111827";
+              const sublabelColor = (c.vtile_sublabel_color as string) || "#6B7280";
+              return (
+                <div key={item.id} className="flex items-center gap-2 mx-auto"
+                  style={{
+                    background: bg,
+                    border: `${isSelected ? 2 : 1}px solid ${border}`,
+                    borderRadius: `${radius}px`,
+                    padding: `${Math.max(6, Math.round(padding * 0.6))}px`,
+                    minHeight: `${Math.max(44, Math.round(minH * 0.7))}px`,
+                    width: widthVal,
+                    maxWidth: "100%",
+                  }}>
+                  {showImg && (
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                      {item.image_url ? (
+                        <img src={item.image_url} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="material-symbols-outlined text-base text-gray-400">{item.icon || "image"}</span>
+                      )}
+                    </div>
+                  )}
+                  {!showImg && item.icon && (
+                    <span className="material-symbols-outlined flex-shrink-0 text-base" style={{ color: labelColor }}>{item.icon}</span>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-bold text-[10px] leading-tight truncate" style={{ color: labelColor }}>{item.label}</div>
+                    {item.sublabel && <div className="text-[9px] leading-tight truncate" style={{ color: sublabelColor }}>{item.sublabel}</div>}
+                  </div>
+                  <span className="material-symbols-outlined text-sm flex-shrink-0" style={{ color: isSelected ? color : "#9CA3AF" }}>
+                    {isSelected ? "check_circle" : "chevron_right"}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1026,6 +1280,19 @@ function hexToRgba(hex: string, opacityPercent: number): string {
   const a = Math.max(0, Math.min(100, opacityPercent)) / 100;
   if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return hex;
   return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// Resolves bar values for image_choice tiles. Fallback chain: item → block → default.
+function resolveBar(item: ChoiceItem, c: BlockContent) {
+  return {
+    padX: item.tile_bar_padding_x ?? (c.tile_bar_padding_x as number | undefined) ?? 6,
+    padY: item.tile_bar_padding_y ?? (c.tile_bar_padding_y as number | undefined) ?? 4,
+    height: item.tile_bar_height ?? (c.tile_bar_height as number | undefined),
+    width: item.tile_bar_width ?? (c.tile_bar_width as number | undefined) ?? 100,
+    radius: item.tile_bar_radius ?? (c.tile_bar_radius as number | undefined) ?? 0,
+    bgColor: item.tile_bar_bg_color ?? (c.tile_bar_bg_color as string | undefined),
+    opacity: item.tile_bar_bg_opacity ?? (c.tile_bar_bg_opacity as number | undefined) ?? 100,
+  };
 }
 
 // ─── Properties Panel ──────────────────────────────────────────────────────────
@@ -1262,14 +1529,51 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
             showFontSize
           />
           <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
-            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Label-Bar</span>
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Label-Bar (Standard für alle Kacheln)</span>
+            <p className="font-label text-[9px] text-outline -mt-1">Klick auf eine Kachel im Preview, um nur diese eine zu ändern.</p>
             <NumberSlider
-              label="Höhe"
+              label="Padding oben/unten"
               min={0}
               max={40}
               step={1}
               value={(c.tile_bar_padding_y as number | undefined) ?? 4}
               onChange={(v) => onUpdate({ tile_bar_padding_y: v })}
+              suffix="px"
+            />
+            <NumberSlider
+              label="Padding seitlich"
+              min={0}
+              max={40}
+              step={1}
+              value={(c.tile_bar_padding_x as number | undefined) ?? 6}
+              onChange={(v) => onUpdate({ tile_bar_padding_x: v })}
+              suffix="px"
+            />
+            <NumberSlider
+              label="Höhe (px, leer = auto)"
+              min={0}
+              max={120}
+              step={1}
+              value={(c.tile_bar_height as number | undefined) ?? 0}
+              onChange={(v) => onUpdate({ tile_bar_height: v === 0 ? undefined : v })}
+              suffix="px"
+            />
+            <NumberSlider
+              label="Breite"
+              min={20}
+              max={100}
+              step={1}
+              value={(c.tile_bar_width as number | undefined) ?? 100}
+              onChange={(v) => onUpdate({ tile_bar_width: v })}
+              suffix="%"
+            />
+            <NumberSlider
+              label="Eckenradius"
+              min={0}
+              max={30}
+              step={1}
+              value={(c.tile_bar_radius as number | undefined) ?? 0}
+              onChange={(v) => onUpdate({ tile_bar_radius: v })}
               suffix="px"
             />
             <NumberSlider
@@ -1281,6 +1585,26 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
               onChange={(v) => onUpdate({ tile_bar_bg_opacity: v })}
               suffix="%"
             />
+            {/* Custom Bar-Farbe (Override für Branding-Farbe) */}
+            <div className="flex items-center gap-2">
+              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline w-14">Farbe</span>
+              <input
+                type="color"
+                value={(c.tile_bar_bg_color as string) || "#FFC107"}
+                onChange={(e) => onUpdate({ tile_bar_bg_color: e.target.value })}
+                className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5"
+              />
+              <input
+                type="text"
+                value={(c.tile_bar_bg_color as string) ?? ""}
+                onChange={(e) => onUpdate({ tile_bar_bg_color: e.target.value })}
+                placeholder="Branding (leer)"
+                className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary"
+              />
+              {(c.tile_bar_bg_color as string) && (
+                <button onClick={() => onUpdate({ tile_bar_bg_color: "" })} className="material-symbols-outlined text-outline text-sm hover:text-error">close</button>
+              )}
+            </div>
           </div>
         </>
       )}
@@ -1523,6 +1847,95 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           </div>
         </>
       )}
+
+      {/* VERTICAL TILES */}
+      {block.type === "vertical_tiles" && (
+        <>
+          {field("Fragetext", c.question ?? "", (v) => onUpdate({ question: v }))}
+          {toggle("Bild in Kachel", "Bild statt/zusätzlich zu Icon anzeigen", (c.show_vtile_image as boolean) ?? true, (v) => onUpdate({ show_vtile_image: v }))}
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Kachel-Größe</span>
+            <NumberSlider label="Höhe" min={48} max={160} step={1} value={(c.vtile_height as number | undefined) ?? 88} onChange={(v) => onUpdate({ vtile_height: v })} suffix="px" />
+            <div className="flex items-center gap-2">
+              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline flex-shrink-0">Breite</span>
+              <input type="text" value={(c.vtile_width as string) ?? "100%"} onChange={(e) => onUpdate({ vtile_width: e.target.value || undefined })} placeholder="100%"
+                className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+            </div>
+            <NumberSlider label="Padding" min={4} max={32} step={1} value={(c.vtile_padding as number | undefined) ?? 16} onChange={(v) => onUpdate({ vtile_padding: v })} suffix="px" />
+            <NumberSlider label="Eckenradius" min={0} max={32} step={1} value={(c.vtile_radius as number | undefined) ?? 16} onChange={(v) => onUpdate({ vtile_radius: v })} suffix="px" />
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Hintergrund</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={(c.vtile_bg as string) || "#ffffff"} onChange={(e) => onUpdate({ vtile_bg: e.target.value })}
+                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+                <input type="text" value={(c.vtile_bg as string) || ""} onChange={(e) => onUpdate({ vtile_bg: e.target.value })} placeholder="#ffffff"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Rahmen</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={(c.vtile_border as string) || "#E5E7EB"} onChange={(e) => onUpdate({ vtile_border: e.target.value })}
+                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+                <input type="text" value={(c.vtile_border as string) || ""} onChange={(e) => onUpdate({ vtile_border: e.target.value })} placeholder="#E5E7EB"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Text</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={(c.vtile_label_color as string) || "#111827"} onChange={(e) => onUpdate({ vtile_label_color: e.target.value })}
+                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+                <input type="text" value={(c.vtile_label_color as string) || ""} onChange={(e) => onUpdate({ vtile_label_color: e.target.value })} placeholder="#111827"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Untertitel</label>
+              <div className="flex items-center gap-1">
+                <input type="color" value={(c.vtile_sublabel_color as string) || "#6B7280"} onChange={(e) => onUpdate({ vtile_sublabel_color: e.target.value })}
+                  className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+                <input type="text" value={(c.vtile_sublabel_color as string) || ""} onChange={(e) => onUpdate({ vtile_sublabel_color: e.target.value })} placeholder="#6B7280"
+                  className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline">Kacheln ({(c.items ?? []).length})</label>
+              <button onClick={addItem} className="flex items-center gap-1 font-label text-xs font-bold text-primary hover:underline">
+                <span className="material-symbols-outlined text-xs">add</span> Hinzufügen
+              </button>
+            </div>
+            <div className="space-y-2">
+              {(c.items ?? []).map((item, i) => (
+                <div key={item.id} className="bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/10 space-y-1.5">
+                  <div className="flex gap-1.5 items-center">
+                    <input value={item.label} onChange={(e) => updateItem(i, { label: e.target.value })} placeholder="Titel"
+                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                    <button onClick={() => removeItem(i)} className="material-symbols-outlined text-outline hover:text-error text-sm">close</button>
+                  </div>
+                  <input value={item.sublabel ?? ""} onChange={(e) => updateItem(i, { sublabel: e.target.value })} placeholder="Untertitel (optional)"
+                    className="w-full bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-outline text-sm w-5 text-center">{item.icon || "circle"}</span>
+                    <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} placeholder="Icon (z.B. school)"
+                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                  </div>
+                  {(c.show_vtile_image as boolean) && (
+                    <ImageUpload value={item.image_url ?? ""} onChange={(v) => updateItem(i, { image_url: v })} aspect="square" />
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1646,6 +2059,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   const [zoom, setZoom] = useState(1);
   const [previewMode, setPreviewMode] = useState<"mobile" | "desktop">("mobile");
   const [activeTextField, setActiveTextField] = useState<ActiveTextField>(null);
+  const [activeImageItem, setActiveImageItem] = useState<ActiveImageItem>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -1726,6 +2140,17 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   function updateBlock(blockId: string, content: Partial<BlockContent>) {
     setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
       ...p, blocks: p.blocks.map((b) => b.id === blockId ? { ...b, content: { ...b.content, ...content } } : b)
+    }));
+  }
+
+  function updateImageItem(blockId: string, itemId: string, patch: Partial<ChoiceItem>) {
+    setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
+      ...p,
+      blocks: p.blocks.map((b) => {
+        if (b.id !== blockId) return b;
+        const items = (b.content.items ?? []).map((it) => it.id === itemId ? { ...it, ...patch } : it);
+        return { ...b, content: { ...b.content, items } };
+      }),
     }));
   }
 
@@ -1985,7 +2410,7 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
         </div>
 
         {/* Canvas */}
-        <div className="flex-1 overflow-y-auto flex items-start justify-center py-8 px-6 bg-surface-container/50" onClick={() => { setSelectedBlockId(null); setShowBlockPicker(false); setActiveTextField(null); }}>
+        <div className="flex-1 overflow-y-auto flex items-start justify-center py-8 px-6 bg-surface-container/50" onClick={() => { setSelectedBlockId(null); setShowBlockPicker(false); setActiveTextField(null); setActiveImageItem(null); }}>
           {/* Device frame */}
           <div className="relative origin-top" style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }} onClick={(e) => e.stopPropagation()}>
             <div className={`bg-white shadow-2xl overflow-hidden border border-gray-200 ${previewMode === "mobile" ? "w-[320px] rounded-[2.5rem]" : "w-[768px] rounded-xl"}`}>
@@ -2046,6 +2471,13 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                       const containerRect = container?.getBoundingClientRect() ?? rect;
                       setActiveTextField({ blockId: block.id, fieldKey, rect: new DOMRect(rect.left - containerRect.left, rect.top - containerRect.top, rect.width, rect.height) });
                       setSelectedBlockId(block.id);
+                      setActiveImageItem(null);
+                    }}
+                    activeItemId={activeImageItem?.blockId === block.id ? activeImageItem.itemId : null}
+                    onItemClick={(itemId) => {
+                      setActiveImageItem({ blockId: block.id, itemId });
+                      setSelectedBlockId(block.id);
+                      setActiveTextField(null);
                     }}
                   />
                 ))}
@@ -2102,16 +2534,28 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
           ) : (
             /* ── PROPERTIES ── */
             <div className="p-5">
-              {activeTextField && selectedBlock ? (
+              {activeImageItem && selectedBlock && selectedBlock.id === activeImageItem.blockId && (() => {
+                const item = (selectedBlock.content.items ?? []).find((it) => it.id === activeImageItem.itemId);
+                if (!item) return null;
+                return (
+                  <ImageItemPanel
+                    item={item}
+                    blockContent={selectedBlock.content}
+                    onUpdate={(patch) => updateImageItem(selectedBlock.id, item.id, patch)}
+                    onClose={() => setActiveImageItem(null)}
+                  />
+                );
+              })()}
+              {!activeImageItem && activeTextField && selectedBlock ? (
                 <ElementPropertiesPanel
                   fieldKey={activeTextField.fieldKey}
                   content={selectedBlock.content}
                   onUpdate={(c) => updateBlock(selectedBlock.id, c)}
                   onClose={() => setActiveTextField(null)}
                 />
-              ) : selectedBlock ? (
+              ) : !activeImageItem && selectedBlock ? (
                 <PropertiesPanel block={selectedBlock} onUpdate={(c) => updateBlock(selectedBlock.id, c)} />
-              ) : (
+              ) : !activeImageItem && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <span className="material-symbols-outlined text-3xl text-outline-variant mb-3">touch_app</span>
                   <p className="font-label text-xs text-outline">Klicke auf einen Block im Preview um ihn zu bearbeiten</p>
