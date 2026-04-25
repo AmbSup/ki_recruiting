@@ -710,8 +710,8 @@ function BlockRenderer({
           >
             {consent && <span className="text-white text-xs font-black">✓</span>}
           </div>
-          <span className="text-xs text-gray-500 leading-relaxed">
-            {consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden."}
+          <span style={vtileTextStyle(c, "consent", { color: "#6B7280", align: "left", lineHeight: 1.5 })}>
+            {(c.consent_text as string) || consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden."}
           </span>
         </button>
         {!isValid && (form.name || form.email) && (
@@ -825,14 +825,23 @@ function BlockRenderer({
 
   // ── THANK YOU ──
   if (block.type === "thank_you") {
+    const kickerStyle = vtileTextStyle(c, "kicker", { color, align: "center", lineHeight: 1.2 });
+    const headlineStyleObj: React.CSSProperties = {
+      fontSize: (c.headline_font_size as number) ? `${c.headline_font_size}px` : headlineSizeMap[(c.headline_size as string) ?? "md"],
+      color: (c.headline_color as string) || "#111827",
+      textAlign: ((c.headline_align as string) || "center") as "left" | "center" | "right",
+      ...((c.headline_font as string) ? { fontFamily: fontVarMap[c.headline_font as string] } : {}),
+      ...((c.headline_line_height as number) != null ? { lineHeight: c.headline_line_height as number } : { lineHeight: 1.1 }),
+    };
+    const subtextStyle = vtileTextStyle(c, "subtext", { color: "#6B7280", align: "center", lineHeight: 1.5 });
     return (
       <div className="flex flex-col items-center text-center py-16 px-6">
         <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{ background: color }}>
           <span className="font-black text-2xl" style={{ color: textColor }}>✓</span>
         </div>
-        <p className="text-xs font-bold mb-2" style={{ color }}>Großartige Neuigkeiten!</p>
-        <h2 className="font-black text-xl leading-tight mb-3" style={{ color: c.headline_color || "#111827" }}>{c.headline || "Vielen Dank!"}</h2>
-        {c.subtext && <p className="text-sm leading-relaxed" style={{ color: c.subtext_color || "#6B7280" }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
+        <p className="mb-2" style={{ ...kickerStyle, fontWeight: 700 }}>{(c.kicker_text as string) || "Großartige Neuigkeiten!"}</p>
+        <h2 className="font-black mb-3" style={headlineStyleObj}>{(c.headline as string) || "Vielen Dank!"}</h2>
+        {c.subtext && <p style={subtextStyle}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
       </div>
     );
   }

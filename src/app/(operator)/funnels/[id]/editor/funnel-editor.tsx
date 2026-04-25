@@ -216,6 +216,8 @@ const fieldLabels: Record<string, string> = {
   cta: "CTA Button", question: "Frage", text: "Text", size: "Text", content: "Text",
   btn: "Button", textarea_field: "Textfeld", card_item: "Kachel",
   vtile_label: "Titel", vtile_sublabel: "Untertitel",
+  consent: "Einverständnis",
+  kicker: "Kicker",
 };
 
 function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
@@ -238,6 +240,8 @@ function ElementPropertiesPanel({ fieldKey, content, onUpdate, onClose }: {
     name: "name", title: "title_text", headline: "headline", subtext: "subtext",
     cta: "cta_text", question: "question", text: "content", size: "content", content: "content",
     btn: "label", textarea_field: "placeholder", card_item: "question",
+    consent: "consent_text",
+    kicker: "kicker_text",
   };
   const textKey = textFieldMap[fieldKey] ?? fieldKey;
   const textValue = (content[textKey] as string) ?? "";
@@ -897,7 +901,14 @@ function BlockPreview({
           </div>
           <div className="mt-2 flex items-start gap-1.5">
             <div className="w-3 h-3 border border-gray-300 rounded mt-0.5 flex-shrink-0" />
-            <span className="text-[9px] text-gray-400">Datenschutzerklärung gelesen und akzeptiert</span>
+            {(() => {
+              const cp = tp("consent");
+              return (
+                <span onClick={cp.onClick} className={cp.className} style={ts("consent", { size: "sm", color: "#9CA3AF", align: "left", lineHeight: 1.4 })}>
+                  {(c.consent_text as string) || "Datenschutzerklärung gelesen und akzeptiert"}
+                </span>
+              );
+            })()}
           </div>
           <button {...tp("btn")} className={`w-full mt-3 py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
             style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}) }}>
@@ -995,7 +1006,14 @@ function BlockPreview({
           <div className="w-12 h-12 rounded-full flex items-center justify-center mb-3" style={{ background: branding.primary_color }}>
             <span className="material-symbols-outlined text-xl font-bold" style={{ color: branding.button_text_color, fontVariationSettings: "'FILL' 1" }}>check</span>
           </div>
-          <p {...tp("subtext")} className={`text-xs font-bold mb-1 cursor-pointer transition-all rounded-sm ${activeFieldKey === "subtext" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`} style={{ color: (c.subtext_color as string) || branding.primary_color }}>Großartige Neuigkeiten!</p>
+          {(() => {
+            const kp = tp("kicker");
+            return (
+              <p onClick={kp.onClick} className={`mb-1 ${kp.className}`} style={{ ...ts("kicker", { size: "sm", color: branding.primary_color, lineHeight: 1.2 }), fontWeight: 700 }}>
+                {(c.kicker_text as string) || "Großartige Neuigkeiten!"}
+              </p>
+            );
+          })()}
           <h3 {...tp("headline")} style={{ ...ts("headline", { size: "md", color: "#111827" }), fontWeight: 900, lineHeight: 1.1, marginBottom: 8 }}>{renderTextWithIcons((c.headline as string) ?? "")}</h3>
           {c.subtext && <p {...tp("subtext")} style={{ ...ts("subtext", { size: "sm", color: "#6B7280" }), lineHeight: 1.6 }}>{renderTextWithIcons((c.subtext as string) ?? "")}</p>}
         </div>
