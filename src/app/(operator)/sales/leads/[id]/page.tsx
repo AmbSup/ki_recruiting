@@ -149,6 +149,8 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
 
   // Generic field-patch helper — used by EditableField rows. Throws on non-2xx
   // so the field can show the server's error message inline.
+  // Sonderfall 409 mit conflict_lead_id (Rufnummer schon vergeben): wir bieten
+  // einen Confirm-Dialog, der direkt zum kollidierenden Lead navigiert.
   async function patchField(field: string, value: string) {
     const res = await fetch(`/api/sales/leads/${id}`, {
       method: "PATCH",
@@ -157,6 +159,11 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
+      const conflictId = (body as { conflict_lead_id?: string | null }).conflict_lead_id;
+      if (res.status === 409 && conflictId) {
+        const goThere = confirm(`${body.error}\n\nKollidierenden Lead jetzt öffnen?`);
+        if (goThere) window.location.href = `/sales/leads/${conflictId}`;
+      }
       throw new Error(body.error ?? `Fehler ${res.status}`);
     }
     await load();

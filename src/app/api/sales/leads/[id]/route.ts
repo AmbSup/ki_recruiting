@@ -74,7 +74,41 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { error } = await supabase.from("sales_leads").update(update).eq("id", id);
   if (error) {
     if ((error as { code?: string }).code === "23505") {
-      return NextResponse.json({ error: "Rufnummer-Konflikt im Program" }, { status: 409 });
+      // Unique-Constraint (sales_program_id, phone) verletzt — andere Lead-Row in
+      // demselben Program hat schon diese Nummer. Hilf dem User mit Name + ID
+      // des kollidierenden Leads, damit er manuell mergen oder löschen kann.
+      let conflictDetail = "";
+      let conflictLeadId: string | null = null;
+      if (typeof update.phone === "string") {
+        const { data: current } = await supabase
+          .from("sales_leads")
+          .select("sales_program_id")
+          .eq("id", id)
+          .maybeSingle();
+        const programId = (current as { sales_program_id?: string } | null)?.sales_program_id;
+        if (programId) {
+          const { data: other } = await supabase
+            .from("sales_leads")
+            .select("id, full_name, first_name, last_name")
+            .eq("sales_program_id", programId)
+            .eq("phone", update.phone)
+            .neq("id", id)
+            .maybeSingle();
+          if (other) {
+            const o = other as { id: string; full_name: string | null; first_name: string | null; last_name: string | null };
+            const name = o.full_name || [o.first_name, o.last_name].filter(Boolean).join(" ") || "(unbenannt)";
+            conflictDetail = ` — bereits bei „${name}" im selben Program in Verwendung`;
+            conflictLeadId = o.id;
+          }
+        }
+      }
+      return NextResponse.json(
+        {
+          error: `Rufnummer-Konflikt${conflictDetail}`,
+          conflict_lead_id: conflictLeadId,
+        },
+        { status: 409 },
+      );
     }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
