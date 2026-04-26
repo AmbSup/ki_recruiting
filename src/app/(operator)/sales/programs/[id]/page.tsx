@@ -235,8 +235,8 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
           </Card>
 
           <Card label="Pitch & Targeting" icon="record_voice_over">
-            <TextArea label="Produkt-Pitch (1-2 Sätze: Was bieten wir an?)" value={form.product_pitch ?? ""} onChange={(v) => update("product_pitch", v)} rows={2} />
-            <TextArea label="Zielpersona (Wer ist die Zielperson?)" value={form.target_persona ?? ""} onChange={(v) => update("target_persona", v)} rows={2} />
+            <TextArea label="Produkt-Pitch (1-2 Sätze: Was bieten wir an?)" value={form.product_pitch ?? ""} onChange={(v) => update("product_pitch", v)} rows={4} />
+            <TextArea label="Zielpersona (Wer ist die Zielperson?)" value={form.target_persona ?? ""} onChange={(v) => update("target_persona", v)} rows={4} />
           </Card>
 
           <Card label="Sales-Strategie" icon="psychology">
@@ -271,7 +271,7 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
               label="Disqualifikations-Kriterien"
               value={strategy.disqualification_criteria ?? ""}
               onChange={(v) => updateStrategy("disqualification_criteria", v)}
-              rows={2}
+              rows={3}
               placeholder="z.B. Mietwohnung, kein Eigentum, keine Entscheidungsbefugnis"
             />
 
@@ -284,7 +284,7 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
               label="Erfolgs-Definition (was zählt als gewonnener Call?)"
               value={strategy.success_definition ?? ""}
               onChange={(v) => updateStrategy("success_definition", v)}
-              rows={2}
+              rows={3}
               placeholder="z.B. Beratungstermin im Kalender gebucht, Lead bestätigt verbal"
             />
 
@@ -489,7 +489,7 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
                 label="Value Proposition (deprecated)"
                 value={form.value_proposition ?? ""}
                 onChange={(v) => update("value_proposition", v)}
-                rows={2}
+                rows={3}
                 placeholder="Wurde durch Pain Points ersetzt — nur noch hier sichtbar für Bestandsdaten."
               />
               <TextArea
@@ -581,7 +581,7 @@ function ObjectionsList({ objections, onChange }: {
                 onChange(next);
               }}
               placeholder={`Einwand ${i + 1} (z.B. "Zu teuer")`}
-              className={inputClass + " text-xs py-1.5"}
+              className={inputClass}
             />
             <input
               value={o.response}
@@ -591,7 +591,7 @@ function ObjectionsList({ objections, onChange }: {
                 onChange(next);
               }}
               placeholder="Deine Antwort"
-              className={inputClass + " text-xs py-1.5"}
+              className={inputClass}
             />
           </div>
         ))}
@@ -603,9 +603,9 @@ function ObjectionsList({ objections, onChange }: {
 function Card({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] space-y-4">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="material-symbols-outlined text-primary text-sm">{icon}</span>
-        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{label}</span>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="material-symbols-outlined text-primary text-base">{icon}</span>
+        <span className="font-label text-sm font-bold uppercase tracking-widest text-primary">{label}</span>
       </div>
       {children}
     </div>
@@ -618,7 +618,7 @@ function Field({ label, value, onChange, type = "text", placeholder, className =
 }) {
   return (
     <div className={className}>
-      {label && <label className="font-label text-xs text-outline block mb-1.5">{label}</label>}
+      {label && <label className="font-label text-sm text-on-surface-variant block mb-1.5">{label}</label>}
       <input
         type={type}
         value={value}
@@ -630,19 +630,19 @@ function Field({ label, value, onChange, type = "text", placeholder, className =
   );
 }
 
-function TextArea({ label, value, onChange, rows = 3, placeholder }: {
+function TextArea({ label, value, onChange, rows = 4, placeholder }: {
   label: string; value: string; onChange: (v: string) => void;
   rows?: number; placeholder?: string;
 }) {
   return (
     <div>
-      {label && <label className="font-label text-xs text-outline block mb-1.5">{label}</label>}
+      {label && <label className="font-label text-sm text-on-surface-variant block mb-1.5">{label}</label>}
       <textarea
         value={value}
         onChange={(e) => onChange(e.target.value)}
         rows={rows}
         placeholder={placeholder}
-        className={inputClass + " resize-none"}
+        className={inputClass + " resize-y min-h-[88px] leading-relaxed"}
       />
     </div>
   );
@@ -654,7 +654,7 @@ function Select({ label, value, options, onChange }: {
 }) {
   return (
     <div>
-      <label className="font-label text-xs text-outline block mb-1.5">{label}</label>
+      <label className="font-label text-sm text-on-surface-variant block mb-1.5">{label}</label>
       <select value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
@@ -667,13 +667,13 @@ function ToggleField({ label, value, onChange, hint }: {
 }) {
   return (
     <div>
-      <label className="font-label text-xs text-outline block mb-1.5">{label}</label>
-      <label className="flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-2.5 cursor-pointer">
+      <label className="font-label text-sm text-on-surface-variant block mb-1.5">{label}</label>
+      <label className="flex items-center gap-3 bg-surface-container-low rounded-xl px-4 py-3 cursor-pointer">
         <input type="checkbox" checked={value} onChange={(e) => onChange(e.target.checked)} />
-        <span className="font-body text-xs text-on-surface-variant">{hint ?? (value ? "Aktiv" : "Inaktiv")}</span>
+        <span className="font-body text-sm text-on-surface-variant">{hint ?? (value ? "Aktiv" : "Inaktiv")}</span>
       </label>
     </div>
   );
 }
 
-const inputClass = "w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";
+const inputClass = "w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-3 font-body text-base text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors";

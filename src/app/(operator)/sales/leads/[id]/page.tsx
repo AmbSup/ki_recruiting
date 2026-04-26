@@ -174,7 +174,7 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
     ?? "–";
 
   return (
-    <div className="px-8 pt-10 pb-32 max-w-[1200px]">
+    <div className="px-8 pt-10 pb-32 max-w-[1440px] mx-auto">
       <Link href="/sales/leads" className="inline-flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors mb-8">
         <span className="material-symbols-outlined text-sm">arrow_back</span>
         <span className="font-label text-xs font-bold uppercase tracking-widest">Alle Leads</span>
@@ -261,7 +261,7 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
       )}
 
       <div className="grid grid-cols-12 gap-6">
-        <div className="col-span-12 lg:col-span-7 space-y-5">
+        <div className="col-span-12 lg:col-span-5 space-y-5">
           <Card label="Status & Aktion" icon="track_changes">
             <div>
               <label className="font-label text-xs text-outline block mb-1.5">Status</label>
@@ -338,7 +338,7 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
           </Card>
         </div>
 
-        <div className="col-span-12 lg:col-span-5 space-y-5">
+        <div className="col-span-12 lg:col-span-7 space-y-5">
           <Card label="Kontakt" icon="person">
             <EditableField
               label="Vorname"
@@ -402,9 +402,12 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
                 const cf = lead.custom_fields ?? {};
                 const leadCtx = typeof cf.lead_context === "string" ? cf.lead_context : null;
                 const summary = typeof cf.funnel_summary === "string" ? cf.funnel_summary : null;
-                const qa = Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ question?: string; answer?: string }>) : null;
+                const qa = Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ question?: string; answer?: string; key?: string }>) : null;
+                // Per-Frage-Slug-Keys (z.B. was_ist_dein_hauptziel) sind bereits in der hübschen Q→A-Liste sichtbar
+                // und im DB-custom_fields nur für die Vapi-Prompt-Interpolation. Im UI also dedupen.
+                const qaKeys = new Set((qa ?? []).map((it) => it.key).filter((k): k is string => typeof k === "string" && k.length > 0));
                 const restEntries = Object.entries(cf).filter(
-                  ([k]) => k !== "lead_context" && k !== "funnel_summary" && k !== "funnel_qa",
+                  ([k]) => k !== "lead_context" && k !== "funnel_summary" && k !== "funnel_qa" && !qaKeys.has(k),
                 );
                 return (
                   <>
@@ -453,8 +456,10 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
             </Card>
           )}
 
-          {Object.keys(lead.funnel_responses ?? {}).length > 0 && (
-            <Card label="Funnel-Antworten" icon="quiz">
+          {/* Roh-Funnel-Responses (Question-Text/Block-ID → option.value). Nur als Fallback,
+              wenn die saubere funnel_qa-Variante fehlt (alte Leads vor 2026-04-26). */}
+          {!Array.isArray(lead.custom_fields?.funnel_qa) && Object.keys(lead.funnel_responses ?? {}).length > 0 && (
+            <Card label="Funnel-Antworten (raw)" icon="quiz">
               {Object.entries(lead.funnel_responses).map(([k, v]) => (
                 <InfoRow key={k} label={k} value={Array.isArray(v) ? v.join(", ") : String(v)} />
               ))}
@@ -469,9 +474,9 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
 function Card({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {
   return (
     <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] space-y-3">
-      <div className="flex items-center gap-2 mb-1">
-        <span className="material-symbols-outlined text-primary text-sm">{icon}</span>
-        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{label}</span>
+      <div className="flex items-center gap-2 mb-2">
+        <span className="material-symbols-outlined text-primary text-base">{icon}</span>
+        <span className="font-label text-sm font-bold uppercase tracking-widest text-primary">{label}</span>
       </div>
       {children}
     </div>
@@ -556,7 +561,7 @@ function EditableField({
         </span>
         <button
           onClick={() => { setDraft(value); setEditing(true); }}
-          className="material-symbols-outlined text-outline text-xs hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+          className="material-symbols-outlined text-outline text-xs hover:text-primary opacity-50 group-hover:opacity-100 transition-opacity flex-shrink-0"
           title="Bearbeiten"
         >
           edit
