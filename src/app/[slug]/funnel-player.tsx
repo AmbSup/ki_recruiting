@@ -665,35 +665,28 @@ function BlockRenderer({
   if (block.type === "contact_form") {
     const nameValid = c.show_name_split ? (form.first_name && form.last_name) : form.name;
     const isValid = nameValid && form.email && consent;
-    const FieldRow = ({ emoji, placeholder, fieldKey, type = "text" }: { emoji: string; placeholder: string; fieldKey: string; type?: string }) => (
-      <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
-        <span className="text-lg flex-shrink-0">{emoji}</span>
-        <input type={type} value={form[fieldKey] ?? ""} onChange={(e) => onFormChange({ [fieldKey]: e.target.value })} placeholder={placeholder}
-          className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent" />
-      </div>
-    );
     return (
       <div className="px-5 py-6">
         <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h2>
         <div className="space-y-3 mb-4">
           {c.show_name_split ? (
             <>
-              <FieldRow emoji="👤" placeholder="Vorname" fieldKey="first_name" />
-              <FieldRow emoji="👤" placeholder="Nachname" fieldKey="last_name" />
+              <FieldRow emoji="👤" placeholder="Vorname" fieldKey="first_name" form={form} onFormChange={onFormChange} />
+              <FieldRow emoji="👤" placeholder="Nachname" fieldKey="last_name" form={form} onFormChange={onFormChange} />
             </>
           ) : (
-            <FieldRow emoji="👋" placeholder="Vollständiger Name" fieldKey="name" />
+            <FieldRow emoji="👋" placeholder="Vollständiger Name" fieldKey="name" form={form} onFormChange={onFormChange} />
           )}
-          <FieldRow emoji="📧" placeholder="E-Mail Adresse" fieldKey="email" type="email" />
-          <FieldRow emoji="📱" placeholder="Telefonnummer" fieldKey="phone" type="tel" />
-          {(c.show_city as boolean) && <FieldRow emoji="📍" placeholder="Deine Stadt" fieldKey="city" />}
-          {(c.show_linkedin as boolean) && <FieldRow emoji="🔗" placeholder="LinkedIn Profil-URL" fieldKey="linkedin" type="url" />}
-          {(c.show_current_job as boolean) && <FieldRow emoji="💼" placeholder="Aktueller Jobtitel" fieldKey="current_job" />}
-          {(c.show_current_employer as boolean) && <FieldRow emoji="🏢" placeholder="Aktueller Arbeitgeber" fieldKey="current_employer" />}
-          {(c.show_start_date as boolean) && <FieldRow emoji="📅" placeholder="Frühester Starttermin" fieldKey="start_date" type="date" />}
-          {(c.show_salary as boolean) && <FieldRow emoji="💰" placeholder="Gehaltsvorstellung (z.B. 50.000 €)" fieldKey="salary" />}
-          {(c.show_experience_years as boolean) && <FieldRow emoji="⏱️" placeholder="Berufserfahrung (Jahre)" fieldKey="experience_years" type="number" />}
-          {(c.show_education as boolean) && <FieldRow emoji="🎓" placeholder="Ausbildung / Abschluss" fieldKey="education" />}
+          <FieldRow emoji="📧" placeholder="E-Mail Adresse" fieldKey="email" type="email" form={form} onFormChange={onFormChange} />
+          <FieldRow emoji="📱" placeholder="Telefonnummer" fieldKey="phone" type="tel" form={form} onFormChange={onFormChange} />
+          {(c.show_city as boolean) && <FieldRow emoji="📍" placeholder="Deine Stadt" fieldKey="city" form={form} onFormChange={onFormChange} />}
+          {(c.show_linkedin as boolean) && <FieldRow emoji="🔗" placeholder="LinkedIn Profil-URL" fieldKey="linkedin" type="url" form={form} onFormChange={onFormChange} />}
+          {(c.show_current_job as boolean) && <FieldRow emoji="💼" placeholder="Aktueller Jobtitel" fieldKey="current_job" form={form} onFormChange={onFormChange} />}
+          {(c.show_current_employer as boolean) && <FieldRow emoji="🏢" placeholder="Aktueller Arbeitgeber" fieldKey="current_employer" form={form} onFormChange={onFormChange} />}
+          {(c.show_start_date as boolean) && <FieldRow emoji="📅" placeholder="Frühester Starttermin" fieldKey="start_date" type="date" form={form} onFormChange={onFormChange} />}
+          {(c.show_salary as boolean) && <FieldRow emoji="💰" placeholder="Gehaltsvorstellung (z.B. 50.000 €)" fieldKey="salary" form={form} onFormChange={onFormChange} />}
+          {(c.show_experience_years as boolean) && <FieldRow emoji="⏱️" placeholder="Berufserfahrung (Jahre)" fieldKey="experience_years" type="number" form={form} onFormChange={onFormChange} />}
+          {(c.show_education as boolean) && <FieldRow emoji="🎓" placeholder="Ausbildung / Abschluss" fieldKey="education" form={form} onFormChange={onFormChange} />}
           {(c.show_drivers_license as boolean) && (
             <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
               <span className="text-lg">🚗</span>
@@ -705,7 +698,7 @@ function BlockRenderer({
               </select>
             </div>
           )}
-          {(c.show_travel as boolean) && <FieldRow emoji="✈️" placeholder="Reisebereitschaft (z.B. 30%)" fieldKey="travel" />}
+          {(c.show_travel as boolean) && <FieldRow emoji="✈️" placeholder="Reisebereitschaft (z.B. 30%)" fieldKey="travel" form={form} onFormChange={onFormChange} />}
           {(c.show_relocate as boolean) && (
             <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
               <span className="text-lg">🏠</span>
@@ -718,11 +711,11 @@ function BlockRenderer({
               </select>
             </div>
           )}
-          {(c.show_skills as boolean) && <FieldRow emoji="⚡" placeholder="Hauptkompetenzen / Skills" fieldKey="skills" />}
-          {(c.show_languages as boolean) && <FieldRow emoji="🌍" placeholder="Sprachen (z.B. DE C2, EN B2)" fieldKey="languages" />}
-          {(c.show_portfolio as boolean) && <FieldRow emoji="🔗" placeholder="Portfolio / Website / GitHub" fieldKey="portfolio" type="url" />}
-          {(c.show_source as boolean) && <FieldRow emoji="👀" placeholder="Wie hast du uns gefunden?" fieldKey="source" />}
-          {(c.show_position_interest as boolean) && <FieldRow emoji="🎯" placeholder="Interesse an Position" fieldKey="position_interest" />}
+          {(c.show_skills as boolean) && <FieldRow emoji="⚡" placeholder="Hauptkompetenzen / Skills" fieldKey="skills" form={form} onFormChange={onFormChange} />}
+          {(c.show_languages as boolean) && <FieldRow emoji="🌍" placeholder="Sprachen (z.B. DE C2, EN B2)" fieldKey="languages" form={form} onFormChange={onFormChange} />}
+          {(c.show_portfolio as boolean) && <FieldRow emoji="🔗" placeholder="Portfolio / Website / GitHub" fieldKey="portfolio" type="url" form={form} onFormChange={onFormChange} />}
+          {(c.show_source as boolean) && <FieldRow emoji="👀" placeholder="Wie hast du uns gefunden?" fieldKey="source" form={form} onFormChange={onFormChange} />}
+          {(c.show_position_interest as boolean) && <FieldRow emoji="🎯" placeholder="Interesse an Position" fieldKey="position_interest" form={form} onFormChange={onFormChange} />}
           {c.show_cv_upload && (
             <label className="flex items-center gap-3 border-2 border-dashed border-gray-200 rounded-2xl px-4 py-3 cursor-pointer hover:border-gray-300 transition-colors">
               <span className="text-lg">📎</span>
