@@ -226,6 +226,16 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   const [autoAdvance, setAutoAdvance] = useState<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // ?test=1 in URL → bypass dedupe in /api/apply, mark source=test, skip auto-dial.
+  // Erkannt einmal beim Mount; bleibt für die Session aktiv.
+  const [testMode, setTestMode] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("test") === "1") setTestMode(true);
+    }
+  }, []);
+
   const currentPage = pages[pageIdx];
 
   // Load FB SDK and fire ViewContent App Event once on mount
@@ -336,6 +346,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           cv_url,
           cv_file_name: cvFile?.name ?? null,
           answers: { ...answers, ...extraAnswers },
+          test_mode: testMode,
         }),
       });
       console.log("[funnel] apply response:", r.status);
@@ -394,6 +405,13 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
   return (
     <Screen color={color} textColor={textColor} branding={branding}>
+      {/* Test-mode banner: visible warning so submissions don't get mistaken for real leads. */}
+      {testMode && (
+        <div className="w-full bg-amber-100 border-b border-amber-300 px-4 py-1.5 text-center text-[11px] font-semibold text-amber-900 flex-shrink-0">
+          🧪 TEST-MODUS aktiv — Submissions landen mit source=&quot;test&quot; und werden nicht angerufen
+        </div>
+      )}
+
       {/* Progress bar */}
       {pages.length > 1 && (
         <div className="w-full h-1 bg-gray-100 flex-shrink-0">

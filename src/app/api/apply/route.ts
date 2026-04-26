@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
     } = body;
     // Normalize phone: replace leading 00 with + (e.g. 004367... → +4367...)
     const phone = body.phone ? String(body.phone).replace(/^00/, "+") : body.phone;
+    const test_mode = body.test_mode === true;
 
     if (!funnel_id || !name || !email) {
       return NextResponse.json({ error: "Pflichtfelder fehlen (funnel_id, name, email)" }, { status: 400 });
@@ -149,6 +150,7 @@ export async function POST(req: NextRequest) {
         rawPhone: phone,
         answers,
         origin: req.nextUrl.origin,
+        test_mode,
       });
     }
 
@@ -214,13 +216,19 @@ async function handleSalesSubmission(args: {
   rawPhone: string | null;
   answers: Record<string, unknown> | undefined;
   origin: string;
+  test_mode: boolean;
 }): Promise<NextResponse> {
-  const { supabase, funnel_id, sales_program_id, name, email, rawPhone, answers, origin } = args;
+  const { supabase, funnel_id, sales_program_id, name, email, rawPhone, answers, origin, test_mode } = args;
 
   const normalizedPhone = normalizePhone(rawPhone);
   if (!normalizedPhone) {
     return NextResponse.json({ error: "Telefonnummer ungültig oder fehlt (Sales-Funnel)" }, { status: 400 });
   }
+  // Test mode: append a unique suffix so the (sales_program_id, phone) unique constraint
+  // never matches an existing row → fresh INSERT every submission. The suffix breaks E.164
+  // format on purpose so accidental dialing fails loudly. We also force source="test" and
+  // skip auto-dial below.
+  const phoneToUse = test_mode ? `${normalizedPhone}-test-${Date.now().toString(36)}` : normalizedPhone;
 
   // Program + funnel_pages parallel laden
   const [{ data: program, error: programErr }, { data: pagesRaw }] = await Promise.all([
@@ -239,13 +247,15 @@ async function handleSalesSubmission(args: {
     return NextResponse.json({ error: "Sales-Program nicht gefunden" }, { status: 404 });
   }
 
-  // Existing Lead?
-  const { data: existing } = await supabase
-    .from("sales_leads")
-    .select("id, status, funnel_responses, custom_fields")
-    .eq("sales_program_id", sales_program_id)
-    .eq("phone", normalizedPhone)
-    .maybeSingle();
+  // Existing Lead? (Skip lookup in test mode — phone suffix makes collision impossible)
+  const { data: existing } = test_mode
+    ? { data: null }
+    : await supabase
+        .from("sales_leads")
+        .select("id, status, funnel_responses, custom_fields")
+        .eq("sales_program_id", sales_program_id)
+        .eq("phone", normalizedPhone)
+        .maybeSingle();
 
   const nowIso = new Date().toISOString();
   const [firstName, ...lastParts] = name.trim().split(/\s+/);
@@ -310,12 +320,12 @@ async function handleSalesSubmission(args: {
     .from("sales_leads")
     .insert({
       sales_program_id,
-      phone: normalizedPhone,
+      phone: phoneToUse,
       first_name: firstName || null,
       last_name: lastName,
       full_name: name,
       email: email || null,
-      source: "funnel",
+      source: test_mode ? "test" : "funnel",
       source_ref: funnel_id,
       funnel_responses: answers ?? {},
       custom_fields: funnelCustomFields,
@@ -366,11 +376,15 @@ async function handleSalesSubmission(args: {
     return NextResponse.json({ error: "Sales-Lead konnte nicht gespeichert werden" }, { status: 500 });
   }
 
-  if (program.auto_dial) {
+  if (program.auto_dial && !test_mode) {
     void triggerSalesCall(origin, created.id);
   }
 
-  return NextResponse.json({ success: true, sales_lead_id: created.id, action: "created" });
+  return NextResponse.json({
+    success: true,
+    sales_lead_id: created.id,
+    action: test_mode ? "test_created" : "created",
+  });
 }
 
 // Auto-Dial geht über /api/sales/trigger-call, NICHT direkt zu n8n. Grund:
