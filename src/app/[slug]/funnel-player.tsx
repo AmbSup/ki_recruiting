@@ -24,6 +24,13 @@ type ChoiceItem = {
   tile_bar_radius?: number;
   tile_bar_bg_color?: string;
   tile_bar_bg_opacity?: number;
+  // Per-item Text-Style-Overrides (image_choice). Fallback: item → block → default.
+  tile_label_size?: string;
+  tile_label_color?: string;
+  tile_label_align?: string;
+  tile_label_font?: string;
+  tile_label_line_height?: number;
+  tile_label_font_size?: number;
 };
 
 type BlockContent = {
@@ -73,16 +80,24 @@ const fontVarMap: Record<string, string> = {
 };
 
 // Tile-Label-Style: identische Logik wie ts() im Editor, lokal nachgebaut.
-// Liest tile_label_size / _font_size / _font / _color / _align / _line_height aus block.content.
-function tileLabelStyle(c: BlockContent, defaults: { color?: string; align?: "left" | "center" | "right"; lineHeight?: number }): React.CSSProperties {
-  const pxSize = c.tile_label_font_size as number | undefined;
-  const fontKey = c.tile_label_font as string | undefined;
+// Fallback chain: item override → block content → defaults. `item` ist optional —
+// für multiple_choice (kein per-item Override) wird null/undefined übergeben.
+function tileLabelStyle(
+  item: ChoiceItem | null | undefined,
+  c: BlockContent,
+  defaults: { color?: string; align?: "left" | "center" | "right"; lineHeight?: number }
+): React.CSSProperties {
+  const pxSize = item?.tile_label_font_size ?? (c.tile_label_font_size as number | undefined);
+  const fontKey = item?.tile_label_font ?? (c.tile_label_font as string | undefined);
   const fontVar = fontKey ? fontVarMap[fontKey] : undefined;
-  const lh = c.tile_label_line_height as number | undefined;
+  const lh = item?.tile_label_line_height ?? (c.tile_label_line_height as number | undefined);
+  const sizeKey = item?.tile_label_size ?? (c.tile_label_size as string | undefined) ?? "sm";
+  const color = item?.tile_label_color ?? (c.tile_label_color as string | undefined);
+  const align = item?.tile_label_align ?? (c.tile_label_align as string | undefined) ?? defaults.align ?? "center";
   return {
-    fontSize: pxSize ? `${pxSize}px` : sizeMap[(c.tile_label_size as string) ?? "sm"],
-    color: (c.tile_label_color as string) || defaults.color || "#111827",
-    textAlign: ((c.tile_label_align as string) || defaults.align || "center") as "left" | "center" | "right",
+    fontSize: pxSize ? `${pxSize}px` : sizeMap[sizeKey],
+    color: color || defaults.color || "#111827",
+    textAlign: align as "left" | "center" | "right",
     ...(fontVar ? { fontFamily: fontVar } : {}),
     ...(lh != null ? { lineHeight: lh } : (defaults.lineHeight != null ? { lineHeight: defaults.lineHeight } : {})),
   };
@@ -588,7 +603,7 @@ function BlockRenderer({
                 style={{ borderColor: selected ? color : "#E5E7EB", background: selected ? color + "15" : "white" }}
               >
                 <span className="material-symbols-outlined text-base" style={{ color: selected ? color : "#9CA3AF" }}>{item.icon || "check"}</span>
-                <span style={{ ...tileLabelStyle(c, { color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 600 }}>{item.label}</span>
+                <span style={{ ...tileLabelStyle(null, c, { color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 600 }}>{item.label}</span>
               </button>
             );
           })}
@@ -644,7 +659,7 @@ function BlockRenderer({
                     ...(bar.height != null ? { height: `${bar.height}px` } : {}),
                   }}
                 >
-                  <span style={{ ...tileLabelStyle(c, { color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block", width: "100%" }}>{item.label}</span>
+                  <span style={{ ...tileLabelStyle(item, c, { color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block", width: "100%" }}>{item.label}</span>
                 </div>
               </button>
             );

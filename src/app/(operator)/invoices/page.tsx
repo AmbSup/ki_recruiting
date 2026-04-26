@@ -77,7 +77,7 @@ export default function InvoicesPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">Abrechnung</h1>
           <p className="font-body text-on-surface-variant mt-2">
             {loading ? "Lädt…" : `${invoices.length} Rechnungen${overdueCount > 0 ? ` · ${overdueCount} überfällig` : ""}`}
@@ -99,7 +99,7 @@ export default function InvoicesPage() {
         ].map((k) => (
           <div key={k.label} className={`rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] ${k.highlight ? "bg-primary-container/20 border border-primary/10" : "bg-surface-container-lowest"}`}>
             <div className="flex items-center justify-between mb-3">
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{k.label}</span>
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{k.label}</span>
               <span className={`material-symbols-outlined text-xl ${k.highlight ? "text-primary" : "text-outline-variant"}`}>{k.icon}</span>
             </div>
             <div className={`font-headline text-3xl ${k.highlight ? "text-primary" : "text-on-surface"}`}>{k.value}</div>
@@ -137,7 +137,7 @@ export default function InvoicesPage() {
           {/* Table Header */}
           <div className="grid grid-cols-12 gap-4 px-6 py-3 border-b border-outline-variant/10 bg-surface-container">
             {["Rechnungsnr.", "Kunde", "Zeitraum", "Betrag", "Fällig am", "Status", ""].map((h) => (
-              <div key={h} className={`font-label text-[10px] font-bold uppercase tracking-widest text-outline ${h === "Betrag" ? "col-span-2 text-right" : h === "" ? "col-span-1" : "col-span-2"}`}>
+              <div key={h} className={`font-label text-xs font-bold uppercase tracking-widest text-outline ${h === "Betrag" ? "col-span-2 text-right" : h === "" ? "col-span-1" : "col-span-2"}`}>
                 {h}
               </div>
             ))}
@@ -151,14 +151,14 @@ export default function InvoicesPage() {
                 {/* Invoice Number */}
                 <div className="col-span-2">
                   <div className="font-label text-sm font-bold text-on-surface">{inv.invoice_number}</div>
-                  <div className="font-label text-[10px] text-outline">{formatDate(inv.sent_at ?? inv.created_at)}</div>
+                  <div className="font-label text-xs text-outline">{formatDate(inv.sent_at ?? inv.created_at)}</div>
                 </div>
 
                 {/* Company */}
                 <div className="col-span-2">
                   <div className="font-label text-sm text-on-surface">{inv.company.name}</div>
                   {inv.company.contact_email && (
-                    <div className="font-label text-[10px] text-outline truncate">{inv.company.contact_email}</div>
+                    <div className="font-label text-xs text-outline truncate">{inv.company.contact_email}</div>
                   )}
                 </div>
 
@@ -176,7 +176,7 @@ export default function InvoicesPage() {
                 {/* Amount */}
                 <div className="col-span-2 text-right">
                   <div className="font-headline text-lg text-on-surface">{formatCurrency(inv.total)}</div>
-                  <div className="font-label text-[10px] text-outline">inkl. {formatCurrency(inv.vat_amount)} MwSt.</div>
+                  <div className="font-label text-xs text-outline">inkl. {formatCurrency(inv.vat_amount)} MwSt.</div>
                 </div>
 
                 {/* Sent / Paid */}
@@ -185,14 +185,14 @@ export default function InvoicesPage() {
                     {inv.sent_at ? `Versendet ${formatDate(inv.sent_at)}` : "—"}
                   </div>
                   {inv.paid_at && (
-                    <div className="font-label text-[10px] text-outline">Bezahlt: {formatDate(inv.paid_at)}</div>
+                    <div className="font-label text-xs text-outline">Bezahlt: {formatDate(inv.paid_at)}</div>
                   )}
                 </div>
 
                 {/* Status */}
                 <div className="col-span-1">
-                  <span className={`inline-flex items-center gap-1 text-[10px] font-label font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${st.bg} ${st.text}`}>
-                    <span className="material-symbols-outlined text-[10px]">{st.icon}</span>
+                  <span className={`inline-flex items-center gap-1 text-xs font-label font-bold uppercase tracking-widest px-2.5 py-1 rounded-full ${st.bg} ${st.text}`}>
+                    <span className="material-symbols-outlined text-xs">{st.icon}</span>
                     {st.label}
                   </span>
                 </div>

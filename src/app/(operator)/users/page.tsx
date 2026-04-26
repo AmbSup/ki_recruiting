@@ -73,7 +73,7 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">Team & Zugänge</h1>
           <p className="font-body text-on-surface-variant mt-2">
             {loading ? "Lädt…" : `${operatorCount} Interne · ${customerCount} Kunden-Zugänge`}
@@ -95,7 +95,7 @@ export default function UsersPage() {
         ].map((k) => (
           <div key={k.label} className="bg-surface-container-lowest rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
             <div className="flex items-center justify-between mb-3">
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{k.label}</span>
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{k.label}</span>
               <span className="material-symbols-outlined text-outline-variant text-xl">{k.icon}</span>
             </div>
             <div className="font-headline text-3xl text-on-surface">{k.value}</div>
@@ -155,7 +155,7 @@ export default function UsersPage() {
             return (
               <div key={section}>
                 <div className="px-6 py-3 bg-surface-container border-b border-outline-variant/10">
-                  <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{section}</span>
+                  <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{section}</span>
                 </div>
                 {sectionUsers.map((user, idx) => {
                   const rc = roleConfig[user.role];
@@ -173,14 +173,14 @@ export default function UsersPage() {
                           <span className="font-label text-sm font-bold text-on-surface">
                             {user.name ?? "—"}
                           </span>
-                          <span className={`inline-flex items-center gap-1 text-[10px] font-label font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${rc.bg} ${rc.text}`}>
-                            <span className="material-symbols-outlined text-[10px]">{rc.icon}</span>
+                          <span className={`inline-flex items-center gap-1 text-xs font-label font-bold uppercase tracking-widest px-2 py-0.5 rounded-full ${rc.bg} ${rc.text}`}>
+                            <span className="material-symbols-outlined text-xs">{rc.icon}</span>
                             {rc.label}
                           </span>
                         </div>
                         <div className="font-label text-xs text-outline mt-0.5">{user.email}</div>
                         {user.company && (
-                          <div className="font-label text-[10px] text-outline-variant">{user.company.name}</div>
+                          <div className="font-label text-xs text-outline-variant">{user.company.name}</div>
                         )}
                       </div>
 

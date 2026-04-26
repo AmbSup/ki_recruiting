@@ -16,14 +16,14 @@ export function PipelineOverview() {
     <div className="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] h-full">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+          <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
             Bewerber-Pipeline
           </span>
           <div className="font-headline text-2xl text-on-surface mt-1">{total} Bewerber</div>
         </div>
         <a
           href="/applicants"
-          className="text-[10px] font-label font-bold uppercase tracking-widest text-primary hover:underline"
+          className="text-xs font-label font-bold uppercase tracking-widest text-primary hover:underline"
         >
           Alle ansehen
         </a>

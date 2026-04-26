@@ -53,7 +53,7 @@ export function AlertsPanel() {
 
   return (
     <div className="space-y-3">
-      <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
         Alerts
       </span>
       {alerts.map((alert, i) => {
@@ -73,7 +73,7 @@ export function AlertsPanel() {
               </div>
             </div>
             {alert.action && (
-              <button className="flex-shrink-0 font-label text-[10px] font-bold uppercase tracking-widest text-primary hover:underline">
+              <button className="flex-shrink-0 font-label text-xs font-bold uppercase tracking-widest text-primary hover:underline">
                 {alert.action}
               </button>
             )}

@@ -40,6 +40,13 @@ type ChoiceItem = {
   tile_bar_radius?: number;
   tile_bar_bg_color?: string;
   tile_bar_bg_opacity?: number;
+  // Per-item Text-Style-Overrides (image_choice). Fallback: item → block → default.
+  tile_label_size?: string;
+  tile_label_color?: string;
+  tile_label_align?: string;
+  tile_label_font?: string;
+  tile_label_line_height?: number;
+  tile_label_font_size?: number;
 };
 
 type BlockContent = {
@@ -430,7 +437,13 @@ function ImageItemPanel({ item, blockContent, onUpdate, onClose }: {
     item.tile_bar_width !== undefined ||
     item.tile_bar_radius !== undefined ||
     item.tile_bar_bg_color !== undefined ||
-    item.tile_bar_bg_opacity !== undefined
+    item.tile_bar_bg_opacity !== undefined ||
+    item.tile_label_size !== undefined ||
+    item.tile_label_color !== undefined ||
+    item.tile_label_align !== undefined ||
+    item.tile_label_font !== undefined ||
+    item.tile_label_line_height !== undefined ||
+    item.tile_label_font_size !== undefined
   );
 
   const resetAll = () => onUpdate({
@@ -441,6 +454,12 @@ function ImageItemPanel({ item, blockContent, onUpdate, onClose }: {
     tile_bar_radius: undefined,
     tile_bar_bg_color: undefined,
     tile_bar_bg_opacity: undefined,
+    tile_label_size: undefined,
+    tile_label_color: undefined,
+    tile_label_align: undefined,
+    tile_label_font: undefined,
+    tile_label_line_height: undefined,
+    tile_label_font_size: undefined,
   });
 
   return (
@@ -463,6 +482,21 @@ function ImageItemPanel({ item, blockContent, onUpdate, onClose }: {
           className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-3 py-2 font-body text-sm text-on-surface focus:outline-none focus:border-primary"
         />
       </div>
+
+      <TextStyleControls
+        label="Text-Stil (nur diese Kachel)"
+        sizeKey="tile_label_size"
+        colorKey="tile_label_color"
+        alignKey="tile_label_align"
+        fontKey="tile_label_font"
+        lineHeightKey="tile_label_line_height"
+        fontSizeKey="tile_label_font_size"
+        content={item as unknown as BlockContent}
+        onUpdate={(patch) => onUpdate(patch as Partial<ChoiceItem>)}
+        showFont
+        showLineHeight
+        showFontSize
+      />
 
       <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
         <div className="flex items-center justify-between">
@@ -847,7 +881,7 @@ function BlockPreview({
                       ...(bar.height != null ? { height: `${bar.height}px` } : {}),
                     }}
                   >
-                    <span style={{ ...ts("tile_label", { size: "sm", color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block", width: "100%" }}>{item.label}</span>
+                    <span style={{ ...resolveTileLabel(item, c, { size: "sm", color: textColor, align: "center", lineHeight: 1.15 }), fontWeight: "bold", display: "block", width: "100%" }}>{item.label}</span>
                   </div>
                 </div>
               );
@@ -1324,6 +1358,29 @@ function resolveBar(item: ChoiceItem, c: BlockContent) {
     radius: item.tile_bar_radius ?? (c.tile_bar_radius as number | undefined) ?? 0,
     bgColor: item.tile_bar_bg_color ?? (c.tile_bar_bg_color as string | undefined),
     opacity: item.tile_bar_bg_opacity ?? (c.tile_bar_bg_opacity as number | undefined) ?? 100,
+  };
+}
+
+// Resolves tile-label text style for image_choice tiles. Fallback chain: item → block → default.
+// Same logic as ts("tile_label", ...) but with item-level overrides.
+function resolveTileLabel(
+  item: ChoiceItem,
+  c: BlockContent,
+  defaults: { size?: string; color?: string; align?: string; lineHeight?: number | string }
+): React.CSSProperties {
+  const pxSize = item.tile_label_font_size ?? (c.tile_label_font_size as number | undefined);
+  const fontKey = item.tile_label_font ?? (c.tile_label_font as string | undefined);
+  const fontVar = fontKey ? availableFonts.find((f) => f.key === fontKey)?.var : undefined;
+  const lh = item.tile_label_line_height ?? (c.tile_label_line_height as number | undefined);
+  const sizeKey = item.tile_label_size ?? (c.tile_label_size as string | undefined) ?? defaults.size ?? "sm";
+  const color = item.tile_label_color ?? (c.tile_label_color as string | undefined);
+  const align = item.tile_label_align ?? (c.tile_label_align as string | undefined) ?? defaults.align ?? "center";
+  return {
+    fontSize: pxSize ? `${pxSize}px` : sizeMap[sizeKey],
+    color: color || defaults.color || "#111827",
+    textAlign: align as "left" | "center" | "right",
+    ...(fontVar ? { fontFamily: fontVar } : {}),
+    ...(lh != null ? { lineHeight: lh } : (defaults.lineHeight != null ? { lineHeight: defaults.lineHeight } : {})),
   };
 }
 
@@ -2260,6 +2317,69 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
     return blockConfig[page.blocks[0].type]?.icon ?? "draft";
   }
 
+  // ── Right-panel resize ──────────────────────────────────────────────────────
+  const RIGHT_PANEL_MIN = 280;
+  const RIGHT_PANEL_MAX = 720;
+  const RIGHT_PANEL_RESERVED = 600; // left sidebar + min center preview
+  const [panelWidth, setPanelWidth] = useState<number>(288);
+
+  const clampWidth = useCallback((w: number) => {
+    if (typeof window === "undefined") return Math.max(RIGHT_PANEL_MIN, Math.min(RIGHT_PANEL_MAX, w));
+    const upper = Math.max(RIGHT_PANEL_MIN, Math.min(RIGHT_PANEL_MAX, window.innerWidth - RIGHT_PANEL_RESERVED));
+    return Math.max(RIGHT_PANEL_MIN, Math.min(upper, w));
+  }, []);
+
+  useEffect(() => {
+    const stored = Number(localStorage.getItem("funnel-editor-right-panel-width"));
+    if (Number.isFinite(stored) && stored >= RIGHT_PANEL_MIN) {
+      setPanelWidth(clampWidth(stored));
+    }
+    const onResize = () => setPanelWidth((w) => clampWidth(w));
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [clampWidth]);
+
+  const persistWidth = (w: number) => {
+    try { localStorage.setItem("funnel-editor-right-panel-width", String(w)); } catch {}
+  };
+
+  const onResizeStart = (e: React.PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+    const startX = e.clientX;
+    const startW = panelWidth;
+    let lastW = startW;
+    const onMove = (ev: PointerEvent) => {
+      const dx = startX - ev.clientX; // dragging left grows the panel
+      lastW = clampWidth(startW + dx);
+      setPanelWidth(lastW);
+    };
+    const onUp = () => {
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      persistWidth(lastW);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  };
+
+  const onResizeKey = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    let next = panelWidth;
+    if (e.key === "ArrowLeft") next = panelWidth + 8;
+    else if (e.key === "ArrowRight") next = panelWidth - 8;
+    else if (e.key === "Home") next = RIGHT_PANEL_MAX;
+    else if (e.key === "End") next = RIGHT_PANEL_MIN;
+    else return;
+    e.preventDefault();
+    const clamped = clampWidth(next);
+    setPanelWidth(clamped);
+    persistWidth(clamped);
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
       {/* ── LEFT SIDEBAR ── */}
@@ -2551,7 +2671,23 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
       </div>
 
       {/* ── RIGHT: PROPERTIES / BLOCK PICKER ── */}
-      <aside className="w-72 flex-shrink-0 bg-surface-container-lowest border-l border-outline-variant/20 flex flex-col">
+      <aside
+        className="relative flex-shrink-0 bg-surface-container-lowest border-l border-outline-variant/20 flex flex-col"
+        style={{ width: panelWidth }}
+      >
+        {/* Resize handle (visible thin bar + wider invisible hit area via ::before) */}
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-valuenow={panelWidth}
+          aria-valuemin={RIGHT_PANEL_MIN}
+          aria-valuemax={RIGHT_PANEL_MAX}
+          aria-label="Eigenschaften-Panel Breite anpassen"
+          tabIndex={0}
+          onPointerDown={onResizeStart}
+          onKeyDown={onResizeKey}
+          className="absolute left-0 top-0 h-full w-1.5 cursor-col-resize bg-transparent hover:bg-primary/20 active:bg-primary/30 focus-visible:bg-primary/40 focus-visible:outline-none z-20 before:absolute before:inset-y-0 before:-left-1.5 before:-right-1.5 before:content-['']"
+        />
         {/* Header tabs */}
         <div className="flex border-b border-outline-variant/20 flex-shrink-0">
           <button

@@ -70,6 +70,12 @@
   --font-label:    "Manrope", sans-serif;
   --font-sans:     "Manrope", sans-serif;
 
+  /* Font sizes — scaled up for readability */
+  --text-xs:   0.8125rem; /* 13px (was 12px) */
+  --text-sm:   0.9375rem; /* 15px (was 14px) */
+  --text-base: 1.0625rem; /* 17px (was 16px) */
+  --text-lg:   1.1875rem; /* 19px (was 18px) */
+
   /* Radius */
   --radius-sm:   0.25rem;
   --radius:      0.25rem;

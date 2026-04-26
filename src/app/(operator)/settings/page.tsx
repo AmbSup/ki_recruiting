@@ -294,7 +294,7 @@ export default function SettingsPage() {
     <div className="px-8 pt-10 pb-32">
       {/* Header */}
       <div className="mb-10">
-        <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
+        <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
         <h1 className="font-headline text-5xl italic text-on-surface leading-none">Einstellungen</h1>
         <p className="font-body text-on-surface-variant mt-2">Konfiguriere deinen KI-Recruit Workspace</p>
       </div>
@@ -319,7 +319,7 @@ export default function SettingsPage() {
                 </span>
                 <div>
                   <div className="font-label text-sm font-bold">{s.label}</div>
-                  <div className={`font-label text-[10px] mt-0.5 ${activeSection === s.id ? "text-on-primary-container/70" : "text-outline"}`}>
+                  <div className={`font-label text-xs mt-0.5 ${activeSection === s.id ? "text-on-primary-container/70" : "text-outline"}`}>
                     {s.description}
                   </div>
                 </div>

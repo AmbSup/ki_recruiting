@@ -49,7 +49,7 @@ export default function DashboardPage() {
         <div className="col-span-12 md:col-span-8 bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
           <div className="flex items-start justify-between mb-6">
             <div>
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
                 Monatsausgaben Ads
               </span>
               <div className="font-headline text-4xl text-on-surface mt-1">€ 4.830</div>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
               />
             ))}
           </div>
-          <div className="flex justify-between mt-2 text-[10px] font-label font-bold uppercase tracking-widest text-outline">
+          <div className="flex justify-between mt-2 text-xs font-label font-bold uppercase tracking-widest text-outline">
             <span>1. Apr</span>
             <span>Heute</span>
           </div>
@@ -76,13 +76,13 @@ export default function DashboardPage() {
         {/* Cost per Lead */}
         <div className="col-span-12 md:col-span-4 bg-surface-container-low rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] flex flex-col justify-between">
           <div>
-            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+            <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
               Ø Cost per Lead
             </span>
             <div className="font-headline text-4xl text-on-surface mt-1">€ 18,40</div>
           </div>
           <div>
-            <div className="flex justify-between text-[10px] font-label font-bold uppercase tracking-widest text-outline mb-2 mt-6">
+            <div className="flex justify-between text-xs font-label font-bold uppercase tracking-widest text-outline mb-2 mt-6">
               <span>Conversion Rate</span>
               <span>6,2%</span>
             </div>

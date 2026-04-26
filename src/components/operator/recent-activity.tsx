@@ -17,7 +17,7 @@ export function RecentActivity() {
   return (
     <div className="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] h-full">
       <div className="flex items-center justify-between mb-6">
-        <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
           Letzte Aktivitäten
         </span>
         <span className="material-symbols-outlined text-outline-variant text-xl">history</span>
@@ -44,11 +44,11 @@ export function RecentActivity() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-body text-sm text-on-surface leading-snug">{item.text}</p>
-                <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mt-0.5">
+                <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
                   {item.sub}
                 </p>
               </div>
-              <span className="font-label text-[10px] text-outline flex-shrink-0">{item.time}</span>
+              <span className="font-label text-xs text-outline flex-shrink-0">{item.time}</span>
             </div>
           ))}
         </div>

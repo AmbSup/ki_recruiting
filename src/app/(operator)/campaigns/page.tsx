@@ -29,8 +29,8 @@ function MetricBox({ label, value, sub }: { label: string; value: string | numbe
   return (
     <div>
       <div className="font-headline text-2xl text-on-surface">{value}</div>
-      <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</div>
-      {sub && <div className="font-label text-[10px] text-outline-variant">{sub}</div>}
+      <div className="font-label text-xs font-bold uppercase tracking-widest text-outline">{label}</div>
+      {sub && <div className="font-label text-xs text-outline-variant">{sub}</div>}
     </div>
   );
 }
@@ -83,7 +83,7 @@ export default function CampaignsPage() {
       {/* Header */}
       <div className="flex items-end justify-between mb-10">
         <div>
-          <p className="font-label text-[10px] font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
+          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">Operator Panel</p>
           <h1 className="font-headline text-5xl italic text-on-surface leading-none">Kampagnen</h1>
           <p className="font-body text-on-surface-variant mt-2">
             {loading ? "Lädt von Meta…" : error ? "Fehler beim Laden" : `${campaigns.length} Kampagnen von Facebook Ads`}
@@ -118,7 +118,7 @@ export default function CampaignsPage() {
         ].map((k) => (
           <div key={k.label} className={`col-span-12 md:col-span-${k.col} bg-surface-container-lowest rounded-xl p-5 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]`}>
             <div className="flex items-center justify-between mb-3">
-              <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{k.label}</span>
+              <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">{k.label}</span>
               <span className="material-symbols-outlined text-outline-variant text-xl">{k.icon}</span>
             </div>
             <div className="font-headline text-3xl text-on-surface">{k.value}</div>
@@ -170,20 +170,20 @@ export default function CampaignsPage() {
                     <div>
                       <h3 className="font-label text-sm font-bold text-on-surface">{campaign.name}</h3>
                       <div className="flex items-center gap-2 mt-0.5">
-                        <span className="font-label text-[10px] text-outline">Facebook Ads</span>
+                        <span className="font-label text-xs text-outline">Facebook Ads</span>
                         {campaign.job && (
                           <>
                             <span className="text-outline-variant">·</span>
-                            <span className="font-label text-[10px] text-outline">{campaign.job.title}</span>
+                            <span className="font-label text-xs text-outline">{campaign.job.title}</span>
                             <span className="text-outline-variant">·</span>
-                            <span className="font-label text-[10px] text-outline">{campaign.job.company.name}</span>
+                            <span className="font-label text-xs text-outline">{campaign.job.company.name}</span>
                           </>
                         )}
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className={`text-[10px] font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
+                    <span className={`text-xs font-label font-bold uppercase tracking-widest px-3 py-1 rounded-full ${st.bg} ${st.text}`}>
                       {st.label}
                     </span>
                     <a
@@ -215,7 +215,7 @@ export default function CampaignsPage() {
                       href={`/${campaign.funnel.slug}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 font-label text-[10px] font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors"
+                      className="flex items-center gap-1.5 font-label text-xs font-bold uppercase tracking-widest text-outline hover:text-primary transition-colors"
                     >
                       <span className="material-symbols-outlined text-xs">link</span>
                       Funnel: {campaign.funnel.name}
