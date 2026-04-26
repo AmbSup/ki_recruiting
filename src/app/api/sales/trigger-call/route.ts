@@ -155,6 +155,32 @@ export async function POST(req: NextRequest) {
   const now = new Date();
   const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][now.getDay()];
 
+  // Backward-Compat: alte Programs hatten hook_promise/hard_qualifier_questions als Strategy-Keys.
+  // Neue Strategie-Keys (hook_one_liner, discovery_questions) gewinnen, falls beide gesetzt.
+  const hookOneLiner = (callStrategy.hook_one_liner as string | undefined)
+    ?? (callStrategy.hook_promise as string | undefined)
+    ?? "";
+  const painPoints = Array.isArray(callStrategy.pain_points) ? callStrategy.pain_points as string[] : [];
+  const discoveryRaw = Array.isArray(callStrategy.discovery_questions)
+    ? callStrategy.discovery_questions as string[]
+    : Array.isArray(callStrategy.hard_qualifier_questions)
+      ? callStrategy.hard_qualifier_questions as string[]
+      : [];
+  const objections = Array.isArray(callStrategy.top_objections)
+    ? (callStrategy.top_objections as Array<{ objection?: string; response?: string }>)
+    : [];
+  const onDisqualify = (callStrategy.on_disqualify as string | undefined) ?? "";
+  const verbalCommitment = callStrategy.verbal_commitment_required === true;
+  const toneFormality = (callStrategy.tone_formality as string | undefined) ?? "";
+  const toneWarmth = (callStrategy.tone_warmth as string | undefined) ?? "";
+
+  const painPointsBlock = painPoints.filter(Boolean).map((p) => `- ${p}`).join("\n");
+  const discoveryBlock = discoveryRaw.filter(Boolean).map((q, i) => `${i + 1}. ${q}`).join("\n");
+  const objectionsBlock = objections
+    .filter((o) => (o.objection ?? "").trim() && (o.response ?? "").trim())
+    .map((o) => `- "${o.objection}" → ${o.response}`)
+    .join("\n");
+
   const vars = {
     first_name: lead.first_name ?? "",
     last_name: lead.last_name ?? "",
@@ -170,22 +196,33 @@ export async function POST(req: NextRequest) {
     value_proposition: program.value_proposition ?? "",
     target_persona: program.target_persona ?? "",
     booking_link: program.booking_link ?? "",
-    hook_promise: (callStrategy.hook_promise as string | undefined) ?? "",
+
+    // Legacy-Keys (für alte Use-Case-Templates, die noch {{hook_promise}} etc. interpolieren)
+    hook_promise: hookOneLiner,
+    hard_qualifier_questions_list: discoveryRaw.join(" / "),
+    show_rate_confirmation_phrase: (callStrategy.show_rate_confirmation_phrase as string | undefined) ?? "",
+
     caller_name: (callStrategy.caller_name as string | undefined) ?? "Jonas",
     fallback_resource_url: (callStrategy.fallback_resource_url as string | undefined) ?? "",
-    hard_qualifier_questions_list: Array.isArray(callStrategy.hard_qualifier_questions)
-      ? (callStrategy.hard_qualifier_questions as string[]).join(" / ")
-      : "",
-    show_rate_confirmation_phrase: (callStrategy.show_rate_confirmation_phrase as string | undefined) ?? "",
-    // DTMF-Consent-Gate: default TRUE (EU AI Act opt-out). Per Program via
-    // call_strategy.require_consent = false ausschaltbar (z.B. Test-Programs).
     require_consent: callStrategy.require_consent !== false,
+
+    // Neue strukturierte Strategie-Felder — vom buildStrategyBlock konsumiert.
+    hook_one_liner: hookOneLiner,
+    pain_points_block: painPointsBlock,
+    discovery_questions_block: discoveryBlock,
+    disqualification_criteria: (callStrategy.disqualification_criteria as string | undefined) ?? "",
+    top_objections_block: objectionsBlock,
+    success_definition: (callStrategy.success_definition as string | undefined) ?? "",
+    on_disqualify: onDisqualify,
+    verbal_commitment_required: verbalCommitment,
+    tone_formality: toneFormality,
+    tone_warmth: toneWarmth,
+
     sales_lead_id: lead.id,
-    sales_call_id: "", // gleich gesetzt nach Insert
+    sales_call_id: "",
     sales_program_id: program.id,
     today_iso: now.toISOString().slice(0, 10),
     today_weekday_de: weekdayDe,
-    // Per-program prompt overrides — builder.ts checkt diese vor dem use-case template.
     system_prompt_override: program.system_prompt_override ?? "",
     first_message_override: program.first_message_override ?? "",
   };

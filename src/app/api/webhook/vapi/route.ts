@@ -107,9 +107,30 @@ export async function POST(req: NextRequest) {
         const programType = (program.program_type ?? "generic") as SalesProgramType;
         const assistantId = program.vapi_assistant_id ?? VAPI_SALES_ASSISTANT_ID;
 
-        const callStrategy = program.call_strategy ?? {};
+        const callStrategy = (program.call_strategy ?? {}) as Record<string, unknown>;
         const now = new Date();
         const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][now.getDay()];
+
+        // Strategie-Felder + Backward-Compat (siehe trigger-call/route.ts für die kanonische Logik)
+        const hookOneLiner = (callStrategy.hook_one_liner as string | undefined)
+          ?? (callStrategy.hook_promise as string | undefined)
+          ?? "";
+        const painPoints = Array.isArray(callStrategy.pain_points) ? callStrategy.pain_points as string[] : [];
+        const discoveryRaw = Array.isArray(callStrategy.discovery_questions)
+          ? callStrategy.discovery_questions as string[]
+          : Array.isArray(callStrategy.hard_qualifier_questions)
+            ? callStrategy.hard_qualifier_questions as string[]
+            : [];
+        const objections = Array.isArray(callStrategy.top_objections)
+          ? (callStrategy.top_objections as Array<{ objection?: string; response?: string }>)
+          : [];
+
+        const painPointsBlock = painPoints.filter(Boolean).map((p) => `- ${p}`).join("\n");
+        const discoveryBlock = discoveryRaw.filter(Boolean).map((q, i) => `${i + 1}. ${q}`).join("\n");
+        const objectionsBlock = objections
+          .filter((o) => (o.objection ?? "").trim() && (o.response ?? "").trim())
+          .map((o) => `- "${o.objection}" → ${o.response}`)
+          .join("\n");
 
         const vars = {
           first_name: lead.first_name ?? "",
@@ -126,11 +147,25 @@ export async function POST(req: NextRequest) {
           value_proposition: program.value_proposition ?? "",
           target_persona: program.target_persona ?? "",
           booking_link: program.booking_link ?? "",
-          hook_promise: callStrategy.hook_promise ?? "",
-          caller_name: callStrategy.caller_name ?? "Jonas",
-          fallback_resource_url: callStrategy.fallback_resource_url ?? "",
-          hard_qualifier_questions_list: (callStrategy.hard_qualifier_questions ?? []).join(" / "),
-          show_rate_confirmation_phrase: callStrategy.show_rate_confirmation_phrase ?? "",
+
+          hook_promise: hookOneLiner,
+          caller_name: (callStrategy.caller_name as string | undefined) ?? "Jonas",
+          fallback_resource_url: (callStrategy.fallback_resource_url as string | undefined) ?? "",
+          hard_qualifier_questions_list: discoveryRaw.join(" / "),
+          show_rate_confirmation_phrase: (callStrategy.show_rate_confirmation_phrase as string | undefined) ?? "",
+          require_consent: callStrategy.require_consent !== false,
+
+          hook_one_liner: hookOneLiner,
+          pain_points_block: painPointsBlock,
+          discovery_questions_block: discoveryBlock,
+          disqualification_criteria: (callStrategy.disqualification_criteria as string | undefined) ?? "",
+          top_objections_block: objectionsBlock,
+          success_definition: (callStrategy.success_definition as string | undefined) ?? "",
+          on_disqualify: (callStrategy.on_disqualify as string | undefined) ?? "",
+          verbal_commitment_required: callStrategy.verbal_commitment_required === true,
+          tone_formality: (callStrategy.tone_formality as string | undefined) ?? "",
+          tone_warmth: (callStrategy.tone_warmth as string | undefined) ?? "",
+
           sales_lead_id: salesSession.sales_lead_id ?? "",
           sales_call_id: salesSession.sales_call_id ?? "",
           sales_program_id: program.id ?? "",

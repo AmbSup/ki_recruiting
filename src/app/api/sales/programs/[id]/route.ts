@@ -5,8 +5,9 @@ export const maxDuration = 60;
 
 const EDITABLE_FIELDS = [
   "name", "product_pitch", "value_proposition", "target_persona",
-  "script_guidelines", "vapi_assistant_id", "caller_phone_number",
-  "booking_link", "meta_form_ids", "auto_dial", "status",
+  "script_guidelines", "vapi_assistant_id", "vapi_phone_number_id",
+  "caller_phone_number", "booking_link", "meta_form_ids",
+  "auto_dial", "status", "system_prompt_override", "first_message_override",
 ] as const;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -34,6 +35,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   for (const field of EDITABLE_FIELDS) {
     if (field in body) update[field] = body[field];
   }
+
+  // call_strategy: server-side merge — UI sendet ein partielles Object und wir
+  // verschmelzen mit existierendem JSONB. Verhindert, dass z.B. require_consent
+  // oder llm_model genuked werden, wenn die UI sie nicht in jedem Save mitsendet.
+  if ("call_strategy" in body && body.call_strategy && typeof body.call_strategy === "object") {
+    const { data: current } = await supabase
+      .from("sales_programs")
+      .select("call_strategy")
+      .eq("id", id)
+      .maybeSingle();
+    const existing = (current?.call_strategy as Record<string, unknown> | null) ?? {};
+    update.call_strategy = { ...existing, ...(body.call_strategy as Record<string, unknown>) };
+  }
+
   if (Object.keys(update).length === 0) {
     return NextResponse.json({ error: "Keine Änderungen" }, { status: 400 });
   }

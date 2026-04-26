@@ -35,12 +35,26 @@ export type PromptVariables = {
   booking_link: string;
 
   // Call-Strategy (aus sales_programs.call_strategy JSONB)
-  hook_promise: string;
+  hook_promise: string;                       // legacy, fällt zurück auf hook_one_liner
   caller_name: string;
   fallback_resource_url: string;
-  hard_qualifier_questions_list: string;
+  hard_qualifier_questions_list: string;       // legacy joined-list, ersetzt durch discovery_questions_block
   show_rate_confirmation_phrase: string;
-  require_consent: boolean; // true → DTMF-Consent-Gate im Prompt (default true)
+  require_consent: boolean;                    // true → DTMF-Consent-Gate im Prompt (default true)
+
+  // Strukturierte Strategie-Felder (Variant A — Sales-Strategie + Tonalität).
+  // Listen-Felder sind bereits-formatierte Markdown-Strings — der Builder/trigger-call
+  // formatiert die rohen Arrays zu bullets/Nummern/Pairs, bevor sie hier landen.
+  hook_one_liner: string;
+  pain_points_block: string;                   // markdown bullets, leer = "" (Sektion wird übersprungen)
+  discovery_questions_block: string;           // nummerierte Liste, leer = ""
+  disqualification_criteria: string;
+  top_objections_block: string;                // "- 'Einwand' → Antwort"-Bullets, leer = ""
+  success_definition: string;
+  on_disqualify: string;                       // "hangup" | "redirect_resource" | ""
+  verbal_commitment_required: boolean;
+  tone_formality: string;                      // "formell" | "locker" | ""
+  tone_warmth: string;                         // "sachlich" | "warm" | ""
 
   // IDs (für Audit im Prompt, i.d.R. unverwendet)
   sales_lead_id: string;

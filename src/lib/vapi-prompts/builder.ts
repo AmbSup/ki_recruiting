@@ -38,6 +38,50 @@ function interpolate(template: string, vars: Partial<PromptVariables>): string {
   });
 }
 
+// Strategie-Block, der zwischen Use-Case-Body und Context eingehängt wird.
+// Rendert pro Sektion nur, wenn der entsprechende Var-Wert nicht leer ist —
+// damit alte Programs ohne Strategie-Felder nicht plötzlich leere Headlines
+// im Prompt sehen.
+function buildStrategyBlock(vars: Partial<PromptVariables>): string {
+  const sections: string[] = [];
+
+  if (vars.hook_one_liner?.trim()) {
+    sections.push(`**Hook (zum Einsatz, wenn Aufmerksamkeit nachlässt):** ${vars.hook_one_liner}`);
+  }
+  if (vars.pain_points_block?.trim()) {
+    sections.push(`**Pain Points, die wir lösen:**\n${vars.pain_points_block}`);
+  }
+  if (vars.discovery_questions_block?.trim()) {
+    sections.push(`**Discovery-Fragen — must-ask, BEVOR du den Pitch machst:**\n${vars.discovery_questions_block}`);
+  }
+  if (vars.disqualification_criteria?.trim()) {
+    const action = vars.on_disqualify === "redirect_resource"
+      ? `→ höflich verabschieden + Fallback-Ressource per SMS senden${vars.fallback_resource_url ? ` (${vars.fallback_resource_url})` : ""}`
+      : vars.on_disqualify === "hangup"
+        ? "→ höflich verabschieden + Call beenden"
+        : "→ höflich verabschieden";
+    sections.push(`**Disqualifikation:** Wenn ${vars.disqualification_criteria} ${action}`);
+  }
+  if (vars.top_objections_block?.trim()) {
+    sections.push(`**Häufige Einwände + deine Antwort:**\n${vars.top_objections_block}`);
+  }
+  if (vars.success_definition?.trim()) {
+    sections.push(`**Erfolgs-Definition (was du erreichen sollst):** ${vars.success_definition}`);
+  }
+  if (vars.verbal_commitment_required) {
+    sections.push(`**Verbale Bestätigung:** Vor jedem Termin EXPLIZIT eine "Ja"-Bestätigung einholen — nicht nur Kopfnicken oder "klingt gut".`);
+  }
+  if (vars.tone_formality || vars.tone_warmth) {
+    const parts: string[] = [];
+    if (vars.tone_formality) parts.push(vars.tone_formality === "formell" ? "formell (Sie-Form, gewählte Wortwahl)" : "locker (Sie-Form bleibt, aber persönlicher Ton)");
+    if (vars.tone_warmth) parts.push(vars.tone_warmth === "warm" ? "warm (emotional spiegeln, Empathie zeigen)" : "sachlich (faktenfokussiert, wenig emotionale Spiegelung)");
+    sections.push(`**Tonalität:** ${parts.join(" + ")}`);
+  }
+
+  if (sections.length === 0) return "";
+  return `\n\n## Sales-Strategie\n\n${sections.join("\n\n")}\n`;
+}
+
 // Context-Block, der am Ende des System-Prompts angehängt wird — enthält
 // die konkreten Lead- + Program-Daten als Referenz-Block.
 //
@@ -88,6 +132,7 @@ export function buildSystemPrompt(
     interpolate(basePromptHeader, vars) +
     (consentEnabled ? interpolate(consentGateBlock, vars) : "") +
     interpolate(bodyTemplate, vars) +
+    buildStrategyBlock(vars) +
     buildContextBlock(vars);
   return raw;
 }
