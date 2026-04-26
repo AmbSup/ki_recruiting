@@ -30,6 +30,13 @@ type Lead = {
   program: { id: string; name: string; booking_link: string | null; auto_dial: boolean };
 };
 
+type FunnelLink = { id: string; name: string; slug: string; status: string | null };
+
+type AdLeadLink = {
+  id: string;
+  ad: { id: string; name: string | null; ad_set: { id: string; name: string | null; campaign: { id: string; name: string | null } | null } | null } | null;
+};
+
 type CallRow = {
   id: string;
   status: string;
@@ -60,6 +67,8 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
   const { id } = use(params);
   const [lead, setLead] = useState<Lead | null>(null);
   const [calls, setCalls] = useState<CallRow[]>([]);
+  const [funnel, setFunnel] = useState<FunnelLink | null>(null);
+  const [adLead, setAdLead] = useState<AdLeadLink | null>(null);
   const [loading, setLoading] = useState(true);
   const [triggering, setTriggering] = useState(false);
   const [triggerMsg, setTriggerMsg] = useState<string | null>(null);
@@ -91,6 +100,27 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
       const l = leadRes.data as unknown as Lead;
       setLead(l);
       setNotesDraft(l.notes ?? "");
+
+      // Pipeline-Upstream: Funnel-Link wenn source=funnel + source_ref ist Funnel-ID,
+      // Ad-Chain wenn der Lead via Meta-Leadgen-Matcher mit ad_leads.sales_lead_id verknüpft wurde.
+      if (l.source === "funnel" && l.source_ref) {
+        const { data: f } = await supabase
+          .from("funnels")
+          .select("id, name, slug, status")
+          .eq("id", l.source_ref)
+          .maybeSingle();
+        setFunnel((f as FunnelLink | null) ?? null);
+      } else {
+        setFunnel(null);
+      }
+
+      const { data: al } = await supabase
+        .from("ad_leads")
+        .select("id, ad:ads(id, name, ad_set:ad_sets(id, name, campaign:ad_campaigns(id, name)))")
+        .eq("sales_lead_id", l.id)
+        .limit(1)
+        .maybeSingle();
+      setAdLead((al as unknown as AdLeadLink | null) ?? null);
     }
     setCalls((callsRes.data ?? []) as unknown as CallRow[]);
     setLoading(false);
@@ -339,6 +369,53 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="col-span-12 lg:col-span-7 space-y-5">
+          <Card label="Pipeline" icon="account_tree">
+            <PipelineRow
+              icon="flag"
+              label="Program"
+              href={`/sales/programs/${lead.program.id}`}
+              value={lead.program.name}
+            />
+            <PipelineRow
+              icon={sourceIcon(lead.source)}
+              label="Quelle"
+              value={sourceLabel(lead.source)}
+              valueExtra={
+                lead.source === "test" ? (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-label text-[10px] font-bold uppercase tracking-widest">Test</span>
+                ) : null
+              }
+            />
+            {funnel && (
+              <PipelineRow
+                icon="quiz"
+                label="Funnel"
+                href={`/funnels/${funnel.id}/editor`}
+                value={funnel.name}
+                valueExtra={
+                  <span className="font-mono text-[10px] text-outline">/{funnel.slug}</span>
+                }
+              />
+            )}
+            {adLead && adLead.ad && (
+              <PipelineRow
+                icon="ads_click"
+                label="Meta-Ad"
+                value={
+                  <span>
+                    {adLead.ad.name ?? "(unbenannt)"}
+                    {adLead.ad.ad_set?.campaign?.name && (
+                      <span className="text-outline"> · {adLead.ad.ad_set.campaign.name}</span>
+                    )}
+                  </span>
+                }
+              />
+            )}
+            {(lead.source === "manual" || lead.source === "csv") && !funnel && !adLead && (
+              <p className="font-body text-[11px] text-outline italic">Direkt-Submit — kein Upstream</p>
+            )}
+          </Card>
+
           <Card label="Kontakt" icon="person">
             <EditableField
               label="Vorname"
@@ -469,6 +546,51 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
       </div>
     </div>
   );
+}
+
+function PipelineRow({ icon, label, value, href, valueExtra }: {
+  icon: string;
+  label: string;
+  value: React.ReactNode;
+  href?: string;
+  valueExtra?: React.ReactNode;
+}) {
+  const inner = (
+    <div className="flex items-center gap-2 min-w-0">
+      <span className={`font-body text-sm ${href ? "text-primary group-hover:underline" : "text-on-surface"} truncate`}>{value}</span>
+      {valueExtra}
+    </div>
+  );
+  return (
+    <div className="flex items-center justify-between gap-3 py-1 group">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="material-symbols-outlined text-outline text-sm flex-shrink-0">{icon}</span>
+        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline flex-shrink-0">{label}</span>
+      </div>
+      {href ? (
+        <Link href={href} className="flex items-center gap-1 min-w-0">
+          {inner}
+          <span className="material-symbols-outlined text-outline text-xs">arrow_forward</span>
+        </Link>
+      ) : inner}
+    </div>
+  );
+}
+
+function sourceIcon(source: string): string {
+  return source === "funnel" ? "quiz"
+    : source === "meta_form" ? "ads_click"
+    : source === "csv" ? "table_chart"
+    : source === "test" ? "science"
+    : "edit";
+}
+
+function sourceLabel(source: string): string {
+  return source === "funnel" ? "Funnel"
+    : source === "meta_form" ? "Meta-Ads"
+    : source === "csv" ? "CSV-Import"
+    : source === "test" ? "Test-Mode"
+    : "Manuell";
 }
 
 function Card({ label, icon, children }: { label: string; icon: string; children: React.ReactNode }) {

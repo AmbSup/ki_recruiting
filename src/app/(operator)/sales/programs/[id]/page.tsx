@@ -28,6 +28,16 @@ type CallStrategy = {
   [key: string]: unknown;
 };
 
+type PipelineStats = {
+  funnels: { id: string; name: string; slug: string; status: string | null }[];
+  leads_count: number;
+  leads_30d: number;
+  leads_recent: { id: string; full_name: string | null; first_name: string | null; status: string; source: string; created_at: string }[];
+  calls_count: number;
+  calls_recent: { id: string; status: string; sales_lead_id: string; created_at: string; lead_name: string | null; rating: number | null }[];
+  meetings_30d: number;
+};
+
 type Program = {
   id: string;
   company_id: string;
@@ -69,6 +79,7 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
   const [metaFormInput, setMetaFormInput] = useState("");
   const [leadModalOpen, setLeadModalOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [stats, setStats] = useState<PipelineStats | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -94,6 +105,52 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
         }
         setLoading(false);
       });
+  }, [id]);
+
+  // Pipeline-Stats: 4 parallele Queries (Funnels-Liste, Leads-Count + recent,
+  // Calls-Count + recent, Meetings-30d-Count). Eigener useEffect, damit Edit-Form
+  // und Stats unabhängig laden.
+  useEffect(() => {
+    const supabase = createClient();
+    const cutoff30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    Promise.all([
+      supabase.from("funnels").select("id, name, slug, status").eq("sales_program_id", id),
+      supabase.from("sales_leads").select("id", { count: "exact", head: true }).eq("sales_program_id", id),
+      supabase.from("sales_leads").select("id", { count: "exact", head: true }).eq("sales_program_id", id).gte("created_at", cutoff30d),
+      supabase.from("sales_leads").select("id, full_name, first_name, status, source, created_at").eq("sales_program_id", id).order("created_at", { ascending: false }).limit(5),
+      supabase.from("sales_calls").select("id", { count: "exact", head: true }).eq("sales_program_id", id),
+      supabase.from("sales_calls").select("id, status, sales_lead_id, created_at, lead:sales_leads(full_name, first_name), analysis:sales_call_analyses(call_rating)").eq("sales_program_id", id).order("created_at", { ascending: false }).limit(5),
+      supabase.from("sales_call_analyses").select("id, sales_call:sales_calls!inner(sales_program_id)", { count: "exact", head: true }).eq("meeting_booked", true).eq("sales_call.sales_program_id", id).gte("created_at", cutoff30d),
+    ]).then(([funnelsRes, leadsCountRes, leads30dRes, leadsRecentRes, callsCountRes, callsRecentRes, meetings30dRes]) => {
+      const callsRecentRaw = (callsRecentRes.data ?? []) as Array<{
+        id: string; status: string; sales_lead_id: string; created_at: string;
+        lead: { full_name: string | null; first_name: string | null } | { full_name: string | null; first_name: string | null }[] | null;
+        analysis: { call_rating: number | null } | { call_rating: number | null }[] | null;
+      }>;
+      const callsRecent = callsRecentRaw.map((c) => {
+        const leadObj = Array.isArray(c.lead) ? c.lead[0] : c.lead;
+        const analysisObj = Array.isArray(c.analysis) ? c.analysis[0] : c.analysis;
+        return {
+          id: c.id,
+          status: c.status,
+          sales_lead_id: c.sales_lead_id,
+          created_at: c.created_at,
+          lead_name: leadObj?.full_name ?? leadObj?.first_name ?? null,
+          rating: analysisObj?.call_rating ?? null,
+        };
+      });
+      setStats({
+        funnels: (funnelsRes.data ?? []) as PipelineStats["funnels"],
+        leads_count: leadsCountRes.count ?? 0,
+        leads_30d: leads30dRes.count ?? 0,
+        leads_recent: (leadsRecentRes.data ?? []) as PipelineStats["leads_recent"],
+        calls_count: callsCountRes.count ?? 0,
+        calls_recent: callsRecent,
+        meetings_30d: meetings30dRes.count ?? 0,
+      });
+    }).catch((err) => {
+      console.error("[programs/[id]] pipeline stats failed:", err);
+    });
   }, [id]);
 
   function update<K extends keyof Program>(field: K, value: Program[K]) {
@@ -216,6 +273,107 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
             <span className="material-symbols-outlined text-sm">delete</span>
             Löschen
           </button>
+        </div>
+      </div>
+
+      {/* Pipeline-KPIs + Verknüpfungen — vor dem Edit-Form, weil das die wichtigste Übersicht ist. */}
+      <div className="space-y-5 mb-6">
+        <Card label="Pipeline" icon="account_tree">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <KpiCell label="Funnels" value={stats?.funnels.length ?? "—"} icon="quiz" />
+            <KpiCell
+              label="Leads"
+              value={stats?.leads_count ?? "—"}
+              icon="person"
+              sub={stats ? `+${stats.leads_30d} (30d)` : undefined}
+            />
+            <KpiCell label="Calls" value={stats?.calls_count ?? "—"} icon="call" />
+            <KpiCell
+              label="Termine 30d"
+              value={stats?.meetings_30d ?? "—"}
+              icon="event_available"
+            />
+          </div>
+        </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <Card label="Funnels" icon="quiz">
+            {stats === null ? (
+              <p className="font-body text-xs text-outline">Lädt…</p>
+            ) : stats.funnels.length === 0 ? (
+              <p className="font-body text-xs text-outline italic">Noch kein Funnel auf dieses Program gerichtet.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {stats.funnels.slice(0, 5).map((f) => (
+                  <li key={f.id}>
+                    <Link
+                      href={`/funnels/${f.id}/editor`}
+                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-container-low transition-colors group"
+                    >
+                      <span className="font-body text-sm text-on-surface truncate group-hover:text-primary">{f.name}</span>
+                      {f.status && (
+                        <span className="font-label text-[10px] text-outline uppercase tracking-wider flex-shrink-0">{f.status}</span>
+                      )}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+
+          <Card label="Letzte Leads" icon="person">
+            {stats === null ? (
+              <p className="font-body text-xs text-outline">Lädt…</p>
+            ) : stats.leads_recent.length === 0 ? (
+              <p className="font-body text-xs text-outline italic">Noch keine Leads.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {stats.leads_recent.map((l) => (
+                  <li key={l.id}>
+                    <Link
+                      href={`/sales/leads/${l.id}`}
+                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-container-low transition-colors group"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="material-symbols-outlined text-outline text-xs flex-shrink-0">{l.source === "funnel" ? "quiz" : l.source === "meta_form" ? "ads_click" : l.source === "csv" ? "table_chart" : l.source === "test" ? "science" : "edit"}</span>
+                        <span className="font-body text-sm text-on-surface truncate group-hover:text-primary">{l.full_name ?? l.first_name ?? "(unbenannt)"}</span>
+                      </div>
+                      <span className="font-label text-[10px] text-outline uppercase tracking-wider flex-shrink-0">{l.status}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {stats && stats.leads_count > 5 && (
+              <Link href={`/sales/leads?program=${id}`} className="block mt-2 font-label text-xs font-bold text-primary hover:underline">
+                Alle {stats.leads_count} Leads →
+              </Link>
+            )}
+          </Card>
+
+          <Card label="Letzte Calls" icon="call">
+            {stats === null ? (
+              <p className="font-body text-xs text-outline">Lädt…</p>
+            ) : stats.calls_recent.length === 0 ? (
+              <p className="font-body text-xs text-outline italic">Noch kein Call.</p>
+            ) : (
+              <ul className="space-y-1.5">
+                {stats.calls_recent.map((c) => (
+                  <li key={c.id}>
+                    <Link
+                      href={`/sales/calls/${c.id}`}
+                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg hover:bg-surface-container-low transition-colors group"
+                    >
+                      <span className="font-body text-sm text-on-surface truncate group-hover:text-primary">{c.lead_name ?? "(unbenannt)"}</span>
+                      <span className="font-label text-[10px] text-outline uppercase tracking-wider flex-shrink-0">
+                        {c.status}{c.rating != null ? ` · ${c.rating}/10` : ""}
+                      </span>
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
         </div>
       </div>
 
@@ -595,6 +753,24 @@ function ObjectionsList({ objections, onChange }: {
             />
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function KpiCell({ label, value, icon, sub }: {
+  label: string;
+  value: string | number;
+  icon: string;
+  sub?: string;
+}) {
+  return (
+    <div className="bg-surface-container-low rounded-xl p-3 flex items-start gap-3">
+      <span className="material-symbols-outlined text-primary text-lg flex-shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <div className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">{label}</div>
+        <div className="font-headline text-2xl text-on-surface leading-none mt-0.5">{value}</div>
+        {sub && <div className="font-label text-[10px] text-outline mt-1">{sub}</div>}
       </div>
     </div>
   );

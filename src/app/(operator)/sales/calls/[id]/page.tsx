@@ -28,6 +28,8 @@ type CallDetail = {
     phone: string;
     company_name: string | null;
     role: string | null;
+    source: string;
+    source_ref: string | null;
   };
   sales_program: { id: string; name: string; booking_link: string | null };
   analysis: {
@@ -51,6 +53,7 @@ type CallDetail = {
 export default function SalesCallDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [call, setCall] = useState<CallDetail | null>(null);
+  const [funnel, setFunnel] = useState<{ id: string; name: string; slug: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<"analysis" | "transcript">("analysis");
 
@@ -60,17 +63,28 @@ export default function SalesCallDetailPage({ params }: { params: Promise<{ id: 
       .from("sales_calls")
       .select(`
         *,
-        sales_lead:sales_leads(id, full_name, first_name, last_name, email, phone, company_name, role),
+        sales_lead:sales_leads(id, full_name, first_name, last_name, email, phone, company_name, role, source, source_ref),
         sales_program:sales_programs(id, name, booking_link),
         analysis:sales_call_analyses(*)
       `)
       .eq("id", id)
       .single()
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (data) {
           const d = data as unknown as Record<string, unknown>;
           const analysis = Array.isArray(d.analysis) ? d.analysis[0] : d.analysis;
-          setCall({ ...data, analysis } as unknown as CallDetail);
+          const c = { ...data, analysis } as unknown as CallDetail;
+          setCall(c);
+
+          // Pipeline-Breadcrumb braucht den Funnel, falls der Lead via Funnel kam.
+          if (c.sales_lead.source === "funnel" && c.sales_lead.source_ref) {
+            const { data: f } = await supabase
+              .from("funnels")
+              .select("id, name, slug")
+              .eq("id", c.sales_lead.source_ref)
+              .maybeSingle();
+            setFunnel((f as { id: string; name: string; slug: string } | null) ?? null);
+          }
         }
         setLoading(false);
       });
@@ -95,13 +109,38 @@ export default function SalesCallDetailPage({ params }: { params: Promise<{ id: 
         <span className="font-label text-xs font-bold uppercase tracking-widest">Alle Calls</span>
       </Link>
 
+      {/* Pipeline-Breadcrumb: klickbare Chips entlang der Sales-Kette. */}
+      <nav className="flex items-center flex-wrap gap-1.5 mb-3 font-label text-[11px] font-bold uppercase tracking-widest">
+        <Link href={`/sales/programs/${call.sales_program.id}`} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors">
+          <span className="material-symbols-outlined text-xs">flag</span>
+          {call.sales_program.name}
+        </Link>
+        <span className="text-outline">›</span>
+        <Link href={`/sales/leads/${call.sales_lead.id}`} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors">
+          <span className="material-symbols-outlined text-xs">person</span>
+          {name}
+        </Link>
+        {funnel && (
+          <>
+            <span className="text-outline">›</span>
+            <Link href={`/funnels/${funnel.id}/editor`} className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-primary transition-colors">
+              <span className="material-symbols-outlined text-xs">quiz</span>
+              {funnel.name}
+            </Link>
+          </>
+        )}
+        {(call.sales_lead.source === "manual" || call.sales_lead.source === "csv" || call.sales_lead.source === "test") && (
+          <>
+            <span className="text-outline">·</span>
+            <span className="px-2.5 py-1 rounded-lg bg-surface-container-low text-outline">
+              {call.sales_lead.source === "manual" ? "Manuell" : call.sales_lead.source === "csv" ? "CSV-Import" : "Test-Mode"}
+            </span>
+          </>
+        )}
+      </nav>
+
       <div className="flex items-start justify-between mb-8">
         <div>
-          <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-2">
-            <Link href={`/sales/programs/${call.sales_program.id}`} className="hover:text-primary">{call.sales_program.name}</Link>
-            {" · "}
-            <Link href={`/sales/leads/${call.sales_lead.id}`} className="hover:text-primary">{name}</Link>
-          </p>
           <h1 className="font-headline text-4xl italic text-on-surface leading-none">Sales Call</h1>
           <p className="font-body text-on-surface-variant mt-1">
             {call.started_at ? new Date(call.started_at).toLocaleString("de-AT") : "Noch nicht gestartet"}
