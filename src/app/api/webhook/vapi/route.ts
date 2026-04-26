@@ -165,6 +165,7 @@ export async function POST(req: NextRequest) {
           verbal_commitment_required: callStrategy.verbal_commitment_required === true,
           tone_formality: (callStrategy.tone_formality as string | undefined) ?? "",
           tone_warmth: (callStrategy.tone_warmth as string | undefined) ?? "",
+          urgency_trigger: (callStrategy.urgency_trigger as string | undefined) ?? "",
 
           sales_lead_id: salesSession.sales_lead_id ?? "",
           sales_call_id: salesSession.sales_call_id ?? "",

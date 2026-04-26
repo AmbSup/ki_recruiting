@@ -68,6 +68,9 @@ function buildStrategyBlock(vars: Partial<PromptVariables>): string {
   if (vars.success_definition?.trim()) {
     sections.push(`**Erfolgs-Definition (was du erreichen sollst):** ${vars.success_definition}`);
   }
+  if (vars.urgency_trigger?.trim()) {
+    sections.push(`**Verknappung / Dringlichkeit (warum JETZT handeln):** ${vars.urgency_trigger}\n\nNutze diesen Trigger SUBTIL bei der Termin-Vereinbarung — nicht aufdringlich. Z.B.: "Übrigens, ${vars.urgency_trigger} — daher empfehle ich, den Termin zeitnah zu legen."`);
+  }
   if (vars.verbal_commitment_required) {
     sections.push(`**Verbale Bestätigung:** Vor jedem Termin EXPLIZIT eine "Ja"-Bestätigung einholen — nicht nur Kopfnicken oder "klingt gut".`);
   }

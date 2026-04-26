@@ -217,6 +217,7 @@ export async function POST(req: NextRequest) {
     verbal_commitment_required: verbalCommitment,
     tone_formality: toneFormality,
     tone_warmth: toneWarmth,
+    urgency_trigger: (callStrategy.urgency_trigger as string | undefined) ?? "",
 
     sales_lead_id: lead.id,
     sales_call_id: "",

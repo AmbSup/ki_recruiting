@@ -55,6 +55,7 @@ export type PromptVariables = {
   verbal_commitment_required: boolean;
   tone_formality: string;                      // "formell" | "locker" | ""
   tone_warmth: string;                         // "sachlich" | "warm" | ""
+  urgency_trigger: string;                     // Verknappung / Dringlichkeit: warum JETZT? (z.B. "begrenzte KfW-Förderung bis Q1 2026")
 
   // IDs (für Audit im Prompt, i.d.R. unverwendet)
   sales_lead_id: string;

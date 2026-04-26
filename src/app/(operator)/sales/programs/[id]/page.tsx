@@ -18,6 +18,7 @@ type CallStrategy = {
   caller_name?: string;
   tone_formality?: "formell" | "locker" | "";
   tone_warmth?: "sachlich" | "warm" | "";
+  urgency_trigger?: string;
   llm_model?: string;
   // Legacy / unverändert mitgeführt
   hook_promise?: string;
@@ -444,6 +445,13 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
               onChange={(v) => updateStrategy("success_definition", v)}
               rows={3}
               placeholder="z.B. Beratungstermin im Kalender gebucht, Lead bestätigt verbal"
+            />
+
+            <Field
+              label="Verknappung / Dringlichkeit (warum JETZT?)"
+              value={strategy.urgency_trigger ?? ""}
+              onChange={(v) => updateStrategy("urgency_trigger", v)}
+              placeholder='z.B. "nur noch 12 Förderplätze in Q1 2026" oder "KfW-Förderung läuft Ende März aus"'
             />
 
             <div>
