@@ -112,7 +112,7 @@ function buildContextBlock(vars: Partial<PromptVariables>): string {
 **Lead:** ${vars.full_name || vars.first_name || "(Name unbekannt)"}
 ${leadContext ? `**Hook:** ${leadContext}\n` : ""}${vars.company_name ? `**Firma:** ${vars.company_name}\n` : ""}${vars.role ? `**Rolle:** ${vars.role}\n` : ""}${vars.notes ? `**Notizen:** ${vars.notes}\n` : ""}${funnelSummary ? `\n### Funnel-Antworten\n${funnelSummary}\n` : ""}${hasRest ? `\n**Custom-Fields:** ${JSON.stringify(rest)}\n` : ""}
 **Program:** ${vars.program_name || "(unbekannt)"}
-${vars.product_pitch ? `**Pitch:** ${vars.product_pitch}\n` : ""}${vars.value_proposition ? `**Value Proposition:** ${vars.value_proposition}\n` : ""}${vars.target_persona ? `**Zielpersona:** ${vars.target_persona}\n` : ""}${vars.booking_link ? `**Booking-Link:** ${vars.booking_link}\n` : ""}${vars.hook_promise ? `**Hook aus Funnel:** ${vars.hook_promise}\n` : ""}
+${vars.product_pitch ? `**Pitch:** ${vars.product_pitch}\n` : ""}${vars.value_proposition ? `**Value Proposition:** ${vars.value_proposition}\n` : ""}${vars.target_persona ? `**Zielpersona:** ${vars.target_persona}\n` : ""}${vars.booking_link ? `**Booking-Link (NIEMALS LAUT AUSSPRECHEN — nur via book_meeting Tool oder als SMS-Hinweis "Ich schicke Ihnen den Link gleich"):** ${vars.booking_link}\n` : ""}${vars.hook_promise ? `**Hook aus Funnel:** ${vars.hook_promise}\n` : ""}
 **HEUTE:** ${vars.today_weekday_de}, ${vars.today_iso} (Termine MÜSSEN in der Zukunft liegen)`;
 }
 
