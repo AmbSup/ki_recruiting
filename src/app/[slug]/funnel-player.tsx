@@ -222,6 +222,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [autoAdvance, setAutoAdvance] = useState<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -287,44 +288,41 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     if (!consent) { console.log("[funnel] consent not given"); return; }
     if (submitted) { console.log("[funnel] already submitted"); return; }
     setSubmitting(true);
+    setSubmitError(null);
 
-    // Advance immediately for good UX
-    setSubmitted(true);
-    advance();
-    setSubmitting(false);
+    // Upload CV (best-effort; failures don't block submission)
+    let cv_url: string | null = null;
+    if (cvFile) {
+      try {
+        const fd = new FormData();
+        fd.append("file", cvFile);
+        fd.append("funnel_id", funnel.id);
+        const res = await fetch("/api/upload-cv", { method: "POST", body: fd });
+        if (res.ok) {
+          const json = await res.json();
+          cv_url = json.url ?? null;
+        }
+      } catch { /* best-effort */ }
+    }
 
-    // Upload CV via server route (admin key), then call /api/apply
-    (async () => {
-      let cv_url: string | null = null;
-      if (cvFile) {
-        try {
-          const fd = new FormData();
-          fd.append("file", cvFile);
-          fd.append("funnel_id", funnel.id);
-          const res = await fetch("/api/upload-cv", { method: "POST", body: fd });
-          if (res.ok) {
-            const json = await res.json();
-            cv_url = json.url ?? null;
-          }
-        } catch { /* best-effort */ }
-      }
+    const extraFieldLabels: Record<string, string> = {
+      linkedin: "LinkedIn", current_job: "Aktueller Jobtitel", current_employer: "Aktueller Arbeitgeber",
+      start_date: "Starttermin", salary: "Gehaltsvorstellung", experience_years: "Berufserfahrung (Jahre)",
+      education: "Ausbildung", drivers_license: "Führerschein", travel: "Reisebereitschaft",
+      relocate: "Umzugsbereitschaft", skills: "Skills", languages: "Sprachen",
+      portfolio: "Portfolio", source: "Gefunden über", position_interest: "Positionsinteresse",
+    };
+    const extraAnswers: Record<string, string[]> = {};
+    for (const [k, label] of Object.entries(extraFieldLabels)) {
+      if (form[k]) extraAnswers[label] = [form[k]];
+    }
+    const fullName = form.name || [form.first_name, form.last_name].filter(Boolean).join(" ");
 
-      // Map extra form fields to German labels for funnel_responses
-      const extraFieldLabels: Record<string, string> = {
-        linkedin: "LinkedIn", current_job: "Aktueller Jobtitel", current_employer: "Aktueller Arbeitgeber",
-        start_date: "Starttermin", salary: "Gehaltsvorstellung", experience_years: "Berufserfahrung (Jahre)",
-        education: "Ausbildung", drivers_license: "Führerschein", travel: "Reisebereitschaft",
-        relocate: "Umzugsbereitschaft", skills: "Skills", languages: "Sprachen",
-        portfolio: "Portfolio", source: "Gefunden über", position_interest: "Positionsinteresse",
-      };
-      const extraAnswers: Record<string, string[]> = {};
-      for (const [k, label] of Object.entries(extraFieldLabels)) {
-        if (form[k]) extraAnswers[label] = [form[k]];
-      }
-      const fullName = form.name || [form.first_name, form.last_name].filter(Boolean).join(" ");
-
-      // Save application, then trigger CV analysis in its own request
-      fetch("/api/apply", {
+    // /api/apply must succeed before we advance to thank-you. Otherwise the
+    // user thinks the lead landed but it never did.
+    let applyJson: { success?: boolean; application_id?: string; sales_lead_id?: string } | null = null;
+    try {
+      const r = await fetch("/api/apply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -339,28 +337,45 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           cv_file_name: cvFile?.name ?? null,
           answers: { ...answers, ...extraAnswers },
         }),
-      }).then(async (r) => {
-        console.log("[funnel] apply response:", r.status);
-        if (!r.ok) { console.error("[funnel] apply failed:", await r.text().catch(() => "")); return; }
-        const { application_id } = await r.json();
-        console.log("[funnel] application_id:", application_id);
-        if (!application_id) return;
-        // Fire Meta Pixel standard events
-        if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
-          const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq!;
-          fbq("track", "Lead");
-          fbq("track", "CompleteRegistration");
-        }
-        // Fire Facebook App Event
-        fbAppEvent('fb_mobile_complete_registration', null, { fb_registration_method: 'funnel' });
-        // Trigger CV analysis as its own long-running request (maxDuration = 60s)
-        fetch("/api/cv-analyse", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ application_id }),
-        }).catch(() => {/* best-effort */});
-      }).catch((err) => console.error("[funnel] apply error:", err));
-    })();
+      });
+      console.log("[funnel] apply response:", r.status);
+      if (!r.ok) {
+        const body = await r.text().catch(() => "");
+        console.error("[funnel] apply failed:", r.status, body);
+        let serverMsg = "";
+        try { serverMsg = JSON.parse(body).error ?? ""; } catch { /* not json */ }
+        setSubmitError(serverMsg || `Senden fehlgeschlagen (Status ${r.status}). Bitte erneut versuchen.`);
+        setSubmitting(false);
+        return;
+      }
+      applyJson = await r.json();
+    } catch (err) {
+      console.error("[funnel] apply network error:", err);
+      setSubmitError("Verbindung zum Server fehlgeschlagen. Bitte Internet prüfen und erneut versuchen.");
+      setSubmitting(false);
+      return;
+    }
+
+    // Success → advance to thank-you, then fire pixel/CV-analyse asynchronously.
+    setSubmitted(true);
+    setSubmitting(false);
+    advance();
+
+    if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
+      const fbq = (window as Window & { fbq?: (...args: unknown[]) => void }).fbq!;
+      fbq("track", "Lead");
+      fbq("track", "CompleteRegistration");
+    }
+    fbAppEvent('fb_mobile_complete_registration', null, { fb_registration_method: 'funnel' });
+
+    const applicationId = applyJson?.application_id;
+    if (applicationId) {
+      fetch("/api/cv-analyse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ application_id: applicationId }),
+      }).catch(() => {/* best-effort */});
+    }
   }
 
   if (!currentPage) {
@@ -417,6 +432,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
             submitting={submitting}
             onSubmit={handleSubmit}
             submitted={submitted}
+            submitError={submitError}
           />
           </div>
         ))}
@@ -449,12 +465,36 @@ function Screen({ children, color, textColor, branding }: {
   );
 }
 
+// ─── Reusable Contact-Form Field Row ────────────────────────────────────────
+// MUSS auf Modul-Scope leben — wäre die Komponente innerhalb BlockRenderer
+// definiert, hätte sie bei jedem Re-Render eine neue Function-Identity und
+// React würde das <input> bei jedem Keystroke unmounten/remounten (Fokus-Verlust).
+function FieldRow({
+  emoji, placeholder, fieldKey, type = "text", form, onFormChange,
+}: {
+  emoji: string; placeholder: string; fieldKey: string; type?: string;
+  form: Record<string, string>; onFormChange: (patch: Record<string, string>) => void;
+}) {
+  return (
+    <div className="flex items-center gap-3 border-2 border-gray-200 rounded-2xl px-4 py-3">
+      <span className="text-lg flex-shrink-0">{emoji}</span>
+      <input
+        type={type}
+        value={form[fieldKey] ?? ""}
+        onChange={(e) => onFormChange({ [fieldKey]: e.target.value })}
+        placeholder={placeholder}
+        className="flex-1 text-sm text-gray-900 placeholder:text-gray-400 outline-none bg-transparent"
+      />
+    </div>
+  );
+}
+
 // ─── Block Renderer ───────────────────────────────────────────────────────────
 
 function BlockRenderer({
   block, color, textColor, branding, answers, onToggleChoice, onAdvance,
   form, onFormChange, consent, onConsentChange, consentText,
-  cvFile, onCvChange, submitting, onSubmit, submitted,
+  cvFile, onCvChange, submitting, onSubmit, submitted, submitError,
 }: {
   block: Block; color: string; textColor: string; branding: FunnelBranding;
   answers: string[]; onToggleChoice: (value: string, sel: "single" | "multiple") => void;
@@ -465,6 +505,7 @@ function BlockRenderer({
   consentText: string | null;
   cvFile: File | null; onCvChange: (f: File | null) => void;
   submitting: boolean; onSubmit: () => Promise<void>; submitted: boolean;
+  submitError: string | null;
 }) {
   const c = block.content;
 
@@ -718,6 +759,11 @@ function BlockRenderer({
           <p className="text-xs text-red-500 mb-3 text-center">
             {!form.name ? "Bitte Namen eingeben." : !form.email ? "Bitte E-Mail eingeben." : "Bitte Datenschutz zustimmen."}
           </p>
+        )}
+        {submitError && (
+          <div className="mb-3 px-3 py-2 rounded-xl border border-red-200 bg-red-50 text-xs text-red-700 leading-relaxed">
+            {submitError}
+          </div>
         )}
         <button
           onClick={onSubmit}
