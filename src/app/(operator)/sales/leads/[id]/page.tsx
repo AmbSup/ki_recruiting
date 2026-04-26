@@ -117,6 +117,21 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
     load();
   }
 
+  // Generic field-patch helper — used by EditableField rows. Throws on non-2xx
+  // so the field can show the server's error message inline.
+  async function patchField(field: string, value: string) {
+    const res = await fetch(`/api/sales/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error ?? `Fehler ${res.status}`);
+    }
+    await load();
+  }
+
   async function triggerCall() {
     setTriggering(true);
     setTriggerError(null);
@@ -325,17 +340,46 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
 
         <div className="col-span-12 lg:col-span-5 space-y-5">
           <Card label="Kontakt" icon="person">
-            <InfoRow label="Telefon" value={lead.phone} mono />
-            {lead.email && <InfoRow label="Email" value={lead.email} />}
-            {lead.linkedin_url && (
-              <InfoRow label="LinkedIn" value={
-                <a href={lead.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
-                  Profil →
-                </a>
-              } />
-            )}
-            <InfoRow label="Firma" value={lead.company_name ?? "–"} />
-            <InfoRow label="Rolle" value={lead.role ?? "–"} />
+            <EditableField
+              label="Vorname"
+              value={lead.first_name ?? ""}
+              onSave={(v) => patchField("first_name", v)}
+            />
+            <EditableField
+              label="Nachname"
+              value={lead.last_name ?? ""}
+              onSave={(v) => patchField("last_name", v)}
+            />
+            <EditableField
+              label="Telefon"
+              value={lead.phone}
+              type="tel"
+              mono
+              onSave={(v) => patchField("phone", v)}
+            />
+            <EditableField
+              label="Email"
+              value={lead.email ?? ""}
+              type="email"
+              onSave={(v) => patchField("email", v)}
+            />
+            <EditableField
+              label="Firma"
+              value={lead.company_name ?? ""}
+              onSave={(v) => patchField("company_name", v)}
+            />
+            <EditableField
+              label="Rolle"
+              value={lead.role ?? ""}
+              onSave={(v) => patchField("role", v)}
+            />
+            <EditableField
+              label="LinkedIn"
+              value={lead.linkedin_url ?? ""}
+              type="text"
+              placeholder="https://linkedin.com/in/…"
+              onSave={(v) => patchField("linkedin_url", v)}
+            />
           </Card>
 
           <Card label="Consent & Quelle" icon="verified_user">
@@ -354,9 +398,58 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
 
           {Object.keys(lead.custom_fields ?? {}).length > 0 && (
             <Card label="Custom Fields" icon="database">
-              {Object.entries(lead.custom_fields).map(([k, v]) => (
-                <InfoRow key={k} label={k} value={String(v)} />
-              ))}
+              {(() => {
+                const cf = lead.custom_fields ?? {};
+                const leadCtx = typeof cf.lead_context === "string" ? cf.lead_context : null;
+                const summary = typeof cf.funnel_summary === "string" ? cf.funnel_summary : null;
+                const qa = Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ question?: string; answer?: string }>) : null;
+                const restEntries = Object.entries(cf).filter(
+                  ([k]) => k !== "lead_context" && k !== "funnel_summary" && k !== "funnel_qa",
+                );
+                return (
+                  <>
+                    {leadCtx && (
+                      <div>
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1">Lead-Hook</span>
+                        <p className="font-body text-xs text-on-surface italic break-words">{leadCtx}</p>
+                      </div>
+                    )}
+                    {qa && qa.length > 0 && (
+                      <div>
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Funnel-Antworten</span>
+                        <ul className="space-y-1.5">
+                          {qa.map((item, i) => (
+                            <li key={i} className="font-body text-xs text-on-surface-variant break-words">
+                              <span className="text-outline">{item.question}</span>
+                              <span className="mx-1.5">→</span>
+                              <span className="font-medium text-on-surface">{item.answer}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {!qa && summary && (
+                      <div>
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1">Zusammenfassung</span>
+                        <pre className="font-body text-xs text-on-surface-variant whitespace-pre-wrap break-words">{summary}</pre>
+                      </div>
+                    )}
+                    {restEntries.length > 0 && (
+                      <div className="pt-1">
+                        {restEntries.map(([k, v]) => (
+                          <InfoRow
+                            key={k}
+                            label={k}
+                            value={typeof v === "string" || typeof v === "number" || typeof v === "boolean"
+                              ? String(v)
+                              : <span className="font-mono text-[10px]">{JSON.stringify(v)}</span>}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </Card>
           )}
 
@@ -389,7 +482,86 @@ function InfoRow({ label, value, mono }: { label: string; value: React.ReactNode
   return (
     <div className="flex items-start justify-between gap-3">
       <span className="font-label text-xs font-bold uppercase tracking-widest text-outline flex-shrink-0">{label}</span>
-      <span className={`font-body text-xs text-on-surface-variant text-right ${mono ? "font-mono" : ""}`}>{value}</span>
+      <span className={`font-body text-xs text-on-surface-variant text-right min-w-0 break-words [overflow-wrap:anywhere] ${mono ? "font-mono" : ""}`}>{value}</span>
+    </div>
+  );
+}
+
+// EditableField: inline-edit für simple text inputs (Telefon, Email, Name, Firma, Rolle, LinkedIn).
+// Pencil-Icon → Input + Save/Cancel. Bei Save → onSave(value) → PATCH + reload.
+function EditableField({
+  label,
+  value,
+  onSave,
+  mono,
+  type = "text",
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onSave: (newValue: string) => Promise<void> | void;
+  mono?: boolean;
+  type?: "text" | "email" | "tel";
+  placeholder?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function commit() {
+    if (draft === value) { setEditing(false); return; }
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(draft);
+      setEditing(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (editing) {
+    return (
+      <div className="flex items-start justify-between gap-3">
+        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline flex-shrink-0 pt-1.5">{label}</span>
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0 items-end">
+          <div className="flex gap-1.5 w-full">
+            <input
+              type={type}
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setDraft(value); setEditing(false); } }}
+              placeholder={placeholder}
+              autoFocus
+              className={`flex-1 min-w-0 bg-surface-container-low border border-outline-variant/30 rounded-lg px-2 py-1 font-body text-xs ${mono ? "font-mono" : ""} text-on-surface focus:outline-none focus:border-primary`}
+            />
+            <button onClick={commit} disabled={saving} className="material-symbols-outlined text-primary text-sm hover:text-primary-dim disabled:opacity-50" title="Speichern">check</button>
+            <button onClick={() => { setDraft(value); setEditing(false); setError(null); }} className="material-symbols-outlined text-outline text-sm hover:text-error" title="Abbrechen">close</button>
+          </div>
+          {error && <span className="font-label text-[10px] text-error">{error}</span>}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-start justify-between gap-3 group">
+      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline flex-shrink-0">{label}</span>
+      <div className="flex items-start gap-2 min-w-0">
+        <span className={`font-body text-xs text-on-surface-variant text-right min-w-0 break-words [overflow-wrap:anywhere] ${mono ? "font-mono" : ""}`}>
+          {value || <span className="text-outline">–</span>}
+        </span>
+        <button
+          onClick={() => { setDraft(value); setEditing(true); }}
+          className="material-symbols-outlined text-outline text-xs hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+          title="Bearbeiten"
+        >
+          edit
+        </button>
+      </div>
     </div>
   );
 }
