@@ -59,13 +59,16 @@ export function buildSystemPrompt(
   vars: Partial<PromptVariables>,
 ): string {
   const template = templatesByType[programType] ?? genericUseCase;
+  // Per-program override hat Priorität — erlaubt Custom-Prompts pro sales_program
+  // ohne neue Use-Case-Datei. Falls leer/null → Use-Case-Template-Body.
+  const bodyTemplate = vars.system_prompt_override?.trim() || template.systemPromptBody;
   // DTMF-Consent-Gate wird direkt nach Base-Header eingehängt, falls aktiv.
   // require_consent default = true (opt-out), damit EU-AI-Act-konform.
   const consentEnabled = vars.require_consent !== false;
   const raw =
     interpolate(basePromptHeader, vars) +
     (consentEnabled ? interpolate(consentGateBlock, vars) : "") +
-    interpolate(template.systemPromptBody, vars) +
+    interpolate(bodyTemplate, vars) +
     buildContextBlock(vars);
   return raw;
 }
@@ -84,7 +87,8 @@ export function buildFirstMessage(
   vars: Partial<PromptVariables>,
 ): string {
   const template = templatesByType[programType] ?? genericUseCase;
-  const opener = interpolate(template.firstMessageTemplate, vars).trim();
+  const openerSrc = vars.first_message_override?.trim() || template.firstMessageTemplate;
+  const opener = interpolate(openerSrc, vars).trim();
 
   const disclosure =
     "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird verarbeitet und ausgewertet.";

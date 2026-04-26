@@ -50,4 +50,9 @@ export type PromptVariables = {
   // Datum (gegen Datums-Halluzinationen)
   today_iso: string;
   today_weekday_de: string;
+
+  // Per-program overrides (sales_programs.system_prompt_override / first_message_override).
+  // Wenn gesetzt, ersetzen sie systemPromptBody bzw. firstMessageTemplate des Use-Case-Templates.
+  system_prompt_override?: string;
+  first_message_override?: string;
 };

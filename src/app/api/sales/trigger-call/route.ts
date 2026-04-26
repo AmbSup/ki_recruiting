@@ -22,6 +22,8 @@ type Program = {
   program_type: SalesProgramType | null;
   call_strategy: Record<string, unknown> | null;
   auto_dial: boolean;
+  system_prompt_override: string | null;
+  first_message_override: string | null;
 };
 
 type Lead = {
@@ -61,7 +63,8 @@ export async function POST(req: NextRequest) {
       program:sales_programs(
         id, name, product_pitch, value_proposition, target_persona, booking_link,
         vapi_assistant_id, vapi_phone_number_id, caller_phone_number,
-        program_type, call_strategy, auto_dial
+        program_type, call_strategy, auto_dial,
+        system_prompt_override, first_message_override
       )
     `)
     .eq("id", sales_lead_id)
@@ -182,7 +185,19 @@ export async function POST(req: NextRequest) {
     sales_program_id: program.id,
     today_iso: now.toISOString().slice(0, 10),
     today_weekday_de: weekdayDe,
+    // Per-program prompt overrides — builder.ts checkt diese vor dem use-case template.
+    system_prompt_override: program.system_prompt_override ?? "",
+    first_message_override: program.first_message_override ?? "",
   };
+
+  // custom_fields top-level flatten — damit Vapi-side {{house_type}} ohne Dot-Notation
+  // gegen variableValues matcht. Überschreibt nichts, weil custom_fields-Keys keine
+  // Reserved-Names der vars sind. Werte werden zu strings normalisiert.
+  const cfFlatten = (lead.custom_fields ?? {}) as Record<string, unknown>;
+  for (const [k, v] of Object.entries(cfFlatten)) {
+    if (k in vars) continue;
+    (vars as Record<string, unknown>)[k] = typeof v === "string" ? v : JSON.stringify(v);
+  }
 
   // sales_calls-Row jetzt anlegen, damit wir die ID in variableValues einbauen können
   const { data: callRow, error: callErr } = await supabase
