@@ -23,7 +23,8 @@ type BlockType =
   | "thank_you"
   | "icon_cards"
   | "vertical_tiles"
-  | "free_text";
+  | "free_text"
+  | "box";
 
 type ChoiceItem = {
   id: string;
@@ -95,6 +96,18 @@ type BlockContent = {
   emoji?: string;
   // divider
   spacing?: "sm" | "md" | "lg";
+  // box (Layout-Container, kann Kinder enthalten)
+  box_layout?: "block" | "flex";
+  box_width?: string;
+  box_height?: string;
+  box_max_width?: string;
+  box_direction?: "row" | "column";
+  box_justify?: "start" | "center" | "end" | "space-between" | "space-around";
+  box_align?: "start" | "center" | "end" | "stretch";
+  box_gap?: number;
+  box_border_color?: string;
+  box_border_width?: number;
+  children?: Block[];
 };
 
 type Block = {
@@ -610,6 +623,15 @@ function blockDefaults(type: BlockType): Block {
       { id: uid(), label: "Weiter bewerben!", icon: "check", value: "yes", image_url: "" },
       { id: uid(), label: "Bewerbung abbrechen!", icon: "close", value: "no", image_url: "" },
     ], question: "Was ist Dein nächster Schritt?", card_bg: "#22d3ee", card_icon_color: "#ffffff", card_columns: "2" },
+    box: {
+      box_layout: "block",
+      box_width: "100%",
+      box_direction: "row",
+      box_justify: "start",
+      box_align: "stretch",
+      box_gap: 12,
+      children: [],
+    },
     vertical_tiles: {
       question: "Welchen Bildungshintergrund hast du?",
       show_vtile_image: true,
@@ -630,6 +652,76 @@ function blockDefaults(type: BlockType): Block {
     },
   };
   return { id, type, content: defaults[type] };
+}
+
+// ─── Tree-Helfer für verschachtelte Box-Container ─────────────────────────────
+// Box-Blocks halten ihre Kinder als block.content.children: Block[]. Helfer-
+// Funktionen traversieren rekursiv. Top-Level-Operationen sind nur ein Spezialfall
+// (parent_id = null, blocks = page.blocks).
+
+function findBlockInTree(blocks: Block[], id: string): Block | null {
+  for (const b of blocks) {
+    if (b.id === id) return b;
+    const kids = (b.content.children as Block[] | undefined) ?? [];
+    if (kids.length > 0) {
+      const found = findBlockInTree(kids, id);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function updateBlockInTree(blocks: Block[], id: string, patch: Partial<BlockContent>): Block[] {
+  return blocks.map((b) => {
+    if (b.id === id) return { ...b, content: { ...b.content, ...patch } };
+    const kids = (b.content.children as Block[] | undefined) ?? [];
+    if (kids.length === 0) return b;
+    const newKids = updateBlockInTree(kids, id, patch);
+    return newKids === kids ? b : { ...b, content: { ...b.content, children: newKids } };
+  });
+}
+
+function removeBlockFromTree(blocks: Block[], id: string): Block[] {
+  const filtered = blocks.filter((b) => b.id !== id);
+  return filtered.map((b) => {
+    const kids = (b.content.children as Block[] | undefined) ?? [];
+    if (kids.length === 0) return b;
+    const newKids = removeBlockFromTree(kids, id);
+    return newKids === kids ? b : { ...b, content: { ...b.content, children: newKids } };
+  });
+}
+
+// Fügt newBlock am Ende der Children des parentId-Blocks ein. Wenn parentId null,
+// wird der Aufrufer den Block direkt an die Page-Blocks-Liste anhängen.
+function insertBlockInTree(blocks: Block[], parentId: string, newBlock: Block): Block[] {
+  return blocks.map((b) => {
+    if (b.id === parentId) {
+      const kids = (b.content.children as Block[] | undefined) ?? [];
+      return { ...b, content: { ...b.content, children: [...kids, newBlock] } };
+    }
+    const kids = (b.content.children as Block[] | undefined) ?? [];
+    if (kids.length === 0) return b;
+    return { ...b, content: { ...b.content, children: insertBlockInTree(kids, parentId, newBlock) } };
+  });
+}
+
+// Verschiebt einen Block innerhalb seines direkten Parents (siblings) um dir.
+// Funktioniert auf jeder Ebene des Baums. Stoppt am Container-Rand (kein Cross-Container-Move).
+function moveBlockInTree(blocks: Block[], id: string, dir: -1 | 1): Block[] {
+  const idx = blocks.findIndex((b) => b.id === id);
+  if (idx !== -1) {
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= blocks.length) return blocks;
+    const next = [...blocks];
+    [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+    return next;
+  }
+  return blocks.map((b) => {
+    const kids = (b.content.children as Block[] | undefined) ?? [];
+    if (kids.length === 0) return b;
+    const movedKids = moveBlockInTree(kids, id, dir);
+    return movedKids === kids ? b : { ...b, content: { ...b.content, children: movedKids } };
+  });
 }
 
 function migratePageToBlocks(page: FunnelPage): Block[] {
@@ -685,41 +777,48 @@ const blockConfig: Record<BlockType, { label: string; icon: string; category: "i
   free_text:       { label: "Freitext-Antwort",   icon: "edit_note",      category: "interactive" },
   icon_cards:      { label: "Icon-Kacheln",      icon: "dashboard",      category: "interactive" },
   vertical_tiles:  { label: "Vertikale Kacheln",  icon: "view_agenda",    category: "interactive" },
+  box:             { label: "Box (Layout)",        icon: "dashboard",      category: "simple" },
 };
 
 // ─── Block Preview Renderer ───────────────────────────────────────────────────
 
+// BlockPreview-Callbacks sind dispatch-style (nehmen die Block-Id als ersten Arg).
+// Damit kann BlockPreview seine Box-Children rekursiv mit denselben Callbacks
+// rendern — jedes Kind ruft sie mit seiner eigenen Id auf.
+type BlockPreviewProps = {
+  block: Block;
+  branding: FunnelBranding;
+  selectedBlockId: string | null;
+  isFirst: boolean;
+  isLast: boolean;
+  onSelect: (id: string) => void;
+  onUpdate: (id: string, content: Partial<BlockContent>) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+  onDelete: (id: string) => void;
+  onTextClick: (id: string, fieldKey: string, e: React.MouseEvent) => void;
+  onItemClick: (id: string, itemId: string, e: React.MouseEvent) => void;
+  activeTextField: { blockId: string; fieldKey: string } | null;
+  activeImageItem: { blockId: string; itemId: string } | null;
+};
+
 function BlockPreview({
   block,
   branding,
-  isSelected,
-  onSelect,
-  onUpdate,
-  onMoveUp,
-  onMoveDown,
-  onDelete,
+  selectedBlockId,
   isFirst,
   isLast,
-  activeFieldKey,
+  onSelect,
+  onUpdate,
+  onMove,
+  onDelete,
   onTextClick,
-  activeItemId,
   onItemClick,
-}: {
-  block: Block;
-  branding: FunnelBranding;
-  isSelected: boolean;
-  onSelect: () => void;
-  onUpdate: (content: Partial<BlockContent>) => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onDelete: () => void;
-  isFirst: boolean;
-  isLast: boolean;
-  activeFieldKey: string | null;
-  onTextClick: (fieldKey: string, e: React.MouseEvent) => void;
-  activeItemId: string | null;
-  onItemClick: (itemId: string, e: React.MouseEvent) => void;
-}) {
+  activeTextField,
+  activeImageItem,
+}: BlockPreviewProps) {
+  const isSelected = selectedBlockId === block.id;
+  const activeFieldKey = activeTextField?.blockId === block.id ? activeTextField.fieldKey : null;
+  const activeItemId = activeImageItem?.blockId === block.id ? activeImageItem.itemId : null;
   const [hovered, setHovered] = useState(false);
   const c = block.content;
   const color = branding.primary_color;
@@ -744,7 +843,7 @@ function BlockPreview({
 
   // Helper: click handler + active ring for text
   const tp = (fieldKey: string) => ({
-    onClick: (e: React.MouseEvent) => { e.stopPropagation(); onTextClick(fieldKey, e); },
+    onClick: (e: React.MouseEvent) => { e.stopPropagation(); onTextClick(block.id, fieldKey, e); },
     className: `cursor-pointer transition-all rounded-sm ${activeFieldKey === fieldKey ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`,
   });
 
@@ -762,16 +861,16 @@ function BlockPreview({
         ...(c.block_radius != null ? { borderRadius: `${c.block_radius}px` } : {}),
         ...(typeof c.block_shadow === "string" && c.block_shadow !== "none" ? { boxShadow: shadowMap[c.block_shadow as string] } : {}),
       }}
-      onClick={onSelect}
+      onClick={(e) => { e.stopPropagation(); onSelect(block.id); }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       {/* Hover toolbar */}
       {(hovered || isSelected) && (
         <div className="absolute -top-7 right-0 flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg shadow-md px-1 py-0.5 z-20" onClick={(e) => e.stopPropagation()}>
-          {!isFirst && <button onClick={onMoveUp} className="p-1 hover:bg-gray-100 rounded text-gray-500"><span className="material-symbols-outlined text-xs">arrow_upward</span></button>}
-          {!isLast && <button onClick={onMoveDown} className="p-1 hover:bg-gray-100 rounded text-gray-500"><span className="material-symbols-outlined text-xs">arrow_downward</span></button>}
-          <button onClick={onDelete} className="p-1 hover:bg-red-50 rounded text-red-400"><span className="material-symbols-outlined text-xs">delete</span></button>
+          {!isFirst && <button onClick={() => onMove(block.id, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-500"><span className="material-symbols-outlined text-xs">arrow_upward</span></button>}
+          {!isLast && <button onClick={() => onMove(block.id, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500"><span className="material-symbols-outlined text-xs">arrow_downward</span></button>}
+          <button onClick={() => onDelete(block.id)} className="p-1 hover:bg-red-50 rounded text-red-400"><span className="material-symbols-outlined text-xs">delete</span></button>
         </div>
       )}
 
@@ -872,7 +971,7 @@ function BlockPreview({
                   key={item.id}
                   className={`relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${isItemActive ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
                   style={{ aspectRatio: "1", borderColor: i === 0 ? color : "transparent" }}
-                  onClick={(e) => { e.stopPropagation(); onItemClick(item.id, e); }}
+                  onClick={(e) => { e.stopPropagation(); onItemClick(block.id, item.id, e); }}
                 >
                   {item.image_url ? (
                     <img src={item.image_url} className="w-full h-full object-cover" alt={item.label} />
@@ -1169,6 +1268,72 @@ function BlockPreview({
           </div>
         </div>
       )}
+
+      {/* ── BOX (Layout-Container) ── */}
+      {block.type === "box" && (() => {
+        const layout = (c.box_layout as string | undefined) ?? "block";
+        const direction = (c.box_direction as string | undefined) ?? "row";
+        const justify = (c.box_justify as string | undefined) ?? "start";
+        const align = (c.box_align as string | undefined) ?? "stretch";
+        const gap = (c.box_gap as number | undefined) ?? 12;
+        const width = (c.box_width as string | undefined) || "100%";
+        const height = (c.box_height as string | undefined) || "auto";
+        const maxWidth = c.box_max_width as string | undefined;
+        const borderColor = c.box_border_color as string | undefined;
+        const borderWidth = c.box_border_width as number | undefined;
+        const flexJustifyMap: Record<string, string> = {
+          start: "flex-start", center: "center", end: "flex-end",
+          "space-between": "space-between", "space-around": "space-around",
+        };
+        const flexAlignMap: Record<string, string> = {
+          start: "flex-start", center: "center", end: "flex-end", stretch: "stretch",
+        };
+        const containerStyle: React.CSSProperties = {
+          width,
+          height,
+          maxWidth,
+          ...(borderColor && borderWidth ? { border: `${borderWidth}px solid ${borderColor}` } : {}),
+          ...(layout === "flex" ? {
+            display: "flex",
+            flexDirection: direction === "column" ? "column" : "row",
+            justifyContent: flexJustifyMap[justify] ?? "flex-start",
+            alignItems: flexAlignMap[align] ?? "stretch",
+            gap: `${gap}px`,
+            flexWrap: "wrap",
+          } : {
+            display: "flex",
+            flexDirection: "column",
+            gap: `${gap}px`,
+          }),
+        };
+        const kids = (c.children as Block[] | undefined) ?? [];
+        return (
+          <div style={containerStyle} onClick={(e) => e.stopPropagation()}>
+            {kids.length === 0 ? (
+              <div className="border-2 border-dashed border-outline-variant/40 rounded-xl px-4 py-8 text-center text-outline font-label text-xs">
+                Box ist leer · &quot;Inhalt&quot;-Sektion rechts → Element hinzufügen
+              </div>
+            ) : kids.map((child, ci) => (
+              <BlockPreview
+                key={child.id}
+                block={child}
+                branding={branding}
+                selectedBlockId={selectedBlockId}
+                isFirst={ci === 0}
+                isLast={ci === kids.length - 1}
+                onSelect={onSelect}
+                onUpdate={onUpdate}
+                onMove={onMove}
+                onDelete={onDelete}
+                onTextClick={onTextClick}
+                onItemClick={onItemClick}
+                activeTextField={activeTextField}
+                activeImageItem={activeImageItem}
+              />
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -1402,7 +1567,7 @@ function resolveTileLabel(
 
 // ─── Properties Panel ──────────────────────────────────────────────────────────
 
-function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Partial<BlockContent>) => void }) {
+function PropertiesPanel({ block, onUpdate, onAddChild }: { block: Block; onUpdate: (c: Partial<BlockContent>) => void; onAddChild?: (type: BlockType) => void }) {
   const c = block.content;
 
   const field = (label: string, value: string, onChange: (v: string) => void, placeholder = "") => (
@@ -2096,6 +2261,122 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
           </div>
         </>
       )}
+
+      {/* BOX (Layout-Container) */}
+      {block.type === "box" && (
+        <>
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Size</span>
+            <div className="flex items-center gap-2">
+              <span className="font-label text-[10px] text-outline w-16">Breite</span>
+              <input type="text" value={(c.box_width as string) ?? ""} onChange={(e) => onUpdate({ box_width: e.target.value || undefined })} placeholder="100%"
+                className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-label text-[10px] text-outline w-16">Höhe</span>
+              <input type="text" value={(c.box_height as string) ?? ""} onChange={(e) => onUpdate({ box_height: e.target.value || undefined })} placeholder="auto"
+                className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="font-label text-[10px] text-outline w-16">Max-Br.</span>
+              <input type="text" value={(c.box_max_width as string) ?? ""} onChange={(e) => onUpdate({ box_max_width: e.target.value || undefined })} placeholder="optional"
+                className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+            </div>
+            <p className="font-label text-[9px] text-outline">CSS-Werte: 100%, 320px, auto, 100vh</p>
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Layout</span>
+            <div className="flex gap-1">
+              {(["block", "flex"] as const).map((m) => (
+                <button key={m} type="button" onClick={() => onUpdate({ box_layout: m })}
+                  className={`flex-1 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase transition-colors ${((c.box_layout as string) ?? "block") === m ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}>
+                  {m}
+                </button>
+              ))}
+            </div>
+            {(c.box_layout as string) === "flex" && (
+              <>
+                <div>
+                  <span className="font-label text-[10px] text-outline block mb-1">Direction</span>
+                  <div className="flex gap-1">
+                    {(["row", "column"] as const).map((d) => (
+                      <button key={d} type="button" onClick={() => onUpdate({ box_direction: d })}
+                        className={`flex-1 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase transition-colors ${((c.box_direction as string) ?? "row") === d ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}>
+                        {d}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-label text-[10px] text-outline block mb-1">Justify</span>
+                  <div className="grid grid-cols-3 gap-1">
+                    {(["start", "center", "end", "space-between", "space-around"] as const).map((j) => (
+                      <button key={j} type="button" onClick={() => onUpdate({ box_justify: j })}
+                        className={`py-1.5 rounded-lg font-label text-[9px] font-bold uppercase transition-colors ${((c.box_justify as string) ?? "start") === j ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}>
+                        {j}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-label text-[10px] text-outline block mb-1">Align</span>
+                  <div className="grid grid-cols-4 gap-1">
+                    {(["start", "center", "end", "stretch"] as const).map((a) => (
+                      <button key={a} type="button" onClick={() => onUpdate({ box_align: a })}
+                        className={`py-1.5 rounded-lg font-label text-[9px] font-bold uppercase transition-colors ${((c.box_align as string) ?? "stretch") === a ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}>
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+            <NumberSlider label="Gap" min={0} max={64} step={1} value={(c.box_gap as number | undefined) ?? 12} onChange={(v) => onUpdate({ box_gap: v })} suffix="px" />
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2.5">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Border</span>
+            <div className="flex items-center gap-2">
+              <input type="color" value={(c.box_border_color as string) || "#e5e7eb"} onChange={(e) => onUpdate({ box_border_color: e.target.value })}
+                className="w-8 h-8 rounded-lg border border-outline-variant/20 cursor-pointer p-0.5" />
+              <input type="text" value={(c.box_border_color as string) ?? ""} onChange={(e) => onUpdate({ box_border_color: e.target.value || undefined })} placeholder="kein Rahmen"
+                className="flex-1 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
+              {(c.box_border_color as string) && (
+                <button onClick={() => onUpdate({ box_border_color: undefined, box_border_width: undefined })} className="material-symbols-outlined text-outline text-sm hover:text-error">close</button>
+              )}
+            </div>
+            <NumberSlider label="Border-Breite" min={0} max={8} step={1} value={(c.box_border_width as number | undefined) ?? 0} onChange={(v) => onUpdate({ box_border_width: v === 0 ? undefined : v })} suffix="px" />
+            <p className="font-label text-[9px] text-outline">Hintergrund / Radius / Schatten in den Layout- + Hintergrund-Sektionen oben.</p>
+          </div>
+
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-2">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Inhalt ({((c.children as Block[] | undefined) ?? []).length} Elemente)</span>
+            {((c.children as Block[] | undefined) ?? []).length > 0 && (
+              <ul className="space-y-1">
+                {((c.children as Block[] | undefined) ?? []).map((child) => (
+                  <li key={child.id} className="flex items-center gap-2 px-2 py-1.5 rounded-lg bg-surface-container-lowest">
+                    <span className="material-symbols-outlined text-outline text-sm flex-shrink-0">{blockConfig[child.type]?.icon ?? "widgets"}</span>
+                    <span className="font-label text-xs text-on-surface-variant truncate flex-1">{blockConfig[child.type]?.label ?? child.type}</span>
+                    <span className="font-mono text-[9px] text-outline">{child.id.slice(0, 4)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {onAddChild && (
+              <details className="group">
+                <summary className="cursor-pointer flex items-center gap-1 font-label text-xs font-bold text-primary hover:underline list-none">
+                  <span className="material-symbols-outlined text-sm">add</span>
+                  Element zur Box hinzufügen
+                </summary>
+                <div className="mt-2">
+                  <BlockPickerInline onAdd={onAddChild} />
+                </div>
+              </details>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -2242,7 +2523,10 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
   useEffect(() => { load(); }, [load]);
 
   const currentPage = pages[selectedPageIdx];
-  const selectedBlock = currentPage?.blocks.find((b) => b.id === selectedBlockId) ?? null;
+  // Tree-aware Selection-Resolver — findet auch verschachtelte Box-Children.
+  const selectedBlock = currentPage && selectedBlockId
+    ? findBlockInTree(currentPage.blocks, selectedBlockId)
+    : null;
 
   // Deselect block when page changes
   useEffect(() => { setSelectedBlockId(null); }, [selectedPageIdx]);
@@ -2299,41 +2583,45 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
 
   function updateBlock(blockId: string, content: Partial<BlockContent>) {
     setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
-      ...p, blocks: p.blocks.map((b) => b.id === blockId ? { ...b, content: { ...b.content, ...content } } : b)
+      ...p, blocks: updateBlockInTree(p.blocks, blockId, content),
     }));
   }
 
   function updateImageItem(blockId: string, itemId: string, patch: Partial<ChoiceItem>) {
+    // Tree-aware: findet den image_choice/list_choice/etc. Block, auch wenn er als
+    // Kind eines Box-Containers liegt. Patcht items[itemId].
+    const target = currentPage ? findBlockInTree(currentPage.blocks, blockId) : null;
+    if (!target) return;
+    const items = (target.content.items ?? []).map((it) => it.id === itemId ? { ...it, ...patch } : it);
     setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
-      ...p,
-      blocks: p.blocks.map((b) => {
-        if (b.id !== blockId) return b;
-        const items = (b.content.items ?? []).map((it) => it.id === itemId ? { ...it, ...patch } : it);
-        return { ...b, content: { ...b.content, items } };
-      }),
+      ...p, blocks: updateBlockInTree(p.blocks, blockId, { items }),
     }));
   }
 
-  function addBlock(type: BlockType) {
+  // addBlock akzeptiert optionalen parentBoxId — wenn gesetzt, wird der neue Block
+  // als Kind dieses Box-Containers eingefügt; sonst flat ans Ende der Page-Liste.
+  function addBlock(type: BlockType, parentBoxId?: string) {
     const newBlock = blockDefaults(type);
-    setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : { ...p, blocks: [...p.blocks, newBlock] }));
+    setPages((prev) => prev.map((p, i) => {
+      if (i !== selectedPageIdx) return p;
+      if (parentBoxId) {
+        return { ...p, blocks: insertBlockInTree(p.blocks, parentBoxId, newBlock) };
+      }
+      return { ...p, blocks: [...p.blocks, newBlock] };
+    }));
     setSelectedBlockId(newBlock.id);
   }
 
   function moveBlock(blockId: string, dir: -1 | 1) {
-    setPages((prev) => prev.map((p, i) => {
-      if (i !== selectedPageIdx) return p;
-      const idx = p.blocks.findIndex((b) => b.id === blockId);
-      const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= p.blocks.length) return p;
-      const blocks = [...p.blocks];
-      [blocks[idx], blocks[newIdx]] = [blocks[newIdx], blocks[idx]];
-      return { ...p, blocks };
+    setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
+      ...p, blocks: moveBlockInTree(p.blocks, blockId, dir),
     }));
   }
 
   function deleteBlock(blockId: string) {
-    setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : { ...p, blocks: p.blocks.filter((b) => b.id !== blockId) }));
+    setPages((prev) => prev.map((p, i) => i !== selectedPageIdx ? p : {
+      ...p, blocks: removeBlockFromTree(p.blocks, blockId),
+    }));
     if (selectedBlockId === blockId) setSelectedBlockId(null);
   }
 
@@ -2679,29 +2967,28 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                     key={block.id}
                     block={block}
                     branding={branding}
-                    isSelected={selectedBlockId === block.id}
-                    onSelect={() => setSelectedBlockId(block.id)}
-                    onUpdate={(c) => updateBlock(block.id, c)}
-                    onMoveUp={() => moveBlock(block.id, -1)}
-                    onMoveDown={() => moveBlock(block.id, 1)}
-                    onDelete={() => deleteBlock(block.id)}
+                    selectedBlockId={selectedBlockId}
                     isFirst={i === 0}
                     isLast={i === currentPage.blocks.length - 1}
-                    activeFieldKey={activeTextField?.blockId === block.id ? activeTextField.fieldKey : null}
-                    onTextClick={(fieldKey, e) => {
+                    onSelect={(id) => setSelectedBlockId(id)}
+                    onUpdate={(id, c) => updateBlock(id, c)}
+                    onMove={(id, dir) => moveBlock(id, dir)}
+                    onDelete={(id) => deleteBlock(id)}
+                    onTextClick={(id, fieldKey, e) => {
                       const rect = (e.target as HTMLElement).getBoundingClientRect();
                       const container = (e.target as HTMLElement).closest(".relative");
                       const containerRect = container?.getBoundingClientRect() ?? rect;
-                      setActiveTextField({ blockId: block.id, fieldKey, rect: new DOMRect(rect.left - containerRect.left, rect.top - containerRect.top, rect.width, rect.height) });
-                      setSelectedBlockId(block.id);
+                      setActiveTextField({ blockId: id, fieldKey, rect: new DOMRect(rect.left - containerRect.left, rect.top - containerRect.top, rect.width, rect.height) });
+                      setSelectedBlockId(id);
                       setActiveImageItem(null);
                     }}
-                    activeItemId={activeImageItem?.blockId === block.id ? activeImageItem.itemId : null}
-                    onItemClick={(itemId) => {
-                      setActiveImageItem({ blockId: block.id, itemId });
-                      setSelectedBlockId(block.id);
+                    onItemClick={(id, itemId) => {
+                      setActiveImageItem({ blockId: id, itemId });
+                      setSelectedBlockId(id);
                       setActiveTextField(null);
                     }}
+                    activeTextField={activeTextField}
+                    activeImageItem={activeImageItem}
                   />
                 ))}
 
@@ -2793,7 +3080,11 @@ export function FunnelEditor({ funnelId }: { funnelId: string }) {
                   onClose={() => setActiveTextField(null)}
                 />
               ) : !activeImageItem && selectedBlock ? (
-                <PropertiesPanel block={selectedBlock} onUpdate={(c) => updateBlock(selectedBlock.id, c)} />
+                <PropertiesPanel
+                  block={selectedBlock}
+                  onUpdate={(c) => updateBlock(selectedBlock.id, c)}
+                  onAddChild={(type) => addBlock(type, selectedBlock.id)}
+                />
               ) : !activeImageItem && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <span className="material-symbols-outlined text-3xl text-outline-variant mb-3">touch_app</span>

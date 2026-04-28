@@ -7,7 +7,8 @@ import { useState, useEffect, useRef } from "react";
 type BlockType =
   | "profile_header" | "multiple_choice" | "image_choice" | "list_choice"
   | "contact_form" | "text" | "button" | "image" | "divider" | "rating"
-  | "welcome" | "loading_screen" | "thank_you" | "icon_cards" | "vertical_tiles" | "free_text";
+  | "welcome" | "loading_screen" | "thank_you" | "icon_cards" | "vertical_tiles" | "free_text"
+  | "box";
 
 type ChoiceItem = {
   id: string;
@@ -252,6 +253,114 @@ function loadFbSdk(appId: string) {
   document.body.appendChild(js);
 }
 
+// ─── renderBlock — top-level recursive render ────────────────────────────────
+// Wickelt jeden Block in den Page-Wrapper-Style (background, padding, radius,
+// shadow). Box-Blocks bekommen zusätzlich Flex-Layout + rekursive Children.
+
+type RenderCtx = {
+  color: string;
+  textColor: string;
+  branding: FunnelBranding;
+  answers: Record<string, string[]>;
+  answerKey: (block: Block) => string;
+  toggleChoice: (blockId: string, value: string, selection: "single" | "multiple", questionKey?: string) => void;
+  advance: () => void;
+  form: Record<string, string>;
+  setForm: (updater: (f: Record<string, string>) => Record<string, string>) => void;
+  consent: boolean;
+  setConsent: (v: boolean) => void;
+  consentText: string | null;
+  cvFile: File | null;
+  setCvFile: (f: File | null) => void;
+  submitting: boolean;
+  handleSubmit: () => Promise<void>;
+  submitted: boolean;
+  submitError: string | null;
+};
+
+function boxStyle(c: BlockContent): React.CSSProperties {
+  const layout = (c.box_layout as string | undefined) ?? "block";
+  const direction = (c.box_direction as string | undefined) ?? "row";
+  const justify = (c.box_justify as string | undefined) ?? "start";
+  const align = (c.box_align as string | undefined) ?? "stretch";
+  const gap = (c.box_gap as number | undefined) ?? 12;
+  const width = (c.box_width as string | undefined) || "100%";
+  const height = (c.box_height as string | undefined) || "auto";
+  const maxWidth = c.box_max_width as string | undefined;
+  const borderColor = c.box_border_color as string | undefined;
+  const borderWidth = c.box_border_width as number | undefined;
+  const flexJustifyMap: Record<string, string> = {
+    start: "flex-start", center: "center", end: "flex-end",
+    "space-between": "space-between", "space-around": "space-around",
+  };
+  const flexAlignMap: Record<string, string> = {
+    start: "flex-start", center: "center", end: "flex-end", stretch: "stretch",
+  };
+  return {
+    width, height, maxWidth,
+    ...(borderColor && borderWidth ? { border: `${borderWidth}px solid ${borderColor}` } : {}),
+    ...(layout === "flex" ? {
+      display: "flex",
+      flexDirection: direction === "column" ? "column" : "row",
+      justifyContent: flexJustifyMap[justify] ?? "flex-start",
+      alignItems: flexAlignMap[align] ?? "stretch",
+      gap: `${gap}px`,
+      flexWrap: "wrap",
+    } : {
+      display: "flex",
+      flexDirection: "column",
+      gap: `${gap}px`,
+    }),
+  };
+}
+
+function renderBlock(block: Block, ctx: RenderCtx): React.ReactNode {
+  const c = block.content;
+  const wrapperStyle: React.CSSProperties = {
+    background: (c.bg_gradient as string) ?? (c.bg_color as string) ?? undefined,
+    paddingTop: (c.block_padding_t as number) != null ? `${c.block_padding_t}px` : undefined,
+    paddingRight: (c.block_padding_r as number) != null ? `${c.block_padding_r}px` : undefined,
+    paddingBottom: (c.block_padding_b as number) != null ? `${c.block_padding_b}px` : undefined,
+    paddingLeft: (c.block_padding_l as number) != null ? `${c.block_padding_l}px` : undefined,
+    ...((c.block_radius as number) != null ? { borderRadius: `${c.block_radius}px` } : {}),
+    ...(typeof c.block_shadow === "string" && c.block_shadow !== "none" ? { boxShadow: shadowMap[c.block_shadow as string] } : {}),
+  };
+
+  if (block.type === "box") {
+    const kids = (c.children as Block[] | undefined) ?? [];
+    return (
+      <div key={block.id} style={{ ...wrapperStyle, ...boxStyle(c) }}>
+        {kids.map((child) => renderBlock(child, ctx))}
+      </div>
+    );
+  }
+
+  return (
+    <div key={block.id} style={wrapperStyle}>
+      <BlockRenderer
+        block={block}
+        color={ctx.color}
+        textColor={ctx.textColor}
+        branding={ctx.branding}
+        answers={ctx.answers[ctx.answerKey(block)] ?? []}
+        onToggleChoice={(value, selection) => ctx.toggleChoice(block.id, value, selection, ctx.answerKey(block))}
+        onAdvance={ctx.advance}
+        form={ctx.form}
+        onFormChange={(patch) => ctx.setForm((f) => ({ ...f, ...patch }))}
+        consent={ctx.consent}
+        onConsentChange={ctx.setConsent}
+        consentText={ctx.consentText}
+        cvFile={ctx.cvFile}
+        onCvChange={ctx.setCvFile}
+        submitting={ctx.submitting}
+        onSubmit={ctx.handleSubmit}
+        submitted={ctx.submitted}
+        submitError={ctx.submitError}
+      />
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; pages: FunnelPage[] }) {
@@ -469,39 +578,11 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
       )}
 
       <div ref={containerRef} className="flex-1 overflow-y-auto">
-        {currentPage.blocks.map((block) => (
-          <div key={block.id} style={{
-            background: (block.content.bg_gradient as string) ?? (block.content.bg_color as string) ?? undefined,
-            paddingTop: (block.content.block_padding_t as number) != null ? `${block.content.block_padding_t}px` : undefined,
-            paddingRight: (block.content.block_padding_r as number) != null ? `${block.content.block_padding_r}px` : undefined,
-            paddingBottom: (block.content.block_padding_b as number) != null ? `${block.content.block_padding_b}px` : undefined,
-            paddingLeft: (block.content.block_padding_l as number) != null ? `${block.content.block_padding_l}px` : undefined,
-            ...((block.content.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${block.content.block_gap}px` } : {}),
-            ...((block.content.block_radius as number) != null ? { borderRadius: `${block.content.block_radius}px` } : {}),
-            ...(typeof block.content.block_shadow === "string" && block.content.block_shadow !== "none" ? { boxShadow: shadowMap[block.content.block_shadow as string] } : {}),
-          }}>
-          <BlockRenderer
-            block={block}
-            color={color}
-            textColor={textColor}
-            branding={branding}
-            answers={answers[answerKey(block)] ?? []}
-            onToggleChoice={(value, selection) => toggleChoice(block.id, value, selection, answerKey(block))}
-            onAdvance={advance}
-            form={form}
-            onFormChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
-            consent={consent}
-            onConsentChange={setConsent}
-            consentText={funnel.consent_text}
-            cvFile={cvFile}
-            onCvChange={setCvFile}
-            submitting={submitting}
-            onSubmit={handleSubmit}
-            submitted={submitted}
-            submitError={submitError}
-          />
-          </div>
-        ))}
+        {currentPage.blocks.map((block) => renderBlock(block, {
+          color, textColor, branding, answers, answerKey, toggleChoice,
+          advance, form, setForm, consent, setConsent, consentText: funnel.consent_text,
+          cvFile, setCvFile, submitting, handleSubmit, submitted, submitError,
+        }))}
       </div>
     </Screen>
   );
