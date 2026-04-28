@@ -145,6 +145,15 @@ function headlineStyle(
   };
 }
 
+// Shadow-Skala (block_shadow + vtile_shadow). Werte spiegeln Tailwind shadow-* nach.
+const shadowMap: Record<string, string> = {
+  none: "none",
+  sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+  md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+  lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  xl: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+};
+
 // Hex → rgba (für Tile-Bar-Hintergrund mit Opacity).
 function hexToRgba(hex: string, opacityPercent: number): string {
   const clean = (hex || "").replace("#", "");
@@ -468,6 +477,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
             paddingBottom: (block.content.block_padding_b as number) != null ? `${block.content.block_padding_b}px` : undefined,
             paddingLeft: (block.content.block_padding_l as number) != null ? `${block.content.block_padding_l}px` : undefined,
             ...((block.content.block_gap as number) != null ? { display: "flex", flexDirection: "column" as const, gap: `${block.content.block_gap}px` } : {}),
+            ...((block.content.block_radius as number) != null ? { borderRadius: `${block.content.block_radius}px` } : {}),
+            ...(typeof block.content.block_shadow === "string" && block.content.block_shadow !== "none" ? { boxShadow: shadowMap[block.content.block_shadow as string] } : {}),
           }}>
           <BlockRenderer
             block={block}
@@ -1013,6 +1024,7 @@ function BlockRenderer({
     const borderColor = (c.vtile_border as string) || "#E5E7EB";
     const labelColor = (c.vtile_label_color as string) || "#111827";
     const imgSize = (c.vtile_image_size as number | undefined) ?? 48;
+    const tileShadow = (c.vtile_shadow as string | undefined) ?? "none";
     const labelStyle = vtileTextStyle(c, "vtile_label", { color: "#111827", align: "left", lineHeight: 1.2 });
     const sublabelStyle = vtileTextStyle(c, "vtile_sublabel", { color: "#6B7280", align: "left", lineHeight: 1.2 });
     return (
@@ -1039,6 +1051,7 @@ function BlockRenderer({
                   minHeight: `${height}px`,
                   width,
                   maxWidth: "100%",
+                  ...(tileShadow !== "none" ? { boxShadow: shadowMap[tileShadow] } : {}),
                 }}
               >
                 {showImg ? (

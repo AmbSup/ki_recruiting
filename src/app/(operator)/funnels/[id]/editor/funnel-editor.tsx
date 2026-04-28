@@ -141,7 +141,19 @@ const gradientPresets = [
   { label: "Grün → Cyan", value: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)" },
   { label: "Orange → Gelb", value: "linear-gradient(135deg, #f5a623 0%, #f7dc6f 100%)" },
   { label: "Blau → Cyan", value: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)" },
+  { label: "Sunset Warm", value: "linear-gradient(135deg, #2d1810 0%, #d97706 50%, #fbbf24 100%)" },
+  { label: "Amber Dunkel", value: "linear-gradient(135deg, #1f1611 0%, #92400e 60%, #f59e0b 100%)" },
+  { label: "Rot → Schwarz", value: "linear-gradient(135deg, #1c1917 0%, #44403c 100%)" },
 ];
+
+// Shadow-Skala für block_shadow + vtile_shadow (Card-Look). Werte spiegeln Tailwind shadow-* nach.
+const shadowMap: Record<string, string> = {
+  none: "none",
+  sm: "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+  md: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+  lg: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)",
+  xl: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
+};
 
 const popularIcons = [
   "check", "star", "favorite", "rocket_launch", "work", "school", "trending_up", "bolt",
@@ -747,6 +759,8 @@ function BlockPreview({
         paddingRight: (c.block_padding_r as number) != null ? `${c.block_padding_r}px` : undefined,
         paddingBottom: (c.block_padding_b as number) != null ? `${c.block_padding_b}px` : undefined,
         paddingLeft: (c.block_padding_l as number) != null ? `${c.block_padding_l}px` : undefined,
+        ...(c.block_radius != null ? { borderRadius: `${c.block_radius}px` } : {}),
+        ...(typeof c.block_shadow === "string" && c.block_shadow !== "none" ? { boxShadow: shadowMap[c.block_shadow as string] } : {}),
       }}
       onClick={onSelect}
       onMouseEnter={() => setHovered(true)}
@@ -1111,6 +1125,7 @@ function BlockPreview({
               const borderColor = (c.vtile_border as string) || "#E5E7EB";
               const imgSize = (c.vtile_image_size as number | undefined) ?? 48;
               const previewImgSize = Math.max(20, Math.round(imgSize * 0.66));
+              const tileShadow = (c.vtile_shadow as string | undefined) ?? "none";
               return (
                 <div key={item.id} className="flex items-center gap-2 mx-auto"
                   style={{
@@ -1121,6 +1136,7 @@ function BlockPreview({
                     minHeight: `${Math.max(44, Math.round(minH * 0.7))}px`,
                     width: widthVal,
                     maxWidth: "100%",
+                    ...(tileShadow !== "none" ? { boxShadow: shadowMap[tileShadow] } : {}),
                   }}>
                   {showImg && (
                     <div className="flex-shrink-0 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden" style={{ width: `${previewImgSize}px`, height: `${previewImgSize}px` }}>
@@ -1502,6 +1518,33 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
             <input type="number" min={0} max={60} value={(c.block_gap as number) ?? ""} onChange={(e) => onUpdate({ block_gap: e.target.value ? Number(e.target.value) : undefined })} placeholder="0"
               className="w-16 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-primary" />
             <span className="font-label text-[9px] text-outline">Vertikaler Abstand</span>
+          </div>
+        </div>
+        {/* Card-Look: Eckenradius + Schatten — geben dem Block ein "schwebendes Card"-Gefühl. */}
+        <div className="bg-surface-container-low rounded-xl p-3 mt-2 space-y-2">
+          <span className="font-label text-[10px] font-bold text-outline block">Card-Look</span>
+          <div className="flex items-center gap-2">
+            <span className="font-label text-[10px] text-outline w-16 flex-shrink-0">Radius (px)</span>
+            <input type="number" min={0} max={48}
+              value={(c.block_radius as number) ?? ""}
+              onChange={(e) => onUpdate({ block_radius: e.target.value ? Number(e.target.value) : undefined })}
+              placeholder="0"
+              className="w-20 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs text-center focus:outline-none focus:border-primary" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="font-label text-[10px] text-outline w-16 flex-shrink-0">Schatten</span>
+            <div className="flex gap-1 flex-1">
+              {(["none", "sm", "md", "lg", "xl"] as const).map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => onUpdate({ block_shadow: s === "none" ? undefined : s })}
+                  className={`flex-1 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase transition-colors ${(c.block_shadow ?? "none") === s ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1954,6 +1997,21 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
             <NumberSlider label="Padding" min={4} max={32} step={1} value={(c.vtile_padding as number | undefined) ?? 16} onChange={(v) => onUpdate({ vtile_padding: v })} suffix="px" />
             <NumberSlider label="Eckenradius" min={0} max={32} step={1} value={(c.vtile_radius as number | undefined) ?? 16} onChange={(v) => onUpdate({ vtile_radius: v })} suffix="px" />
             <NumberSlider label="Bildgröße" min={16} max={80} step={1} value={(c.vtile_image_size as number | undefined) ?? 48} onChange={(v) => onUpdate({ vtile_image_size: v })} suffix="px" />
+            <div>
+              <label className="font-label text-[10px] text-outline block mb-1">Schatten</label>
+              <div className="flex gap-1">
+                {(["none", "sm", "md", "lg", "xl"] as const).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => onUpdate({ vtile_shadow: s === "none" ? undefined : s })}
+                    className={`flex-1 py-1.5 rounded-lg font-label text-[10px] font-bold uppercase transition-colors ${((c.vtile_shadow as string | undefined) ?? "none") === s ? "bg-primary text-on-primary" : "bg-surface-container-lowest text-on-surface-variant hover:bg-surface-container"}`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <TextStyleControls
