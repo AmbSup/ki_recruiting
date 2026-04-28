@@ -123,6 +123,28 @@ function vtileTextStyle(
   };
 }
 
+// Headline-Style: liest <fieldKey>_size/_color/_align/_font/_font_size/_line_height aus
+// block.content und mapped auf headlineSizeMap (größere Skala als sizeMap). Wird von ALLEN
+// Block-Typen im Player für die Frage/Headline genutzt — sonst rendern manche hardcoded
+// und ignorieren die Style-Settings aus dem Builder.
+function headlineStyle(
+  c: BlockContent,
+  fieldKey: string = "question",
+  defaults: { color?: string; align?: "left" | "center" | "right"; lineHeight?: number } = {},
+): React.CSSProperties {
+  const pxSize = c[`${fieldKey}_font_size`] as number | undefined;
+  const fontKey = c[`${fieldKey}_font`] as string | undefined;
+  const fontVar = fontKey ? fontVarMap[fontKey] : undefined;
+  const lh = c[`${fieldKey}_line_height`] as number | undefined;
+  return {
+    fontSize: pxSize ? `${pxSize}px` : headlineSizeMap[(c[`${fieldKey}_size`] as string) ?? "md"],
+    color: (c[`${fieldKey}_color`] as string) || defaults.color || "#111827",
+    textAlign: ((c[`${fieldKey}_align`] as string) || defaults.align || "left") as "left" | "center" | "right",
+    ...(fontVar ? { fontFamily: fontVar } : {}),
+    ...(lh != null ? { lineHeight: lh } : (defaults.lineHeight != null ? { lineHeight: defaults.lineHeight } : {})),
+  };
+}
+
 // Hex → rgba (für Tile-Bar-Hintergrund mit Opacity).
 function hexToRgba(hex: string, opacityPercent: number): string {
   const clean = (hex || "").replace("#", "");
@@ -590,7 +612,7 @@ function BlockRenderer({
     const hasSelection = answers.length > 0;
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black mb-1 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <h2 className="font-black mb-1" style={{ ...headlineStyle(c, "question", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         {sel === "multiple" && <p className="text-xs text-gray-400 mb-3">Mehrere Antworten möglich</p>}
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
@@ -625,7 +647,7 @@ function BlockRenderer({
   if (block.type === "image_choice") {
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <h2 className="font-black mb-3" style={{ ...headlineStyle(c, "question", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className="grid grid-cols-2 gap-2 mb-4">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
@@ -673,7 +695,7 @@ function BlockRenderer({
   if (block.type === "list_choice") {
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black mb-3 leading-tight" style={{ fontSize: headlineSizeMap[(c.question_size as string) ?? "md"], color: (c.question_color as string) || "#111827" }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <h2 className="font-black mb-3" style={{ ...headlineStyle(c, "question", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className="space-y-2">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
@@ -700,7 +722,7 @@ function BlockRenderer({
     const isValid = nameValid && form.email && consent;
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h2>
+        <h2 className="font-black mb-4" style={{ ...headlineStyle(c, "headline", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h2>
         <div className="space-y-3 mb-4">
           {c.show_name_split ? (
             <>
@@ -924,12 +946,7 @@ function BlockRenderer({
     const isRequired = (c.is_required as boolean) ?? true;
     return (
       <div className="px-5 py-6" style={(c.block_gap as number) != null ? { display: "flex", flexDirection: "column", gap: `${c.block_gap}px` } : undefined}>
-        <h2 className="font-black leading-tight" style={{
-          fontSize: (c.question_font_size as number) ? `${c.question_font_size}px` : headlineSizeMap[(c.question_size as string) ?? "md"],
-          color: (c.question_color as string) || "#111827",
-          textAlign: ((c.question_align as string) || "left") as "left" | "center" | "right",
-          ...((c.question_font as string) ? { fontFamily: fontVarMap[c.question_font as string] } : {}),
-        }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <h2 className="font-black" style={{ ...headlineStyle(c, "question", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <textarea
           value={curAnswer}
           onChange={(e) => onToggleChoice(e.target.value, "single")}
@@ -966,7 +983,7 @@ function BlockRenderer({
     const cols = (c.card_columns as string) === "1" ? "grid-cols-1" : "grid-cols-2";
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-4 text-center">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <h2 className="font-black mb-4" style={{ ...headlineStyle(c, "question", { align: "center", lineHeight: 1.2 }) }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className={`grid gap-3 ${cols}`}>
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
@@ -1000,7 +1017,7 @@ function BlockRenderer({
     const sublabelStyle = vtileTextStyle(c, "vtile_sublabel", { color: "#6B7280", align: "left", lineHeight: 1.2 });
     return (
       <div className="px-5 py-6">
-        <h2 className="font-black text-lg text-gray-900 mb-4">{renderTextWithIcons((c.question as string) || "Frage")}</h2>
+        <h2 className="font-black mb-4" style={{ ...headlineStyle(c, "question", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.question as string) || "Frage")}</h2>
         <div className="flex flex-col gap-3">
           {(c.items ?? []).map((item) => {
             const selected = answers.includes(item.value);
