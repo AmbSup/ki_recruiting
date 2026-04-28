@@ -1137,11 +1137,11 @@ function BlockPreview({
                   <div className="flex-1 min-w-0">
                     {(() => {
                       const lp = tp("vtile_label");
-                      return <div onClick={lp.onClick} className={`truncate ${lp.className}`} style={{ ...ts("vtile_label", { size: "sm", color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 700 }}>{item.label}</div>;
+                      return <div onClick={lp.onClick} className={`whitespace-pre-wrap break-words ${lp.className}`} style={{ ...ts("vtile_label", { size: "sm", color: "#111827", align: "left", lineHeight: 1.2 }), fontWeight: 700 }}>{item.label}</div>;
                     })()}
                     {item.sublabel && (() => {
                       const sp = tp("vtile_sublabel");
-                      return <div onClick={sp.onClick} className={`truncate ${sp.className}`} style={ts("vtile_sublabel", { size: "sm", color: "#6B7280", align: "left", lineHeight: 1.2 })}>{item.sublabel}</div>;
+                      return <div onClick={sp.onClick} className={`whitespace-pre-wrap break-words ${sp.className}`} style={ts("vtile_sublabel", { size: "sm", color: "#6B7280", align: "left", lineHeight: 1.2 })}>{item.sublabel}</div>;
                     })()}
                   </div>
                   <span className="material-symbols-outlined text-sm flex-shrink-0" style={{ color: isSelected ? color : "#9CA3AF" }}>
@@ -2017,13 +2017,13 @@ function PropertiesPanel({ block, onUpdate }: { block: Block; onUpdate: (c: Part
             <div className="space-y-2">
               {(c.items ?? []).map((item, i) => (
                 <div key={item.id} className="bg-surface-container-low rounded-xl p-2.5 border border-outline-variant/10 space-y-1.5">
-                  <div className="flex gap-1.5 items-center">
-                    <input value={item.label} onChange={(e) => updateItem(i, { label: e.target.value })} placeholder="Titel"
-                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
-                    <button onClick={() => removeItem(i)} className="material-symbols-outlined text-outline hover:text-error text-sm">close</button>
+                  <div className="flex gap-1.5 items-start">
+                    <textarea value={item.label} onChange={(e) => updateItem(i, { label: e.target.value })} placeholder="Titel" rows={1}
+                      className="flex-1 bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary resize-y leading-relaxed" />
+                    <button onClick={() => removeItem(i)} className="material-symbols-outlined text-outline hover:text-error text-sm mt-1">close</button>
                   </div>
-                  <input value={item.sublabel ?? ""} onChange={(e) => updateItem(i, { sublabel: e.target.value })} placeholder="Untertitel (optional)"
-                    className="w-full bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary" />
+                  <textarea value={item.sublabel ?? ""} onChange={(e) => updateItem(i, { sublabel: e.target.value })} placeholder="Untertitel (optional, Enter für Zeilenumbruch)" rows={2}
+                    className="w-full bg-surface-container border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary resize-y leading-relaxed" />
                   <div className="flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-outline text-sm w-5 text-center">{item.icon || "circle"}</span>
                     <input value={item.icon} onChange={(e) => updateItem(i, { icon: e.target.value })} placeholder="Icon (z.B. school)"

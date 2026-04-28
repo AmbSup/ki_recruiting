@@ -1038,8 +1038,8 @@ function BlockRenderer({
                   )
                 )}
                 <div className="flex-1 min-w-0">
-                  <div className="truncate" style={{ ...labelStyle, fontWeight: 700 }}>{item.label}</div>
-                  {item.sublabel && <div className="truncate" style={{ ...sublabelStyle, marginTop: 2 }}>{item.sublabel}</div>}
+                  <div className="whitespace-pre-wrap break-words" style={{ ...labelStyle, fontWeight: 700 }}>{item.label}</div>
+                  {item.sublabel && <div className="whitespace-pre-wrap break-words" style={{ ...sublabelStyle, marginTop: 2 }}>{item.sublabel}</div>}
                 </div>
                 <span className="material-symbols-outlined text-xl flex-shrink-0" style={{ color: selected ? color : "#9CA3AF" }}>
                   {selected ? "radio_button_checked" : "radio_button_unchecked"}
