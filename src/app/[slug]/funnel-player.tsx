@@ -56,11 +56,14 @@ type BlockContent = {
   emoji?: string; spacing?: "sm" | "md" | "lg";
 };
 
+// Inline-Mini-Markdown: **fett** + {{material_icon}}. Kein verschachteltes Markdown.
 function renderTextWithIcons(text: string) {
-  const parts = text.split(/(\{\{[a-z_]+\}\})/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\{\{[a-z_]+\}\})/g);
   return parts.map((part, i) => {
-    const match = part.match(/^\{\{([a-z_]+)\}\}$/);
-    if (match) return <span key={i} className="material-symbols-outlined align-middle" style={{ fontSize: "1.2em" }}>{match[1]}</span>;
+    const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
+    if (boldMatch) return <strong key={i}>{boldMatch[1]}</strong>;
+    const iconMatch = part.match(/^\{\{([a-z_]+)\}\}$/);
+    if (iconMatch) return <span key={i} className="material-symbols-outlined align-middle" style={{ fontSize: "1.2em" }}>{iconMatch[1]}</span>;
     return part;
   });
 }
@@ -936,16 +939,20 @@ function BlockRenderer({
 
   // ── BUTTON ──
   if (block.type === "button") {
+    const customWidth = c.btn_width as string | undefined;
+    const customPadding = c.btn_padding as number | undefined;
     return (
       <div className="px-5 py-3">
         <button
           onClick={onAdvance}
-          className="w-full py-4 font-black text-sm transition-all active:scale-95"
+          className={`font-black text-sm transition-all active:scale-95 ${customWidth ? "" : "w-full"} ${customPadding != null ? "" : "py-4"}`}
           style={{
             ...(c.style === "outline"
               ? { border: `2px solid ${color}`, color: (c.btn_color as string) || color, background: (c.btn_bg as string) || "transparent" }
               : { background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor }),
             borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px",
+            ...(customWidth ? { width: cssVal(customWidth, undefined) } : {}),
+            ...(customPadding != null ? { padding: `${customPadding}px` } : {}),
           }}
         >
           {renderTextWithIcons((c.label as string) || "Weiter →")}

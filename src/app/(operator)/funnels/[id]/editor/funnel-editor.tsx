@@ -206,11 +206,14 @@ const defaultBranding: FunnelBranding = {
 };
 
 // Render {{icon_name}} as Material Symbol inline icons
+// Inline-Mini-Markdown: **fett** + {{material_icon}}. Kein verschachteltes Markdown.
 function renderTextWithIcons(text: string) {
-  const parts = text.split(/(\{\{[a-z_]+\}\})/g);
+  const parts = text.split(/(\*\*[^*]+\*\*|\{\{[a-z_]+\}\})/g);
   return parts.map((part, i) => {
-    const match = part.match(/^\{\{([a-z_]+)\}\}$/);
-    if (match) return <span key={i} className="material-symbols-outlined align-middle" style={{ fontSize: "1.2em" }}>{match[1]}</span>;
+    const boldMatch = part.match(/^\*\*([^*]+)\*\*$/);
+    if (boldMatch) return <strong key={i}>{boldMatch[1]}</strong>;
+    const iconMatch = part.match(/^\{\{([a-z_]+)\}\}$/);
+    if (iconMatch) return <span key={i} className="material-symbols-outlined align-middle" style={{ fontSize: "1.2em" }}>{iconMatch[1]}</span>;
     return part;
   });
 }
@@ -1078,21 +1081,27 @@ function BlockPreview({
       )}
 
       {/* ── BUTTON ── */}
-      {block.type === "button" && (
-        <div className="px-4 py-2">
-          <button {...tp("btn")}
-            className={`w-full py-3 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
-            style={{
-              ...(c.style === "outline" ? { border: `2px solid ${color}`, color: (c.btn_color as string) || color, background: (c.btn_bg as string) || "transparent" } : { background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor }),
-              ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}),
-              ...((c.btn_height as string) ? { height: cssVal(c.btn_height as string, undefined) } : {}),
-              fontSize: ts("btn", { size: "sm" }).fontSize,
-            }}
-          >
-            {renderTextWithIcons((c.label as string) || "Weiter →")}
-          </button>
-        </div>
-      )}
+      {block.type === "button" && (() => {
+        const customWidth = c.btn_width as string | undefined;
+        const customPadding = c.btn_padding as number | undefined;
+        return (
+          <div className="px-4 py-2">
+            <button {...tp("btn")}
+              className={`rounded-2xl font-black text-xs cursor-pointer transition-all ${customWidth ? "" : "w-full"} ${customPadding != null ? "" : "py-3"} ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
+              style={{
+                ...(c.style === "outline" ? { border: `2px solid ${color}`, color: (c.btn_color as string) || color, background: (c.btn_bg as string) || "transparent" } : { background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor }),
+                ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}),
+                ...((c.btn_height as string) ? { height: cssVal(c.btn_height as string, undefined) } : {}),
+                ...(customWidth ? { width: cssVal(customWidth, undefined) } : {}),
+                ...(customPadding != null ? { padding: `${customPadding}px` } : {}),
+                fontSize: ts("btn", { size: "sm" }).fontSize,
+              }}
+            >
+              {renderTextWithIcons((c.label as string) || "Weiter →")}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ── IMAGE ── */}
       {block.type === "image" && (
