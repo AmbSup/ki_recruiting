@@ -875,11 +875,11 @@ function BlockRenderer({
                 ) : (
                   <>
                     <div className="text-sm text-gray-500 font-medium">Lebenslauf hochladen (optional)</div>
-                    <div className="text-xs text-gray-400">max. 5MB · PDF, JPG, PNG</div>
+                    <div className="text-xs text-gray-400">max. 5MB · PDF, DOCX, JPG, PNG</div>
                   </>
                 )}
               </div>
-              <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="hidden" onChange={(e) => onCvChange(e.target.files?.[0] ?? null)} />
+              <input type="file" accept=".pdf,.docx,.jpg,.jpeg,.png" className="hidden" onChange={(e) => onCvChange(e.target.files?.[0] ?? null)} />
             </label>
           )}
         </div>

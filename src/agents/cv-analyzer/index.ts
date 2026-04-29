@@ -1,5 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
+import mammoth from "mammoth";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -71,7 +74,25 @@ Antworte IMMER als valides JSON ohne Markdown-Codeblöcke.`;
       const buffer = await response.arrayBuffer();
       const base64 = Buffer.from(buffer).toString("base64");
 
-      if (contentType.includes("pdf")) {
+      // Detect DOCX via Content-Type oder Filename-Endung. DOCX wird mit mammoth
+      // zu Plain-Text extrahiert und als Text-Content-Block an Claude geschickt
+      // (Anthropic SDK hat keinen nativen DOCX-DocumentBlock).
+      const isDocx =
+        contentType.includes(DOCX_MIME) ||
+        contentType.includes("officedocument.wordprocessingml") ||
+        /\.docx(\?|$)/i.test(options.cv_file_url);
+
+      if (isDocx) {
+        const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
+        const extractedText = (result.value ?? "").trim();
+        if (!extractedText) throw new Error("DOCX-Extraktion ergab leeren Text");
+        cvContent = [
+          {
+            type: "text",
+            text: `Lebenslauf-Inhalt (extrahiert aus DOCX):\n\n${extractedText}\n\n---\n\nAnalysiere diesen Lebenslauf von ${options.applicant_name} für die folgende Stelle:\n\n${jobContext}\n\n${analysisInstructions()}`,
+          },
+        ];
+      } else if (contentType.includes("pdf")) {
         cvContent = [
           {
             type: "document",
@@ -96,9 +117,10 @@ Antworte IMMER als valides JSON ohne Markdown-Codeblöcke.`;
           },
         ];
       } else {
-        throw new Error("Unsupported file type");
+        throw new Error("CV-Format nicht unterstützt — bitte als PDF oder DOCX hochladen.");
       }
-    } catch {
+    } catch (err) {
+      console.error("[cv-analyzer] CV-fetch/extract failed:", err);
       // Fallback: analyze without CV file
       cvContent = [{
         type: "text",
