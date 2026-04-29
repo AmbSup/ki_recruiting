@@ -162,6 +162,14 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
   const [uploadingCv, setUploadingCv] = useState(false);
   const [deletingCv, setDeletingCv] = useState(false);
   const [deletingCall, setDeletingCall] = useState<string | null>(null);
+  // Funnel-Pages für Label-Resolution beim Display von funnel_responses.
+  // Übersetzt rohe Item-`value`-Strings (z.B. "berufsausbildung") zu lesbaren
+  // Item-Labels (z.B. "Berufsausbildung") über die aktuelle Funnel-Struktur.
+  const [funnelLabelMap, setFunnelLabelMap] = useState<{
+    questionByBlockId: Record<string, string>;
+    labelsByQuestion: Record<string, Record<string, string>>;
+    labelsByBlockId: Record<string, Record<string, string>>;
+  } | null>(null);
   const supabase = createClient();
 
   async function loadApp() {
@@ -189,6 +197,46 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
     if (data) {
       setApp(data as unknown as ApplicationDetail);
       setNotes(data.operator_notes ?? "");
+
+      // Funnel-Pages laden, um value→label-Map für funnel_responses-Display zu bauen.
+      // Best-effort: bei Fehlern oder fehlendem Funnel zeigen wir den rohen Value.
+      const funnelId = (data as unknown as { funnel_id?: string }).funnel_id;
+      if (funnelId) {
+        const { data: pagesData } = await supabase
+          .from("funnel_pages")
+          .select("blocks")
+          .eq("funnel_id", funnelId)
+          .order("page_order");
+        const questionByBlockId: Record<string, string> = {};
+        const labelsByQuestion: Record<string, Record<string, string>> = {};
+        const labelsByBlockId: Record<string, Record<string, string>> = {};
+        const walk = (blocks: Array<{ id?: string; content?: Record<string, unknown> }>) => {
+          for (const b of blocks ?? []) {
+            const id = b.id;
+            const content = (b.content ?? {}) as Record<string, unknown>;
+            const question = typeof content.question === "string" ? content.question : "";
+            const items = Array.isArray(content.items) ? (content.items as Array<{ value?: string; label?: string }>) : [];
+            if (id && question) questionByBlockId[id] = question;
+            for (const it of items) {
+              if (typeof it.value !== "string" || typeof it.label !== "string") continue;
+              if (question) {
+                if (!labelsByQuestion[question]) labelsByQuestion[question] = {};
+                labelsByQuestion[question][it.value] = it.label;
+              }
+              if (id) {
+                if (!labelsByBlockId[id]) labelsByBlockId[id] = {};
+                labelsByBlockId[id][it.value] = it.label;
+              }
+            }
+            const children = Array.isArray(content.children) ? (content.children as Array<{ id?: string; content?: Record<string, unknown> }>) : [];
+            if (children.length) walk(children);
+          }
+        };
+        for (const p of (pagesData ?? []) as Array<{ blocks?: unknown }>) {
+          walk((p.blocks as Array<{ id?: string; content?: Record<string, unknown> }>) ?? []);
+        }
+        setFunnelLabelMap({ questionByBlockId, labelsByQuestion, labelsByBlockId });
+      }
     }
     setLoading(false);
   }
@@ -1239,28 +1287,47 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
             })
           )}
 
-          {/* Funnel Responses */}
+          {/* Funnel Responses — value→label resolution via funnelLabelMap (best-effort). */}
           {Object.keys(app.funnel_responses ?? {}).length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
               <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">
                 Funnel-Antworten
               </h3>
               <div className="space-y-4">
-                {Object.entries(app.funnel_responses).map(([question, answers]) => (
-                  <div key={question}>
-                    <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-1.5">
-                      {question}
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {(Array.isArray(answers) ? answers : [answers]).map((a) => (
-                        <span key={a}
-                          className="bg-primary-container/30 text-on-primary-container px-2.5 py-1 rounded-full font-label text-xs font-bold">
-                          {a}
-                        </span>
-                      ))}
+                {Object.entries(app.funnel_responses).map(([key, rawAnswers]) => {
+                  // Question-Resolution: wenn key eine block.id ist (kein menschenlesbares Frage-Text),
+                  // schau nach in funnelLabelMap.questionByBlockId. Sonst nutze key direkt.
+                  const question = funnelLabelMap?.questionByBlockId[key] || key;
+                  const labelMap =
+                    funnelLabelMap?.labelsByQuestion[key] ??
+                    funnelLabelMap?.labelsByBlockId[key] ??
+                    {};
+                  const answers = Array.isArray(rawAnswers) ? rawAnswers : [rawAnswers];
+                  return (
+                    <div key={key}>
+                      <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-1.5">
+                        {question}
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {answers.length === 0 ? (
+                          <span className="font-label text-xs italic text-outline">(keine Antwort)</span>
+                        ) : answers.map((a) => {
+                          const label = labelMap[a] ?? a;
+                          const labelMissing = !labelMap[a];
+                          return (
+                            <span
+                              key={a}
+                              className={`px-2.5 py-1 rounded-full font-label text-xs font-bold ${labelMissing ? "bg-amber-100 text-amber-900" : "bg-primary-container/30 text-on-primary-container"}`}
+                              title={labelMissing ? `Roh-Wert: "${a}" – keine Item-Übersetzung im aktuellen Funnel gefunden` : undefined}
+                            >
+                              {label}
+                            </span>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

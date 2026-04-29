@@ -88,6 +88,53 @@ function buildFunnelContext(
   return { custom_fields: out, qa, summary };
 }
 
+// Recruiting funnel_responses-Resolver: walks pages.blocks (rekursiv durch
+// box.content.children), baut value→label-Maps pro Frage UND pro block.id,
+// und mapped die Antworten auf Labels. Antworten ohne Match bleiben raw.
+function resolveAnswerLabels(
+  pages: Array<{ blocks?: unknown }>,
+  answers: Record<string, unknown>,
+): Record<string, string[]> {
+  const labelsByQuestion: Record<string, Record<string, string>> = {};
+  const labelsByBlockId: Record<string, Record<string, string>> = {};
+
+  const walk = (blocks: Array<{ id?: string; content?: Record<string, unknown> }>) => {
+    for (const b of blocks ?? []) {
+      const id = b.id;
+      const content = (b.content ?? {}) as Record<string, unknown>;
+      const question = typeof content.question === "string" ? content.question : "";
+      const items = Array.isArray(content.items) ? (content.items as Array<{ value?: string; label?: string }>) : [];
+      for (const it of items) {
+        if (typeof it.value !== "string" || typeof it.label !== "string") continue;
+        if (question) {
+          if (!labelsByQuestion[question]) labelsByQuestion[question] = {};
+          labelsByQuestion[question][it.value] = it.label;
+        }
+        if (id) {
+          if (!labelsByBlockId[id]) labelsByBlockId[id] = {};
+          labelsByBlockId[id][it.value] = it.label;
+        }
+      }
+      const children = Array.isArray(content.children) ? (content.children as Array<{ id?: string; content?: Record<string, unknown> }>) : [];
+      if (children.length) walk(children);
+    }
+  };
+
+  for (const p of pages) {
+    walk(((p.blocks ?? []) as Array<{ id?: string; content?: Record<string, unknown> }>));
+  }
+
+  const out: Record<string, string[]> = {};
+  for (const [key, raw] of Object.entries(answers)) {
+    const arr = Array.isArray(raw) ? (raw as unknown[]) : [raw];
+    const map = labelsByQuestion[key] ?? labelsByBlockId[key] ?? {};
+    out[key] = arr
+      .filter((v) => typeof v === "string")
+      .map((v) => map[v as string] ?? (v as string));
+  }
+  return out;
+}
+
 async function summarizeLeadContext(args: {
   firstName: string | null;
   programPitch: string | null;
@@ -174,12 +221,26 @@ export async function POST(req: NextRequest) {
     }
     const applicantId = newApplicant.id;
 
-    // 2. Create new application (fresh applicant → no unique constraint conflict)
+    // 2a. Funnel-Pages laden, um value→label zu resolven. Antworten werden als
+    // Item-Labels gespeichert, nicht als Roh-Values. Sales-Branch macht das
+    // schon via buildFunnelContext; Recruiting hat es bisher übersprungen, was
+    // im Applicant-Detail zu unleserlichen "berufsausbildung"-Strings führte.
+    const { data: funnelPagesForLabels } = await supabase
+      .from("funnel_pages")
+      .select("blocks")
+      .eq("funnel_id", funnel_id)
+      .order("page_order");
+    const resolvedAnswers = resolveAnswerLabels(
+      (funnelPagesForLabels ?? []) as Array<{ blocks?: unknown }>,
+      (answers ?? {}) as Record<string, unknown>,
+    );
+
+    // 2b. Create new application (fresh applicant → no unique constraint conflict)
     const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
       applicant_id: applicantId,
       job_id,
       funnel_id,
-      funnel_responses: answers ?? {},
+      funnel_responses: resolvedAnswers,
       source: "direct",
     }).select("id").single();
 

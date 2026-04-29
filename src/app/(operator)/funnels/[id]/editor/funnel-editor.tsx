@@ -623,9 +623,9 @@ function blockDefaults(type: BlockType): Block {
     thank_you: { headline: "Wir passen zueinander!", subtext: "Wir melden uns in Kürze bei dir." },
     free_text: { question: "Warum bist du der/die Richtige für diesen Job?", placeholder: "Deine Antwort hier…", cta: "Weiter →", is_required: true },
     icon_cards: { items: [
-      { id: uid(), label: "Weiter bewerben!", icon: "check", value: "yes", image_url: "" },
-      { id: uid(), label: "Bewerbung abbrechen!", icon: "close", value: "no", image_url: "" },
-    ], question: "Was ist Dein nächster Schritt?", card_bg: "#22d3ee", card_icon_color: "#ffffff", card_columns: "2" },
+      { id: uid(), label: "Option A", icon: "circle", value: "a", image_url: "" },
+      { id: uid(), label: "Option B", icon: "circle", value: "b", image_url: "" },
+    ], question: "Neue Frage", card_bg: "#22d3ee", card_icon_color: "#ffffff", card_columns: "2" },
     box: {
       box_layout: "block",
       box_width: "100%",
@@ -636,8 +636,8 @@ function blockDefaults(type: BlockType): Block {
       children: [],
     },
     vertical_tiles: {
-      question: "Welchen Bildungshintergrund hast du?",
-      show_vtile_image: true,
+      question: "Neue Frage",
+      show_vtile_image: false,
       vtile_height: 88,
       vtile_width: "100%",
       vtile_padding: 16,
@@ -647,10 +647,9 @@ function blockDefaults(type: BlockType): Block {
       vtile_label_color: "#111827",
       vtile_sublabel_color: "#6B7280",
       items: [
-        { id: uid(), label: "Ja, abgeschlossenes Studium", sublabel: "Bachelor, Master oder höher", icon: "school", value: "studium", image_url: "" },
-        { id: uid(), label: "Berufsausbildung", sublabel: "Lehre oder Fachausbildung", icon: "engineering", value: "berufsausbildung", image_url: "" },
-        { id: uid(), label: "Noch in Ausbildung", sublabel: "Aktuell Schule oder Studium", icon: "menu_book", value: "in_ausbildung", image_url: "" },
-        { id: uid(), label: "Autodidakt", sublabel: "Selbst gelernt, ohne Abschluss", icon: "self_improvement", value: "autodidakt", image_url: "" },
+        { id: uid(), label: "Option A", sublabel: "", icon: "circle", value: "a", image_url: "" },
+        { id: uid(), label: "Option B", sublabel: "", icon: "circle", value: "b", image_url: "" },
+        { id: uid(), label: "Option C", sublabel: "", icon: "circle", value: "c", image_url: "" },
       ],
     },
   };
