@@ -1308,7 +1308,7 @@ function BlockPreview({
         };
         const kids = (c.children as Block[] | undefined) ?? [];
         return (
-          <div style={containerStyle} onClick={(e) => e.stopPropagation()}>
+          <div style={containerStyle}>
             {kids.length === 0 ? (
               <div className="border-2 border-dashed border-outline-variant/40 rounded-xl px-4 py-8 text-center text-outline font-label text-xs">
                 Box ist leer · &quot;Inhalt&quot;-Sektion rechts → Element hinzufügen
