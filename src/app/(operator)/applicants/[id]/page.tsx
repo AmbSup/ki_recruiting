@@ -64,6 +64,7 @@ type ApplicationDetail = {
   }[];
   voice_calls: {
     id: string;
+    vapi_call_id: string | null;
     status: string;
     started_at: string | null;
     scheduled_at: string | null;
@@ -353,6 +354,38 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
       await supabase.from("transcripts").delete().eq("voice_call_id", vcId);
       await supabase.from("call_analyses").delete().eq("voice_call_id", vcId);
       await supabase.from("voice_calls").delete().eq("id", vcId);
+      await loadApp();
+    } finally {
+      setDeletingCall(null);
+    }
+  }
+
+  // Recovery: holt das Transcript direkt von der Vapi-API + persistiert neu.
+  // Nutzt POST /api/recovery/recover-transcript. Eingabe: vapi_call_id (aus
+  // existierendem voice_call ODER manuell eingegeben falls nicht persistiert).
+  async function recoverTranscript(vcId: string | null, existingVapiCallId: string | null) {
+    if (!app) return;
+    const vapiId = existingVapiCallId
+      ? existingVapiCallId
+      : prompt("Vapi-Call-ID eingeben (von Vapi-Dashboard kopieren):")?.trim();
+    if (!vapiId) return;
+    if (!confirm(`Transcript für Vapi-Call ${vapiId} von Vapi nachladen?\n\nFalls bereits eine voice_calls-Row mit dieser ID existiert, wird sie ersetzt.`)) return;
+    setDeletingCall(vcId ?? "recovery-new");
+    try {
+      const res = await fetch("/api/recovery/recover-transcript", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          vapi_call_id: vapiId,
+          application_id: app.id,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(`Fehler: ${data.error ?? `HTTP ${res.status}`}`);
+        return;
+      }
+      alert(`Transcript wiederhergestellt: ${data.transcript_chars} Zeichen, ${data.message_count} Nachrichten.${data.replaced_existing > 0 ? ` (${data.replaced_existing} alte Row(s) ersetzt)` : ""}`);
       await loadApp();
     } finally {
       setDeletingCall(null);
@@ -1051,6 +1084,15 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                       {triggeringCall ? "Wird ausgelöst…" : "KI-Call starten"}
                     </button>
                   )}
+                  {/* Recovery: falls Vapi-Call existiert aber kein voice_calls-Row in der DB. */}
+                  <button
+                    onClick={() => recoverTranscript(null, null)}
+                    className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors mt-1"
+                    title="Vapi-Call-ID manuell eingeben + Transcript nachladen"
+                  >
+                    <span className="material-symbols-outlined text-xs">refresh</span>
+                    Transcript per Vapi-ID nachladen
+                  </button>
                 </div>
               )}
             </div>
@@ -1102,6 +1144,16 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                       )}
                     </div>
                     <div className="flex items-center gap-3">
+                      {/* Recovery: lädt das Transcript von Vapi nach (nutzt vorhandene vapi_call_id falls da, sonst prompt). */}
+                      <button
+                        onClick={() => recoverTranscript(vc.id, vc.vapi_call_id ?? null)}
+                        disabled={deletingCall === vc.id}
+                        title="Transcript von Vapi nachladen"
+                        className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors disabled:opacity-50"
+                      >
+                        <span className="material-symbols-outlined text-xs">refresh</span>
+                        {deletingCall === vc.id ? "Lädt…" : "Recovery"}
+                      </button>
                       <button
                         onClick={() => deleteVoiceCall(vc.id)}
                         disabled={deletingCall === vc.id}
