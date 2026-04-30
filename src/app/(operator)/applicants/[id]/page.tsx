@@ -610,6 +610,13 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 An Kundenportal freigeben
               </button>
             )}
+            <a
+              href={`/api/applicants/${id}/report`}
+              className="w-full flex items-center justify-center gap-2 border border-primary/40 text-primary py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-container/30 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">picture_as_pdf</span>
+              PDF erstellen
+            </a>
             <div className="grid grid-cols-2 gap-2">
               <button onClick={() => quickDecision("accepted")}
                 disabled={isAccepted}
