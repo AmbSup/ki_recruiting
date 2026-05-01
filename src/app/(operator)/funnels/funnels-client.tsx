@@ -43,6 +43,7 @@ export function FunnelsClient() {
   const [externalModalOpen, setExternalModalOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [duplicateFunnel, setDuplicateFunnel] = useState<Funnel | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -60,6 +61,7 @@ export function FunnelsClient() {
     setLoading(false);
   }, []);
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- legacy pattern; load() updates funnels list on mount
   useEffect(() => { load(); }, [load]);
 
   async function deleteFunnel(id: string) {
@@ -211,6 +213,13 @@ export function FunnelsClient() {
                     >
                       edit
                     </a>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setDuplicateFunnel(funnel); }}
+                      className="material-symbols-outlined text-outline hover:text-primary transition-colors text-xl p-1"
+                      title="Funnel duplizieren"
+                    >
+                      content_copy
+                    </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteFunnel(funnel.id); }}
                       className="material-symbols-outlined text-outline hover:text-error transition-colors text-xl p-1"
@@ -423,6 +432,173 @@ export function FunnelsClient() {
 
       <FunnelModal open={modalOpen} onClose={() => setModalOpen(false)} onSuccess={load} />
       <ExternalFunnelModal open={externalModalOpen} onClose={() => setExternalModalOpen(false)} onSuccess={load} />
+      {duplicateFunnel && (
+        <DuplicateFunnelModal
+          key={duplicateFunnel.id}
+          funnel={duplicateFunnel}
+          onClose={() => setDuplicateFunnel(null)}
+          onSuccess={() => { setDuplicateFunnel(null); load(); }}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── Duplicate-Modal: wählt Anchor (Job oder Sales-Program) für Klon ─────────
+
+function DuplicateFunnelModal({
+  funnel,
+  onClose,
+  onSuccess,
+}: {
+  funnel: Funnel;
+  onClose: () => void;
+  onSuccess: (newFunnelId: string, slug: string) => void;
+}) {
+  // Initial-State direkt aus funnel ableiten — der Modal mountet pro Funnel-ID neu (key=funnel.id),
+  // daher kein useEffect-State-Sync nötig.
+  const initialPurpose: "recruiting" | "sales" = funnel.sales_program_id ? "sales" : "recruiting";
+
+  const [jobs, setJobs] = useState<Array<{ id: string; title: string; company: { name: string } }>>([]);
+  const [programs, setPrograms] = useState<Array<{ id: string; name: string; company: { name: string } }>>([]);
+  const [purpose, setPurpose] = useState<"recruiting" | "sales">(initialPurpose);
+  const [jobId, setJobId] = useState(initialPurpose === "recruiting" ? (funnel.job_id ?? "") : "");
+  const [programId, setProgramId] = useState(initialPurpose === "sales" ? (funnel.sales_program_id ?? "") : "");
+  const [newName, setNewName] = useState(`${funnel.name} (Kopie)`);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("jobs")
+      .select("id, title, status, company:companies(name)")
+      .in("status", ["active", "draft", "paused"])
+      .then(({ data }) => { if (data) setJobs(data as unknown as typeof jobs); });
+    supabase
+      .from("sales_programs")
+      .select("id, name, status, company:companies(name)")
+      .in("status", ["active", "draft", "paused"])
+      .then(({ data }) => { if (data) setPrograms(data as unknown as typeof programs); });
+  }, []);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!funnel) return;
+    if (purpose === "recruiting" && !jobId) { setError("Bitte Job auswählen"); return; }
+    if (purpose === "sales" && !programId) { setError("Bitte Sales-Program auswählen"); return; }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/funnels/duplicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: { type: "funnel", funnel_id: funnel.id },
+          target_anchor: purpose === "recruiting" ? { job_id: jobId } : { sales_program_id: programId },
+          new_name: newName.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error ?? `HTTP ${res.status}`);
+        setLoading(false);
+        return;
+      }
+      onSuccess(data.funnel_id, data.slug);
+      // Ähnlich wie funnel-modal: optional zum Editor öffnen.
+      if (data.edit_url) window.location.href = data.edit_url;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Netzwerkfehler");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-inverse-surface/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-surface-container-lowest rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-outline-variant/20">
+          <div>
+            <h2 className="font-headline text-2xl italic text-on-surface">Funnel duplizieren</h2>
+            <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mt-0.5">
+              Quelle: {funnel.name}
+            </p>
+          </div>
+          <button onClick={onClose} className="material-symbols-outlined text-outline hover:text-on-surface transition-colors">close</button>
+        </div>
+
+        <form onSubmit={submit} className="px-6 py-5 space-y-4">
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Ziel-Zweck</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setPurpose("recruiting")}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                  purpose === "recruiting" ? "bg-primary text-on-primary" : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">work</span>
+                Recruiting
+              </button>
+              <button
+                type="button"
+                onClick={() => setPurpose("sales")}
+                className={`flex items-center justify-center gap-2 rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                  purpose === "sales" ? "bg-primary text-on-primary" : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">trending_up</span>
+                Sales
+              </button>
+            </div>
+          </div>
+
+          {purpose === "recruiting" ? (
+            <div>
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Ziel-Job *</label>
+              <select required value={jobId} onChange={(e) => setJobId(e.target.value)} className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm">
+                <option value="">Job auswählen…</option>
+                {jobs.map((j) => <option key={j.id} value={j.id}>{j.title} · {j.company.name}</option>)}
+              </select>
+            </div>
+          ) : (
+            <div>
+              <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Ziel-Sales-Program *</label>
+              <select required value={programId} onChange={(e) => setProgramId(e.target.value)} className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm">
+                <option value="">Program auswählen…</option>
+                {programs.map((p) => <option key={p.id} value={p.id}>{p.name} · {p.company.name}</option>)}
+              </select>
+            </div>
+          )}
+
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Neuer Name</label>
+            <input
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="Klon-Name"
+              className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm"
+            />
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 bg-error-container/20 border border-error-container/40 rounded-xl px-4 py-3">
+              <span className="material-symbols-outlined text-error text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+              <span className="font-body text-sm text-error">{error}</span>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button type="button" onClick={onClose} className="flex-1 border border-outline-variant/30 text-on-surface-variant rounded-xl py-3 font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors">Abbrechen</button>
+            <button type="submit" disabled={loading} className="flex-1 bg-primary text-on-primary rounded-xl py-3 font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+              {loading ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span> : <span className="material-symbols-outlined text-sm">content_copy</span>}
+              Duplizieren & öffnen
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

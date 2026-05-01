@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 type Props = { open: boolean; onClose: () => void; onSuccess?: () => void };
 type Job = { id: string; title: string; company: { name: string } };
 type SalesProgram = { id: string; name: string; company: { name: string } };
 type FunnelPurpose = "recruiting" | "sales";
+type CreationMode = "blank" | "template";
+type FunnelTemplate = {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  category: "recruiting" | "sales";
+  niche: string;
+};
 
 function slugify(str: string) {
   return str
@@ -23,9 +33,13 @@ const SALES_CONSENT =
   "Mit dem Absenden willige ich ein, dass mich [Firma] telefonisch kontaktiert, um mein Anliegen zu besprechen. Die Einwilligung kann jederzeit widerrufen werden. Details in der Datenschutzerklärung.";
 
 export function FunnelModal({ open, onClose, onSuccess }: Props) {
+  const router = useRouter();
+  const [mode, setMode] = useState<CreationMode>("blank");
   const [purpose, setPurpose] = useState<FunnelPurpose>("recruiting");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [programs, setPrograms] = useState<SalesProgram[]>([]);
+  const [templates, setTemplates] = useState<FunnelTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null);
   const [form, setForm] = useState({
     job_id: "",
     sales_program_id: "",
@@ -51,6 +65,11 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
       .select("id, name, status, company:companies(name)")
       .in("status", ["active", "draft", "paused"])
       .then(({ data }) => { if (data) setPrograms(data as unknown as SalesProgram[]); });
+    supabase
+      .from("funnel_templates")
+      .select("id, slug, name, description, category, niche")
+      .order("name")
+      .then(({ data }) => { if (data) setTemplates(data as FunnelTemplate[]); });
   }, [open]);
 
   // Purpose-Switch: Consent-Default + Target-IDs säubern
@@ -84,6 +103,41 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
     }
     if (purpose === "sales" && !form.sales_program_id) {
       setError("Bitte Sales-Program auswählen"); return;
+    }
+
+    // Template-Modus: ruft /api/funnels/duplicate, kein direkter DB-Insert
+    if (mode === "template") {
+      if (!selectedTemplateId) {
+        setError("Bitte ein Template auswählen"); return;
+      }
+      setLoading(true);
+      try {
+        const res = await fetch("/api/funnels/duplicate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            source: { type: "template", template_id: selectedTemplateId },
+            target_anchor:
+              purpose === "recruiting"
+                ? { job_id: form.job_id }
+                : { sales_program_id: form.sales_program_id },
+            new_name: form.name || undefined,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setError(data.error ?? `HTTP ${res.status}`);
+          setLoading(false);
+          return;
+        }
+        onClose();
+        onSuccess?.();
+        if (data.edit_url) router.push(data.edit_url);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Netzwerkfehler");
+        setLoading(false);
+      }
+      return;
     }
 
     // Sales-Consent-Validator: consent_text darf nicht leer sein
@@ -137,6 +191,34 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
         </div>
 
         <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+          {/* Mode-Tabs */}
+          <div className="grid grid-cols-2 gap-2 bg-surface-container-low rounded-xl p-1">
+            <button
+              type="button"
+              onClick={() => { setMode("blank"); setSelectedTemplateId(null); }}
+              className={`flex items-center justify-center gap-2 rounded-lg py-2 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                mode === "blank"
+                  ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">add_box</span>
+              Von Null
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("template")}
+              className={`flex items-center justify-center gap-2 rounded-lg py-2 font-label text-xs font-bold uppercase tracking-widest transition-colors ${
+                mode === "template"
+                  ? "bg-surface-container-lowest text-on-surface shadow-sm"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">auto_awesome</span>
+              Aus Template
+            </button>
+          </div>
+
           <Field label="Funnel-Zweck *">
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -165,6 +247,45 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
               </button>
             </div>
           </Field>
+
+          {/* Template-Picker — nur im Template-Mode */}
+          {mode === "template" && (
+            <Field label="Template wählen *">
+              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                {templates.filter((t) => t.category === purpose).map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setSelectedTemplateId(t.id)}
+                    className={`w-full text-left rounded-xl border-2 px-4 py-3 transition-colors ${
+                      selectedTemplateId === t.id
+                        ? "border-primary bg-primary-container/30"
+                        : "border-outline-variant/20 bg-surface-container-low hover:border-outline-variant/40"
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="font-body text-sm font-semibold text-on-surface">{t.name}</div>
+                        {t.description && (
+                          <div className="font-label text-xs text-outline mt-0.5 line-clamp-2">{t.description}</div>
+                        )}
+                      </div>
+                      {selectedTemplateId === t.id && (
+                        <span className="material-symbols-outlined text-primary text-base flex-shrink-0" style={{ fontVariationSettings: "'FILL' 1" }}>
+                          check_circle
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+                {templates.filter((t) => t.category === purpose).length === 0 && (
+                  <p className="font-label text-xs text-outline italic px-2 py-3">
+                    Keine Templates für diesen Zweck verfügbar. Wähle eine andere Kategorie oder benutze &quot;Von Null&quot;.
+                  </p>
+                )}
+              </div>
+            </Field>
+          )}
 
           {purpose === "recruiting" ? (
             <Field label="Job *">
@@ -205,16 +326,22 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
             </Field>
           )}
 
-          <Field label="Funnel-Name *">
+          <Field label={mode === "template" ? "Funnel-Name (optional, sonst Template-Name)" : "Funnel-Name *"}>
             <input
-              required
+              required={mode === "blank"}
               value={form.name}
               onChange={(e) => handleNameChange(e.target.value)}
-              placeholder={purpose === "sales" ? "B2B Closer — Outreach A" : "Lagerarbeiter Variante A"}
+              placeholder={
+                mode === "template"
+                  ? "Leer lassen für Template-Default"
+                  : purpose === "sales" ? "B2B Closer — Outreach A" : "Lagerarbeiter Variante A"
+              }
               className={inputClass}
             />
           </Field>
 
+          {mode === "blank" && (
+          <>
           <Field label="URL-Slug">
             <div className="flex items-center gap-0 bg-surface-container-low border border-outline-variant/20 rounded-xl overflow-hidden focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-colors">
               <span className="px-3 py-2.5 font-label text-xs text-outline border-r border-outline-variant/20 whitespace-nowrap">
@@ -261,6 +388,8 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
               </p>
             )}
           </Field>
+          </>
+          )}
 
           {error && (
             <div className="flex items-center gap-2 bg-error-container/20 border border-error-container/40 rounded-xl px-4 py-3">
@@ -280,8 +409,8 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
             >
               {loading
                 ? <span className="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                : <span className="material-symbols-outlined text-sm">save</span>}
-              Erstellen & Editor öffnen
+                : <span className="material-symbols-outlined text-sm">{mode === "template" ? "auto_awesome" : "save"}</span>}
+              {mode === "template" ? "Aus Template erstellen" : "Erstellen & Editor öffnen"}
             </button>
           </div>
         </form>
