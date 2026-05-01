@@ -52,7 +52,12 @@ function buildStrategyBlock(vars: Partial<PromptVariables>): string {
     sections.push(`**Pain Points, die wir lösen:**\n${vars.pain_points_block}`);
   }
   if (vars.discovery_questions_block?.trim()) {
-    sections.push(`**Discovery-Fragen — must-ask, BEVOR du den Pitch machst:**\n${vars.discovery_questions_block}`);
+    sections.push(
+      `**Discovery-Fragen — WORTGETREU stellen, in EXAKT dieser Reihenfolge, BEVOR du in den Pitch gehst.**\n` +
+      `Paraphrasieren ist verboten. Eine Frage pro Turn, dann SCHWEIGEN bis der Lead antwortet (≥3 Sekunden Pause). Niemals zwei Fragen aneinanderhängen.\n\n` +
+      `${vars.discovery_questions_block}\n\n` +
+      `Wenn der Lead schon ohne Aufforderung Pain-Points nennt: nicke kurz an ("Verstehe."), dann nächste Frage. Niemals den Lead unterbrechen.`,
+    );
   }
   if (vars.disqualification_criteria?.trim()) {
     const action = vars.on_disqualify === "redirect_resource"

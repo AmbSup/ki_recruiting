@@ -46,6 +46,9 @@ Verknüpfe den genannten Pain mit einer konkreten Fähigkeit aus \`{{product_pit
 - **Niemals drängen**, wenn der Lead zweimal Nein sagt.
 - **Niemals länger als 8 Minuten** reden.`,
 
+  // firstMessage ist Cold-Call-tauglich: keine Annahme einer vorigen Anfrage.
+  // Operator kann pro Program einen eigenen Opener via `first_message_override` setzen
+  // (z.B. wenn der Lead aus Funnel-Submission kommt → "wegen Ihrer Anfrage zu …").
   firstMessageTemplate:
-    `Guten Tag {{first_name}}, hier ist {{caller_name}} von {{company_name}}. Ich rufe wegen Ihrer Anfrage zu {{program_name}} an. Passt es kurz, wenn ich Ihnen in drei Minuten erkläre, worum es geht?`,
+    `Guten Tag {{first_name}}, hier ist {{caller_name}} von {{caller_company}}. Grüße Sie. Passt es kurz, wenn ich Ihnen in zwei Minuten erkläre, worum es geht?`,
 };

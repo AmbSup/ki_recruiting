@@ -27,6 +27,7 @@ type Program = {
   cal_username: string | null;
   cal_event_type_slug: string | null;
   cal_timezone: string | null;
+  company: { name: string | null } | null;
 };
 
 type Lead = {
@@ -68,7 +69,8 @@ export async function POST(req: NextRequest) {
         vapi_assistant_id, vapi_phone_number_id, caller_phone_number,
         program_type, call_strategy, auto_dial,
         system_prompt_override, first_message_override,
-        cal_username, cal_event_type_slug, cal_timezone
+        cal_username, cal_event_type_slug, cal_timezone,
+        company:companies(name)
       )
     `)
     .eq("id", sales_lead_id)
@@ -200,13 +202,16 @@ export async function POST(req: NextRequest) {
     value_proposition: program.value_proposition ?? "",
     target_persona: program.target_persona ?? "",
     booking_link: program.booking_link ?? "",
+    // Operator-Firma — Joined aus sales_programs.company. Fällt auf program.name zurück
+    // falls die Join-Beziehung leer ist (defensiv, sollte nicht passieren).
+    caller_company: (Array.isArray(program.company) ? program.company[0]?.name : program.company?.name) ?? program.name ?? "",
 
     // Legacy-Keys (für alte Use-Case-Templates, die noch {{hook_promise}} etc. interpolieren)
     hook_promise: hookOneLiner,
     hard_qualifier_questions_list: discoveryRaw.join(" / "),
     show_rate_confirmation_phrase: (callStrategy.show_rate_confirmation_phrase as string | undefined) ?? "",
 
-    caller_name: (callStrategy.caller_name as string | undefined) ?? "Jonas",
+    caller_name: (callStrategy.caller_name as string | undefined) ?? "Andrea",
     fallback_resource_url: (callStrategy.fallback_resource_url as string | undefined) ?? "",
     require_consent: callStrategy.require_consent !== false,
 

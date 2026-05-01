@@ -22,7 +22,7 @@ export type PromptVariables = {
   full_name: string;
   email: string;
   phone: string;
-  company_name: string;
+  company_name: string;          // LEAD's company (z.B. "Akme") — NICHT für Opener nutzen!
   role: string;
   notes: string;
   custom_fields_json: string;
@@ -33,6 +33,7 @@ export type PromptVariables = {
   value_proposition: string;
   target_persona: string;
   booking_link: string;
+  caller_company: string;        // OPERATOR-Firma (z.B. "Neuronic") — für Opener: "Hier ist X von {{caller_company}}"
 
   // Call-Strategy (aus sales_programs.call_strategy JSONB)
   hook_promise: string;                       // legacy, fällt zurück auf hook_one_liner
