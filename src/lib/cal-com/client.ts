@@ -4,16 +4,21 @@
 // Docs: https://cal.com/docs/api-reference/v2/introduction
 
 const CAL_API_BASE = "https://api.cal.com/v2";
-const CAL_API_VERSION = "2024-09-04";
 
-function authHeaders(): Record<string, string> {
+// Cal.com v2 hat pro Endpoint unterschiedliche unterstützte API-Versionen.
+// /v2/slots akzeptiert nur 2024-09-04, /v2/bookings POST nur 2024-08-13.
+// Verifiziert via curl 2026-05-01: Falsche Version → 404 NotFoundException.
+const CAL_API_VERSION_SLOTS = "2024-09-04";
+const CAL_API_VERSION_BOOKINGS = "2024-08-13";
+
+function authHeaders(version: string): Record<string, string> {
   const key = process.env.CAL_COM_API_KEY;
   if (!key) {
     throw new Error("CAL_COM_API_KEY nicht gesetzt — bitte in Vercel-Env-Vars hinterlegen");
   }
   return {
     Authorization: `Bearer ${key}`,
-    "cal-api-version": CAL_API_VERSION,
+    "cal-api-version": version,
     "Content-Type": "application/json",
   };
 }
@@ -42,7 +47,7 @@ export async function fetchAvailableSlots(opts: {
     timeZone: opts.timeZone ?? "Europe/Vienna",
   });
   const url = `${CAL_API_BASE}/slots?${params.toString()}`;
-  const res = await fetch(url, { headers: authHeaders(), method: "GET" });
+  const res = await fetch(url, { headers: authHeaders(CAL_API_VERSION_SLOTS), method: "GET" });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
     throw new Error(`Cal.com /slots ${res.status}: ${text.slice(0, 300)}`);
@@ -108,7 +113,7 @@ export async function createBooking(opts: {
   };
   const res = await fetch(`${CAL_API_BASE}/bookings`, {
     method: "POST",
-    headers: authHeaders(),
+    headers: authHeaders(CAL_API_VERSION_BOOKINGS),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
