@@ -2,164 +2,225 @@
   "name": "Sales — Vapi Data Tools",
   "nodes": [
     {
-      "id": "webhook-tools",
-      "name": "Vapi Sales-Tools Webhook",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [240, 300],
       "parameters": {
         "httpMethod": "POST",
         "path": "vapi-sales-tools",
         "responseMode": "responseNode",
         "options": {}
       },
+      "id": "webhook-tools",
+      "name": "Vapi Sales-Tools Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 304],
       "webhookId": "sales-vapi-tools",
       "onError": "continueRegularOutput"
     },
     {
+      "parameters": {
+        "jsCode": "const msg = $input.first().json.body?.message ?? {};\nconst toolCalls = msg.toolCalls ?? [];\nconst call = msg.call ?? {};\nconst vars = call?.assistantOverrides?.variableValues ?? {};\nconst phone = call?.customer?.number ?? null;\n\n// SIP-Headers normalisieren (case-insensitive). Vapi stellt sie je nach\n// Version unter call.customer.sipHeaders oder call.sipHeaders bereit.\nconst rawSip = call?.customer?.sipHeaders ?? call?.sipHeaders ?? {};\nconst sip = {};\nfor (const [k, v] of Object.entries(rawSip)) {\n  if (typeof v === 'string') sip[k.toLowerCase()] = v;\n}\n\nconst first = toolCalls[0]?.function ?? {};\nconst toolName = first.name ?? null;\nconst toolArgs = first.arguments ?? {};\n\nreturn [{\n  json: {\n    tool_name: toolName,\n    tool_args: toolArgs,\n    tool_call_id: toolCalls[0]?.id ?? null,\n    phone,\n    // Priorität: variableValues → SIP-Header → toolArgs\n    sales_lead_id:    vars.sales_lead_id    ?? sip['x-sales-lead-id']    ?? toolArgs.sales_lead_id    ?? null,\n    sales_call_id:    vars.sales_call_id    ?? sip['x-sales-call-id']    ?? null,\n    sales_program_id: vars.sales_program_id ?? sip['x-sales-program-id'] ?? toolArgs.sales_program_id ?? null\n  }\n}];"
+      },
       "id": "extract-tool",
       "name": "Extract Tool & Args",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [440, 300],
-      "parameters": {
-        "jsCode": "const msg = $input.first().json.body?.message ?? {};\nconst toolCalls = msg.toolCalls ?? [];\nconst call = msg.call ?? {};\nconst vars = call?.assistantOverrides?.variableValues ?? {};\nconst phone = call?.customer?.number ?? null;\n\n// SIP-Headers normalisieren (case-insensitive). Vapi stellt sie je nach\n// Version unter call.customer.sipHeaders oder call.sipHeaders bereit.\nconst rawSip = call?.customer?.sipHeaders ?? call?.sipHeaders ?? {};\nconst sip = {};\nfor (const [k, v] of Object.entries(rawSip)) {\n  if (typeof v === 'string') sip[k.toLowerCase()] = v;\n}\n\nconst first = toolCalls[0]?.function ?? {};\nconst toolName = first.name ?? null;\nconst toolArgs = first.arguments ?? {};\n\nreturn [{\n  json: {\n    tool_name: toolName,\n    tool_args: toolArgs,\n    tool_call_id: toolCalls[0]?.id ?? null,\n    phone,\n    // Priorität: variableValues → SIP-Header → toolArgs\n    sales_lead_id:    vars.sales_lead_id    ?? sip['x-sales-lead-id']    ?? toolArgs.sales_lead_id    ?? null,\n    sales_call_id:    vars.sales_call_id    ?? sip['x-sales-call-id']    ?? null,\n    sales_program_id: vars.sales_program_id ?? sip['x-sales-program-id'] ?? toolArgs.sales_program_id ?? null\n  }\n}];"
-      }
+      "position": [448, 304]
     },
     {
+      "parameters": {
+        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_leads?phone=eq.{{ encodeURIComponent($json.phone) }}&select=id,first_name,last_name,full_name,email,company_name,role,notes,custom_fields,sales_program_id,program:sales_programs(id,name,product_pitch,value_proposition,booking_link,target_persona),recent_calls:sales_calls(id,status,created_at)&recent_calls.order=created_at.desc&recent_calls.limit=3&limit=1",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "supabaseApi",
+        "options": {
+          "response": { "response": { "neverError": true } },
+          "timeout": 10000
+        }
+      },
       "id": "resolve-context",
       "name": "Resolve Lead + Program by Phone",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [640, 300],
-      "parameters": {
-        "method": "GET",
-        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_leads?phone=eq.{{ encodeURIComponent($json.phone) }}&select=id,first_name,last_name,full_name,email,company_name,role,notes,custom_fields,sales_program_id,program:sales_programs(id,name,product_pitch,value_proposition,booking_link,target_persona),recent_calls:sales_calls(id,status,created_at)&recent_calls.order=created_at.desc&recent_calls.limit=3&limit=1",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "options": { "timeout": 10000, "response": { "response": { "neverError": true } } }
-      },
+      "position": [640, 304],
       "credentials": {
         "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
       }
     },
     {
+      "parameters": {
+        "jsCode": "const extracted = $('Extract Tool & Args').first().json;\nconst raw = $input.first().json;\nlet rows = [];\nif (Array.isArray(raw)) rows = raw;\nelse if (Array.isArray(raw && raw.body)) rows = raw.body;\nelse if (raw && typeof raw === 'object' && raw.id) rows = [raw];\nconst lead = rows[0] || null;\nconst program = lead && lead.program ? lead.program : null;\n\n// Aktivsten Sales-Call bestimmen: bevorzugt 'in_progress' > 'initiated' > 'ringing',\n// sonst jüngsten beliebigen Call. recent_calls ist bereits DESC sortiert (neueste zuerst).\nconst recent = (lead && Array.isArray(lead.recent_calls)) ? lead.recent_calls : [];\nconst priority = ['in_progress', 'ringing', 'initiated'];\nlet activeCall = null;\nfor (const p of priority) {\n  activeCall = recent.find(c => c && c.status === p) || null;\n  if (activeCall) break;\n}\nif (!activeCall && recent.length > 0) activeCall = recent[0];\n\nreturn [{\n  json: {\n    tool_name: extracted.tool_name,\n    tool_args: extracted.tool_args,\n    tool_call_id: extracted.tool_call_id,\n    sales_lead_id: (lead && lead.id) || extracted.sales_lead_id,\n    sales_program_id: (program && program.id) || extracted.sales_program_id,\n    sales_call_id: extracted.sales_call_id || (activeCall && activeCall.id) || null,\n    phone: extracted.phone,\n    lead: lead,\n    program: program\n  }\n}];"
+      },
       "id": "build-context",
       "name": "Build Context",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [840, 300],
-      "parameters": {
-        "jsCode": "const extracted = $('Extract Tool & Args').first().json;\nconst raw = $input.first().json;\nlet rows = [];\nif (Array.isArray(raw)) rows = raw;\nelse if (Array.isArray(raw && raw.body)) rows = raw.body;\nelse if (raw && typeof raw === 'object' && raw.id) rows = [raw];\nconst lead = rows[0] || null;\nconst program = lead && lead.program ? lead.program : null;\n\n// Aktivsten Sales-Call bestimmen: bevorzugt 'in_progress' > 'ringing' > 'initiated',\n// sonst jüngsten beliebigen Call. recent_calls ist bereits DESC sortiert (neueste zuerst).\nconst recent = (lead && Array.isArray(lead.recent_calls)) ? lead.recent_calls : [];\nconst priority = ['in_progress', 'ringing', 'initiated'];\nlet activeCall = null;\nfor (const p of priority) {\n  activeCall = recent.find(c => c && c.status === p) || null;\n  if (activeCall) break;\n}\nif (!activeCall && recent.length > 0) activeCall = recent[0];\n\nreturn [{\n  json: {\n    tool_name: extracted.tool_name,\n    tool_args: extracted.tool_args,\n    tool_call_id: extracted.tool_call_id,\n    sales_lead_id: (lead && lead.id) || extracted.sales_lead_id,\n    sales_program_id: (program && program.id) || extracted.sales_program_id,\n    // Priorität: variableValues → SIP-Header (extracted) → Fallback via Lead\n    sales_call_id: extracted.sales_call_id || (activeCall && activeCall.id) || null,\n    phone: extracted.phone,\n    lead: lead,\n    program: program\n  }\n}];"
-      }
+      "position": [848, 304]
     },
     {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "version": 2 }, "conditions": [{ "leftValue": "={{ $json.tool_name }}", "rightValue": "get_program", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": { "version": 2 }, "conditions": [{ "leftValue": "={{ $json.tool_name }}", "rightValue": "get_lead_context", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": { "version": 2 }, "conditions": [{ "leftValue": "={{ $json.tool_name }}", "rightValue": "book_meeting", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": { "version": 2 }, "conditions": [{ "leftValue": "={{ $json.tool_name }}", "rightValue": "log_objection", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": { "version": 2 }, "conditions": [{ "leftValue": "={{ $json.tool_name }}", "rightValue": "get_available_slots", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } },
+            { "conditions": { "options": { "version": 2 }, "conditions": [{ "leftValue": "={{ $json.tool_name }}", "rightValue": "send_booking_link", "operator": { "type": "string", "operation": "equals" } }], "combinator": "and" } }
+          ]
+        },
+        "options": { "fallbackOutput": "extra" }
+      },
       "id": "route-tool",
       "name": "Route by Tool",
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3,
-      "position": [1040, 300],
-      "parameters": {
-        "rules": {
-          "values": [
-            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "get_program", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "get_program" },
-            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "get_lead_context", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "get_lead_context" },
-            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "book_meeting", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "book_meeting" },
-            { "conditions": { "options": { "version": 2 }, "conditions": [ { "leftValue": "={{ $json.tool_name }}", "rightValue": "log_objection", "operator": { "type": "string", "operation": "equals" } } ], "combinator": "and" }, "outputKey": "log_objection" }
-          ]
-        },
-        "options": { "fallbackOutput": "extra" }
-      }
+      "position": [1040, 304]
     },
     {
+      "parameters": {
+        "method": "POST",
+        "url": "https://ki-recruiting.vercel.app/api/sales/calendar/book",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sales_call_id: $json.sales_call_id, start: ($json.tool_args.start || $json.tool_args.datetime || ''), notes: ($json.tool_args.notes || '') }) }}",
+        "options": { "timeout": 20000 }
+      },
       "id": "book-meeting",
       "name": "Persist Meeting (book_meeting)",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1240, 460],
-      "parameters": {
-        "method": "POST",
-        "url": "=https://frsobblncygkmdtrarhq.supabase.co/rest/v1/sales_call_analyses?on_conflict=sales_call_id",
-        "authentication": "predefinedCredentialType",
-        "nodeCredentialType": "supabaseApi",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            { "name": "Content-Type", "value": "application/json" },
-            { "name": "Prefer", "value": "resolution=merge-duplicates,return=representation" }
-          ]
-        },
-        "sendBody": true,
-        "contentType": "json",
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ sales_call_id: $json.sales_call_id, meeting_booked: true, meeting_datetime: $json.tool_args.datetime }) }}",
-        "options": { "timeout": 15000 }
-      },
-      "credentials": {
-        "supabaseApi": { "id": "ZBhoJp0VDK4YwJ7b", "name": "Supabase account" }
-      }
+      "position": [1248, 464]
     },
     {
+      "parameters": {},
       "id": "log-objection",
       "name": "Log Objection (noop — appended by analyzer)",
       "type": "n8n-nodes-base.noOp",
       "typeVersion": 1,
-      "position": [1240, 620],
-      "parameters": {}
+      "position": [1248, 624]
     },
     {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, result: JSON.stringify({ name: ($json.program && $json.program.name) || '', product_pitch: ($json.program && $json.program.product_pitch) || '', value_proposition: ($json.program && $json.program.value_proposition) || '', booking_link: ($json.program && $json.program.booking_link) || '' }) }] }) }}",
+        "options": {}
+      },
       "id": "respond-program",
       "name": "Respond get_program",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1240, 140],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, result: JSON.stringify({ name: ($json.program && $json.program.name) || '', product_pitch: ($json.program && $json.program.product_pitch) || '', value_proposition: ($json.program && $json.program.value_proposition) || '', booking_link: ($json.program && $json.program.booking_link) || '' }) }] }) }}"
-      }
+      "position": [1248, 144]
     },
     {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, result: JSON.stringify({ full_name: ($json.lead && $json.lead.full_name) || '', first_name: ($json.lead && $json.lead.first_name) || '', company_name: ($json.lead && $json.lead.company_name) || '', role: ($json.lead && $json.lead.role) || '', notes: ($json.lead && $json.lead.notes) || '', custom_fields: ($json.lead && $json.lead.custom_fields) || {} }) }] }) }}",
+        "options": {}
+      },
       "id": "respond-lead",
       "name": "Respond get_lead_context",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1240, 300],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, result: JSON.stringify({ full_name: ($json.lead && $json.lead.full_name) || '', first_name: ($json.lead && $json.lead.first_name) || '', company_name: ($json.lead && $json.lead.company_name) || '', role: ($json.lead && $json.lead.role) || '', notes: ($json.lead && $json.lead.notes) || '', custom_fields: ($json.lead && $json.lead.custom_fields) || {} }) }] }) }}"
-      }
+      "position": [1248, 304]
     },
     {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: $json.ok ? ('Termin gebucht für ' + $json.start + '. Bestätigung kommt per E-Mail.') : ($json.fallback && $json.fallback.sms_sid ? 'Buchung nicht möglich, ich habe Ihnen den Buchungslink per SMS geschickt.' : 'Buchung fehlgeschlagen: ' + ($json.reason || 'unbekannter Fehler')) }] }) }}",
+        "options": {}
+      },
       "id": "respond-meeting",
       "name": "Respond book_meeting",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1440, 460],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: 'Meeting booked successfully.' }] }) }}"
-      }
+      "position": [1440, 464]
     },
     {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: 'Objection logged.' }] }) }}",
+        "options": {}
+      },
       "id": "respond-objection",
       "name": "Respond log_objection",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1440, 620],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: 'Objection logged.' }] }) }}"
-      }
+      "position": [1440, 624]
     },
     {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, error: 'unknown_tool' }] }) }}",
+        "options": {}
+      },
       "id": "respond-unknown",
       "name": "Respond unknown tool",
       "type": "n8n-nodes-base.respondToWebhook",
       "typeVersion": 1.1,
-      "position": [1240, 780],
+      "position": [1248, 784]
+    },
+    {
+      "id": "get-slots",
+      "name": "Get Available Slots",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1248, 944],
+      "parameters": {
+        "method": "GET",
+        "url": "=https://ki-recruiting.vercel.app/api/sales/calendar/slots?program_id={{ $json.sales_program_id }}&date_from={{ ($json.tool_args && $json.tool_args.date_from) || '' }}&date_to={{ ($json.tool_args && $json.tool_args.date_to) || '' }}&limit=3",
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "neverError": true } }
+        }
+      }
+    },
+    {
+      "id": "respond-slots",
+      "name": "Respond get_available_slots",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 944],
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $json.tool_call_id, error: 'unknown_tool' }] }) }}"
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: ($json.slots && $json.slots.length > 0) ? $json.slots.map(function(s,i){return 'Option ' + (i+1) + ': ' + s.label_de + ' (start: ' + s.start + ')';}).join('\\n') : 'Keine freien Slots in den nächsten 14 Tagen.' }] }) }}",
+        "options": {}
+      }
+    },
+    {
+      "id": "send-link",
+      "name": "Send Booking Link",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1248, 1104],
+      "parameters": {
+        "method": "POST",
+        "url": "https://ki-recruiting.vercel.app/api/sales/calendar/send-link",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [{ "name": "Content-Type", "value": "application/json" }]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ sales_call_id: $json.sales_call_id }) }}",
+        "options": {
+          "timeout": 15000,
+          "response": { "response": { "neverError": true } }
+        }
+      }
+    },
+    {
+      "id": "respond-send-link",
+      "name": "Respond send_booking_link",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1440, 1104],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ results: [{ toolCallId: $('Build Context').first().json.tool_call_id, result: ($json.success === true) ? 'Buchungslink per SMS gesendet.' : ('SMS-Versand fehlgeschlagen: ' + ($json.error || 'unbekannt')) }] }) }}",
+        "options": {}
       }
     }
   ],
@@ -174,11 +235,21 @@
         [{ "node": "Respond get_lead_context", "type": "main", "index": 0 }],
         [{ "node": "Persist Meeting (book_meeting)", "type": "main", "index": 0 }],
         [{ "node": "Log Objection (noop — appended by analyzer)", "type": "main", "index": 0 }],
+        [{ "node": "Get Available Slots", "type": "main", "index": 0 }],
+        [{ "node": "Send Booking Link", "type": "main", "index": 0 }],
         [{ "node": "Respond unknown tool", "type": "main", "index": 0 }]
       ]
     },
     "Persist Meeting (book_meeting)": { "main": [[{ "node": "Respond book_meeting", "type": "main", "index": 0 }]] },
-    "Log Objection (noop — appended by analyzer)": { "main": [[{ "node": "Respond log_objection", "type": "main", "index": 0 }]] }
+    "Log Objection (noop — appended by analyzer)": { "main": [[{ "node": "Respond log_objection", "type": "main", "index": 0 }]] },
+    "Get Available Slots": { "main": [[{ "node": "Respond get_available_slots", "type": "main", "index": 0 }]] },
+    "Send Booking Link": { "main": [[{ "node": "Respond send_booking_link", "type": "main", "index": 0 }]] }
   },
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "binaryMode": "separate",
+    "timeSavedMode": "fixed"
+  }
 }
