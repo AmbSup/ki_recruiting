@@ -24,6 +24,9 @@ type Program = {
   auto_dial: boolean;
   system_prompt_override: string | null;
   first_message_override: string | null;
+  cal_username: string | null;
+  cal_event_type_slug: string | null;
+  cal_timezone: string | null;
 };
 
 type Lead = {
@@ -64,7 +67,8 @@ export async function POST(req: NextRequest) {
         id, name, product_pitch, value_proposition, target_persona, booking_link,
         vapi_assistant_id, vapi_phone_number_id, caller_phone_number,
         program_type, call_strategy, auto_dial,
-        system_prompt_override, first_message_override
+        system_prompt_override, first_message_override,
+        cal_username, cal_event_type_slug, cal_timezone
       )
     `)
     .eq("id", sales_lead_id)
@@ -226,6 +230,9 @@ export async function POST(req: NextRequest) {
     today_weekday_de: weekdayDe,
     system_prompt_override: program.system_prompt_override ?? "",
     first_message_override: program.first_message_override ?? "",
+    cal_username: program.cal_username ?? "",
+    cal_event_type_slug: program.cal_event_type_slug ?? "",
+    cal_timezone: program.cal_timezone ?? "Europe/Vienna",
   };
 
   // custom_fields top-level flatten — damit Vapi-side {{house_type}} ohne Dot-Notation

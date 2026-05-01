@@ -85,6 +85,33 @@ function buildStrategyBlock(vars: Partial<PromptVariables>): string {
   return `\n\n## Sales-Strategie\n\n${sections.join("\n\n")}\n`;
 }
 
+// Calendar-Block — instruiert den Assistant über den Cal.com-Buchungs-Flow.
+// Wird nur eingehängt, wenn das Program eine Cal.com-Konfiguration hat (sonst
+// fällt der Assistant zurück auf nur "Ich schicke Ihnen den Buchungslink per SMS").
+function buildCalendarBlock(vars: Partial<PromptVariables>): string {
+  const hasCal = Boolean(vars.cal_username && vars.cal_event_type_slug);
+  if (!hasCal) {
+    if (vars.booking_link) {
+      return `\n\n## Termin-Vereinbarung\n\nWenn der Lead einen Termin möchte, rufe \`send_booking_link\` auf — das Tool sendet ihm den Buchungslink per SMS. Sage verbal: "Ich habe Ihnen den Buchungslink per SMS geschickt, dort können Sie sich einen passenden Slot aussuchen."`;
+    }
+    return "";
+  }
+  return `
+
+## Termin-Vereinbarung (Cal.com-Flow)
+
+**Pflicht-Reihenfolge:**
+1. **Niemals einen Termin erfinden** — bevor du einen Slot vorschlägst, rufe IMMER \`get_available_slots\` auf.
+2. Lies max. **3 Slots** vor — verteilt über mehrere Tage, nicht alle auf demselben Vormittag. Beispiel: "Ich habe Donnerstag um 10:00, oder Freitag um 14:30 — was passt Ihnen besser?"
+3. Sobald der Lead einen Slot bestätigt hat (ein klares "Ja" zu einem konkreten Slot), rufe SOFORT \`book_meeting\` mit dem **exakten** \`start\`-Wert aus get_available_slots auf — niemals abändern.
+4. Bestätige verbal: "Termin steht. Sie bekommen gleich eine Mail von Cal.com mit der Bestätigung."
+
+**Fallback-Regeln:**
+- Wenn der Lead unsicher ist oder selbst aussuchen will → \`send_booking_link\` aufrufen, dann verbal "Ich habe Ihnen den Buchungslink per SMS geschickt".
+- Wenn \`book_meeting\` zurückgibt, dass die Buchung fehlgeschlagen ist und stattdessen eine SMS gesendet wurde → ruhig bleiben, sage: "Sie bekommen gerade den Buchungslink per SMS — bitte wählen Sie dort Ihren Wunschtermin." NICHT erneut versuchen.
+- Niemals den Buchungslink laut vorlesen.`;
+}
+
 // Context-Block, der am Ende des System-Prompts angehängt wird — enthält
 // die konkreten Lead- + Program-Daten als Referenz-Block.
 //
@@ -136,6 +163,7 @@ export function buildSystemPrompt(
     (consentEnabled ? interpolate(consentGateBlock, vars) : "") +
     interpolate(bodyTemplate, vars) +
     buildStrategyBlock(vars) +
+    buildCalendarBlock(vars) +
     buildContextBlock(vars);
   return raw;
 }

@@ -57,6 +57,9 @@ type Program = {
   call_strategy: CallStrategy | null;
   system_prompt_override: string | null;
   first_message_override: string | null;
+  cal_username: string | null;
+  cal_event_type_slug: string | null;
+  cal_timezone: string | null;
   created_at: string;
   company: { id: string; name: string };
 };
@@ -562,6 +565,15 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
             <Field label="Vapi Phone-Number ID" value={form.vapi_phone_number_id ?? ""} onChange={(v) => update("vapi_phone_number_id", v)} placeholder="phn_abc123…" />
             <Field label="Caller-Nummer (E.164)" value={form.caller_phone_number ?? ""} onChange={(v) => update("caller_phone_number", v)} placeholder="+4315551234" />
             <Field label="Booking-Link" type="url" value={form.booking_link ?? ""} onChange={(v) => update("booking_link", v)} placeholder="https://cal.com/…" />
+          </Card>
+
+          <Card label="Cal.com-Kalender" icon="event">
+            <p className="font-body text-xs text-outline mb-3">
+              Wenn Cal.com-Username + Event-Type-Slug gesetzt sind, kann die KI im Call freie Slots vorlesen und direkt buchen. Sonst Fallback auf SMS-Hand-off mit dem Booking-Link.
+            </p>
+            <Field label="Cal.com-Username" value={form.cal_username ?? ""} onChange={(v) => update("cal_username", v)} placeholder="martinamon" />
+            <Field label="Event-Type-Slug" value={form.cal_event_type_slug ?? ""} onChange={(v) => update("cal_event_type_slug", v)} placeholder="30min" />
+            <Field label="Zeitzone" value={form.cal_timezone ?? "Europe/Vienna"} onChange={(v) => update("cal_timezone", v)} placeholder="Europe/Vienna" />
           </Card>
 
           <Card label="Meta-Leadgen-Formulare" icon="ads_click">

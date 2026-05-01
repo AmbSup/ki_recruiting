@@ -49,26 +49,64 @@ const getLeadContext: VapiTool = {
   server: { url: TOOLS_WEBHOOK_URL },
 };
 
+const getAvailableSlots: VapiTool = {
+  type: "function",
+  function: {
+    name: "get_available_slots",
+    description:
+      "Ruft die nächsten freien Termin-Slots des Operators aus seinem Cal.com-Kalender ab. Nutze dies BEVOR du dem Lead einen Termin vorschlägst — niemals Slots erfinden. Liefert max 5 Slots in DACH-natürlichem Format ('Donnerstag, 30. April um 10:00').",
+    parameters: {
+      type: "object",
+      properties: {
+        date_from: {
+          type: "string",
+          description: "Optional: Start-Datum (YYYY-MM-DD). Default: heute.",
+        },
+        date_to: {
+          type: "string",
+          description: "Optional: End-Datum (YYYY-MM-DD). Default: heute + 14 Tage.",
+        },
+      },
+      required: [],
+    },
+  },
+  async: false,
+  server: { url: TOOLS_WEBHOOK_URL },
+};
+
 const bookMeeting: VapiTool = {
   type: "function",
   function: {
     name: "book_meeting",
     description:
-      "Reserviert einen Termin im System, sobald der Lead einen Slot zusagt. IMMER sofort aufrufen, nicht nur mündlich bestätigen.",
+      "Bucht einen Termin im Cal.com-Kalender des Operators, sobald der Lead einen Slot zugesagt hat. Nutze AUSSCHLIESSLICH `start`-Werte, die du vorher von get_available_slots erhalten hast. Bei Fehler (Slot weg, Email fehlt) sendet das Tool automatisch einen Buchungs-Link per SMS — du musst dann verbal sagen 'Ich habe Ihnen den Buchungslink per SMS geschickt'.",
     parameters: {
       type: "object",
       properties: {
-        datetime: {
+        start: {
           type: "string",
-          description: "ISO-8601-Zeitpunkt des vereinbarten Termins, IMMER in der Zukunft.",
+          description:
+            "ISO-8601-Start-Zeitpunkt (z.B. '2026-05-05T10:00:00+02:00') — übernimm GENAU den Wert aus get_available_slots.",
         },
         notes: {
           type: "string",
-          description: "Ein Satz, was im Termin besprochen wird.",
+          description: "Ein Satz: was wird im Termin besprochen.",
         },
       },
-      required: ["datetime"],
+      required: ["start"],
     },
+  },
+  async: false,
+  server: { url: TOOLS_WEBHOOK_URL },
+};
+
+const sendBookingLink: VapiTool = {
+  type: "function",
+  function: {
+    name: "send_booking_link",
+    description:
+      "Sendet dem Lead den Buchungs-Link per SMS, wenn er den Termin lieber selbst auswählen möchte oder unsicher ist. Nutze dies als Fallback, wenn der Lead zögert oder keine Email parat hat.",
+    parameters: { type: "object", properties: {}, required: [] },
   },
   async: false,
   server: { url: TOOLS_WEBHOOK_URL },
@@ -159,7 +197,9 @@ const qualifyLead: VapiTool = {
 export const salesTools: VapiTool[] = [
   getProgram,
   getLeadContext,
+  getAvailableSlots,
   bookMeeting,
+  sendBookingLink,
   logObjection,
   requestFileUpload,
   qualifyLead,

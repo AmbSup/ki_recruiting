@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
       meta_form_ids: body.meta_form_ids ?? [],
       auto_dial: body.auto_dial ?? false,
       status: body.status ?? "draft",
+      cal_username: body.cal_username ?? null,
+      cal_event_type_slug: body.cal_event_type_slug ?? null,
+      cal_timezone: body.cal_timezone ?? "Europe/Vienna",
     })
     .select("id")
     .single();

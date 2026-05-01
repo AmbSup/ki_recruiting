@@ -70,4 +70,11 @@ export type PromptVariables = {
   // Wenn gesetzt, ersetzen sie systemPromptBody bzw. firstMessageTemplate des Use-Case-Templates.
   system_prompt_override?: string;
   first_message_override?: string;
+
+  // Cal.com-Konfiguration des Programs — wenn beide gesetzt, rendert builder.ts
+  // den Calendar-Flow-Block (get_available_slots → book_meeting). Sonst fällt
+  // der Assistant auf send_booking_link via SMS zurück.
+  cal_username?: string;
+  cal_event_type_slug?: string;
+  cal_timezone?: string;
 };

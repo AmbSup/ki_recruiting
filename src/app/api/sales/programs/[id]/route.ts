@@ -8,6 +8,7 @@ const EDITABLE_FIELDS = [
   "script_guidelines", "vapi_assistant_id", "vapi_phone_number_id",
   "caller_phone_number", "booking_link", "meta_form_ids",
   "auto_dial", "status", "system_prompt_override", "first_message_override",
+  "cal_username", "cal_event_type_slug", "cal_timezone",
 ] as const;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

@@ -13,6 +13,7 @@ const navItems = [
   { href: "/ads-setup",    icon: "ads_click",      label: "Ads Setup" },
   { href: "/applicants",   icon: "people",         label: "Bewerber" },
   { href: "/sales",        icon: "trending_up",    label: "Sales" },
+  { href: "/sales/calendar", icon: "event",        label: "Kalender" },
   { href: "/campaigns",    icon: "campaign",       label: "Kampagnen" },
   { href: "/calls",        icon: "call",           label: "Calls" },
   { href: "/invoices",     icon: "receipt_long",   label: "Abrechnung" },
