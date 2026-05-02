@@ -171,10 +171,39 @@ export function Sidebar() {
                 <span className="material-symbols-outlined text-base">logout</span>
                 <span className="font-label text-sm font-semibold">Abmelden</span>
               </button>
+              <DeployStamp />
             </div>
           )}
         </div>
       </div>
     </aside>
+  );
+}
+
+// Build-Time-Stamp im User-Menü — zeigt wann der aktuelle Vercel-Build live ging.
+// Werte aus next.config.ts → process.env.NEXT_PUBLIC_BUILD_TIME / _COMMIT_SHA.
+function DeployStamp() {
+  const buildTime = process.env.NEXT_PUBLIC_BUILD_TIME;
+  const sha = process.env.NEXT_PUBLIC_COMMIT_SHA;
+  if (!buildTime) return null;
+  const date = new Date(buildTime);
+  const formatted = isNaN(date.getTime())
+    ? buildTime
+    : date.toLocaleString("de-AT", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+  const shortSha = sha && sha !== "local" ? sha.slice(0, 7) : null;
+  return (
+    <div className="px-4 py-2.5 border-t border-outline-variant/10 bg-surface-container-low/50">
+      <div className="font-label text-[10px] uppercase tracking-widest text-outline">Deployed</div>
+      <div className="font-mono text-xs text-on-surface-variant">
+        {formatted}
+        {shortSha && <span className="ml-1.5 text-outline">· {shortSha}</span>}
+      </div>
+    </div>
   );
 }

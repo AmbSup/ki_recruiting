@@ -30,7 +30,14 @@ type Lead = {
   program: { id: string; name: string; booking_link: string | null; auto_dial: boolean };
 };
 
-type FunnelLink = { id: string; name: string; slug: string; status: string | null };
+type FunnelLink = {
+  id: string;
+  name: string;
+  slug: string;
+  status: string | null;
+  sales_program_id: string | null;
+  job_id: string | null;
+};
 
 type AdLeadLink = {
   id: string;
@@ -103,13 +110,21 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
 
       // Pipeline-Upstream: Funnel-Link wenn source=funnel + source_ref ist Funnel-ID,
       // Ad-Chain wenn der Lead via Meta-Leadgen-Matcher mit ad_leads.sales_lead_id verknüpft wurde.
+      // WICHTIG: nur setzen wenn Funnel zum aktuellen Sales-Program des Leads gehört
+      // — sonst sehen Operatoren stale Funnel-Antworten von einem alten Program (z.B.
+      // Lead war früher PV, jetzt KI Sales Call → PV-Antworten waren irreführend).
       if (l.source === "funnel" && l.source_ref) {
         const { data: f } = await supabase
           .from("funnels")
-          .select("id, name, slug, status")
+          .select("id, name, slug, status, sales_program_id, job_id")
           .eq("id", l.source_ref)
           .maybeSingle();
-        setFunnel((f as FunnelLink | null) ?? null);
+        const fn = f as FunnelLink | null;
+        if (fn && fn.sales_program_id === l.sales_program_id) {
+          setFunnel(fn);
+        } else {
+          setFunnel(null);
+        }
       } else {
         setFunnel(null);
       }
@@ -418,8 +433,14 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
                 }
               />
             )}
-            {(lead.source === "manual" || lead.source === "csv") && !funnel && !adLead && (
-              <p className="font-body text-[11px] text-outline italic">Direkt-Submit — kein Upstream</p>
+            {!funnel && !adLead && (
+              <p className="font-body text-[11px] text-outline italic">
+                {lead.source === "funnel"
+                  ? "Kein Funnel zutreffend (Lead stammt aus Funnel eines anderen Programs)"
+                  : lead.source === "manual" || lead.source === "csv"
+                    ? "Direkt-Submit — kein Upstream"
+                    : "Kein Funnel zutreffend"}
+              </p>
             )}
           </Card>
 
@@ -484,14 +505,24 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
             <Card label="Custom Fields" icon="database">
               {(() => {
                 const cf = lead.custom_fields ?? {};
-                const leadCtx = typeof cf.lead_context === "string" ? cf.lead_context : null;
-                const summary = typeof cf.funnel_summary === "string" ? cf.funnel_summary : null;
-                const qa = Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ question?: string; answer?: string; key?: string }>) : null;
+                // funnel-bezogene Felder NUR zeigen wenn der Funnel zum Program passt.
+                // Sonst sind das stale Daten von einer früheren Funnel-Submission unter einem anderen Program.
+                const showFunnelData = Boolean(funnel);
+                const leadCtx = showFunnelData && typeof cf.lead_context === "string" ? cf.lead_context : null;
+                const summary = showFunnelData && typeof cf.funnel_summary === "string" ? cf.funnel_summary : null;
+                const qa = showFunnelData && Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ question?: string; answer?: string; key?: string }>) : null;
                 // Per-Frage-Slug-Keys (z.B. was_ist_dein_hauptziel) sind bereits in der hübschen Q→A-Liste sichtbar
                 // und im DB-custom_fields nur für die Vapi-Prompt-Interpolation. Im UI also dedupen.
-                const qaKeys = new Set((qa ?? []).map((it) => it.key).filter((k): k is string => typeof k === "string" && k.length > 0));
+                // Wenn der Funnel nicht zum Program passt, filtern wir auch die per-Frage-Slugs UND die rendered-Variants raus.
+                const allFunnelQa = Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ question?: string; answer?: string; key?: string }>) : null;
+                const qaKeysToHide = new Set((allFunnelQa ?? []).map((it) => it.key).filter((k): k is string => typeof k === "string" && k.length > 0));
                 const restEntries = Object.entries(cf).filter(
-                  ([k]) => k !== "lead_context" && k !== "funnel_summary" && k !== "funnel_qa" && !qaKeys.has(k),
+                  ([k]) => {
+                    if (k === "funnel_qa" || k === "funnel_summary" || k === "lead_context") return false;
+                    if (qaKeysToHide.has(k) && !showFunnelData) return false;     // stale per-Frage-Slugs unterdrücken
+                    if (qaKeysToHide.has(k) && showFunnelData) return false;       // bereits in Q→A-Liste
+                    return true;
+                  },
                 );
                 return (
                   <>
@@ -541,8 +572,9 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
           )}
 
           {/* Roh-Funnel-Responses (Question-Text/Block-ID → option.value). Nur als Fallback,
-              wenn die saubere funnel_qa-Variante fehlt (alte Leads vor 2026-04-26). */}
-          {!Array.isArray(lead.custom_fields?.funnel_qa) && Object.keys(lead.funnel_responses ?? {}).length > 0 && (
+              wenn die saubere funnel_qa-Variante fehlt (alte Leads vor 2026-04-26).
+              Auch hier: nur zeigen wenn Funnel zum aktuellen Program passt. */}
+          {funnel && !Array.isArray(lead.custom_fields?.funnel_qa) && Object.keys(lead.funnel_responses ?? {}).length > 0 && (
             <Card label="Funnel-Antworten (raw)" icon="quiz">
               {Object.entries(lead.funnel_responses).map(([k, v]) => (
                 <InfoRow key={k} label={k} value={Array.isArray(v) ? v.join(", ") : String(v)} />

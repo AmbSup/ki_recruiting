@@ -44,6 +44,8 @@ type Lead = {
   role: string | null;
   notes: string | null;
   custom_fields: Record<string, unknown> | null;
+  source: string | null;
+  source_ref: string | null;
   program: Program | null;
 };
 
@@ -64,6 +66,7 @@ export async function POST(req: NextRequest) {
     .select(`
       id, sales_program_id, phone, consent_given, status,
       first_name, last_name, full_name, email, company_name, role, notes, custom_fields,
+      source, source_ref,
       program:sales_programs(
         id, name, product_pitch, value_proposition, target_persona, booking_link,
         vapi_assistant_id, vapi_phone_number_id, caller_phone_number,
@@ -155,6 +158,27 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Stale-Funnel-Cleanup: Wenn lead.source_ref auf einen Funnel zeigt, der zu
+  // einem ANDEREN sales_program gehört, dann sind funnel_qa/funnel_summary/
+  // lead_context + die per-Frage-Slug-Keys in custom_fields stale (z.B. der
+  // Lead war früher PV-Funnel, jetzt KI Sales Call). Würden wir diese Daten
+  // ungefiltert in den Prompt geben, sagt die KI im Call Sätze wie "Sie sind
+  // Hausbesitzer mit Süddach" — was zum aktuellen Sales-Program nicht passt.
+  // → Strip die funnel-bezogenen Keys aus custom_fields.
+  let cleanedCustomFields: Record<string, unknown> = (lead.custom_fields ?? {}) as Record<string, unknown>;
+  if (lead.source === "funnel" && lead.source_ref) {
+    const { data: srcFunnel } = await supabase
+      .from("funnels")
+      .select("sales_program_id")
+      .eq("id", lead.source_ref)
+      .maybeSingle();
+    const funnelProgramId = (srcFunnel as { sales_program_id?: string | null } | null)?.sales_program_id ?? null;
+    const funnelMatches = funnelProgramId === lead.sales_program_id;
+    if (!funnelMatches) {
+      cleanedCustomFields = stripStaleFunnelFields(cleanedCustomFields);
+    }
+  }
+
   // Prompt rendern — use-case-spezifisch via builder
   const programType = (program.program_type ?? "generic") as SalesProgramType;
   const callStrategy = (program.call_strategy ?? {}) as Record<string, unknown>;
@@ -196,7 +220,7 @@ export async function POST(req: NextRequest) {
     company_name: lead.company_name ?? "",
     role: lead.role ?? "",
     notes: lead.notes ?? "",
-    custom_fields_json: JSON.stringify(lead.custom_fields ?? {}),
+    custom_fields_json: JSON.stringify(cleanedCustomFields),
     program_name: program.name ?? "",
     product_pitch: program.product_pitch ?? "",
     value_proposition: program.value_proposition ?? "",
@@ -243,7 +267,7 @@ export async function POST(req: NextRequest) {
   // custom_fields top-level flatten — damit Vapi-side {{house_type}} ohne Dot-Notation
   // gegen variableValues matcht. Überschreibt nichts, weil custom_fields-Keys keine
   // Reserved-Names der vars sind. Werte werden zu strings normalisiert.
-  const cfFlatten = (lead.custom_fields ?? {}) as Record<string, unknown>;
+  const cfFlatten = cleanedCustomFields;
   for (const [k, v] of Object.entries(cfFlatten)) {
     if (k in vars) continue;
     (vars as Record<string, unknown>)[k] = typeof v === "string" ? v : JSON.stringify(v);
@@ -341,4 +365,20 @@ export async function POST(req: NextRequest) {
     vapi_assistant_id: assistantId,
     vapi_phone_number_id: phoneNumberId,
   });
+}
+
+// Entfernt funnel-spezifische Felder aus custom_fields. Genutzt wenn der Lead
+// aus einem Funnel eines anderen Sales-Programs stammt — die alten Antworten
+// wären für den aktuellen Call irreführend (z.B. PV-Hook im KI-Sales-Call).
+function stripStaleFunnelFields(cf: Record<string, unknown>): Record<string, unknown> {
+  const FUNNEL_RENDERED_KEYS = new Set(["funnel_qa", "funnel_summary", "lead_context"]);
+  const qaArr = Array.isArray(cf.funnel_qa) ? (cf.funnel_qa as Array<{ key?: string }>) : [];
+  const slugKeys = new Set(qaArr.map((q) => q.key).filter((k): k is string => typeof k === "string" && k.length > 0));
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(cf)) {
+    if (FUNNEL_RENDERED_KEYS.has(k)) continue;
+    if (slugKeys.has(k)) continue;
+    out[k] = v;
+  }
+  return out;
 }
