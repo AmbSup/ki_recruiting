@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getFunnelPublicUrl } from "@/lib/funnel-url";
 import { ImageUpload } from "@/components/ui/image-upload";
+import { parseVideoUrl, providerLabel } from "@/lib/video-url-parser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,8 @@ type BlockType =
   | "icon_cards"
   | "vertical_tiles"
   | "free_text"
-  | "box";
+  | "box"
+  | "video";
 
 type ChoiceItem = {
   id: string;
@@ -616,6 +618,7 @@ function blockDefaults(type: BlockType): Block {
     text: { content: "Text hier eingeben…", size: "md", align: "left", bold: false },
     button: { label: "Weiter →", style: "primary" },
     image: { url: "", alt: "", rounded: true },
+    video: { video_url: "", video_provider: "youtube", video_aspect: "16/9", video_max_width: "100%" },
     divider: { spacing: "md" },
     rating: { stars: 5, count: "18+", source_text: "Kununu Bewertungen" },
     welcome: { emoji: "👋", headline: "Hey, lass' uns loslegen!", subtext: "Diese kurze Umfrage hilft uns zu verstehen, ob diese Rolle gut zu dir passt. Es dauert nur eine Minute." },
@@ -772,6 +775,7 @@ const blockConfig: Record<BlockType, { label: string; icon: string; category: "i
   text:            { label: "Text",              icon: "text_fields",    category: "simple" },
   button:          { label: "Button",            icon: "smart_button",   category: "simple" },
   image:           { label: "Bild",              icon: "image",          category: "simple" },
+  video:           { label: "Video",             icon: "play_circle",    category: "simple" },
   divider:         { label: "Trenner",           icon: "horizontal_rule", category: "simple" },
   rating:          { label: "Bewertungen",       icon: "star",           category: "simple" },
   loading_screen:  { label: "Ladescreen",        icon: "hourglass_top",  category: "simple" },
@@ -1119,6 +1123,44 @@ function BlockPreview({
               <span className="material-symbols-outlined text-3xl text-gray-300">image</span>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── VIDEO ── */}
+      {block.type === "video" && (
+        <div className="px-4 py-2">
+          {(() => {
+            const url = (c.video_url as string) ?? "";
+            const aspect = (c.video_aspect as string) ?? "16/9";
+            const aspectClass =
+              aspect === "1/1" ? "aspect-square" :
+              aspect === "9/16" ? "aspect-[9/16]" :
+              aspect === "4/3" ? "aspect-[4/3]" :
+              "aspect-video";
+            if (!url) {
+              return (
+                <div className={`${aspectClass} w-full bg-gray-100 rounded-xl flex flex-col items-center justify-center gap-1`}
+                  style={{ maxWidth: (c.video_max_width as string) || "100%", margin: "0 auto" }}>
+                  <span className="material-symbols-outlined text-3xl text-gray-300">play_circle</span>
+                  <span className="font-label text-xs text-gray-400">URL einfügen →</span>
+                </div>
+              );
+            }
+            const { provider, embed_url } = parseVideoUrl(url);
+            return (
+              <div className={`${aspectClass} w-full overflow-hidden rounded-xl bg-black relative`}
+                style={{ maxWidth: (c.video_max_width as string) || "100%", margin: "0 auto", pointerEvents: "none" }}>
+                {provider === "direct" ? (
+                  <video src={embed_url} className="w-full h-full" />
+                ) : (
+                  <iframe src={embed_url} className="w-full h-full" />
+                )}
+                <div className="absolute top-1 right-1 bg-black/50 text-white text-[10px] px-1.5 py-0.5 rounded">
+                  {providerLabel(provider)}
+                </div>
+              </div>
+            );
+          })()}
         </div>
       )}
 
@@ -2023,6 +2065,60 @@ function PropertiesPanel({ block, onUpdate, onAddChild }: { block: Block; onUpda
               </div>
             </div>
           </div>
+        </>
+      )}
+
+      {/* VIDEO */}
+      {block.type === "video" && (
+        <>
+          {(() => {
+            const url = (c.video_url as string) ?? "";
+            const parsed = parseVideoUrl(url);
+            return (
+              <>
+                <div>
+                  <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Video-URL (YouTube, Vimeo oder MP4)</label>
+                  <input
+                    type="url"
+                    value={url}
+                    onChange={(e) => onUpdate({ video_url: e.target.value, video_provider: parseVideoUrl(e.target.value).provider })}
+                    placeholder="https://www.youtube.com/watch?v=…"
+                    className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                  />
+                  {url && (
+                    <p className={`mt-1.5 font-label text-[11px] ${parsed.provider === "direct" && !url.match(/\.(mp4|webm|mov|m3u8)/i) ? "text-amber-600" : "text-primary"}`}>
+                      {parsed.provider === "direct" && !url.match(/\.(mp4|webm|mov|m3u8)/i)
+                        ? `⚠️ URL nicht als YouTube/Vimeo erkannt — wird als Direkt-Video versucht. Prüfe ob die URL stimmt.`
+                        : `✓ ${providerLabel(parsed.provider)} erkannt`}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Format</label>
+                  <select
+                    value={(c.video_aspect as string) ?? "16/9"}
+                    onChange={(e) => onUpdate({ video_aspect: e.target.value })}
+                    className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+                  >
+                    <option value="16/9">16:9 (Standard, querformat)</option>
+                    <option value="4/3">4:3 (klassisch)</option>
+                    <option value="1/1">1:1 (Quadrat, Social)</option>
+                    <option value="9/16">9:16 (Hochformat, Mobile)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">Max-Breite</label>
+                  <input
+                    type="text"
+                    value={(c.video_max_width as string) ?? "100%"}
+                    onChange={(e) => onUpdate({ video_max_width: e.target.value })}
+                    placeholder="100% oder 600px"
+                    className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary"
+                  />
+                </div>
+              </>
+            );
+          })()}
         </>
       )}
 

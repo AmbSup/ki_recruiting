@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { parseVideoUrl } from "@/lib/video-url-parser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -8,7 +9,7 @@ type BlockType =
   | "profile_header" | "multiple_choice" | "image_choice" | "list_choice"
   | "contact_form" | "text" | "button" | "image" | "divider" | "rating"
   | "welcome" | "loading_screen" | "thank_you" | "icon_cards" | "vertical_tiles" | "free_text"
-  | "box";
+  | "box" | "video";
 
 type ChoiceItem = {
   id: string;
@@ -973,6 +974,37 @@ function BlockRenderer({
             objectFit: ((c.img_fit as string) || "cover") as "cover" | "contain" | "fill" | "none",
             margin: "0 auto", display: "block",
           }} />
+      </div>
+    );
+  }
+
+  // ── VIDEO ──
+  if (block.type === "video" && c.video_url) {
+    const { provider, embed_url } = parseVideoUrl(c.video_url as string);
+    const aspect = (c.video_aspect as string) ?? "16/9";
+    const aspectClass =
+      aspect === "1/1" ? "aspect-square" :
+      aspect === "9/16" ? "aspect-[9/16]" :
+      aspect === "4/3" ? "aspect-[4/3]" :
+      "aspect-video";
+    return (
+      <div className="px-5 py-3">
+        <div
+          className={`${aspectClass} w-full overflow-hidden rounded-2xl bg-black`}
+          style={{ maxWidth: (c.video_max_width as string) || "100%", margin: "0 auto" }}
+        >
+          {provider === "direct" ? (
+            <video src={embed_url} controls className="w-full h-full" />
+          ) : (
+            <iframe
+              src={embed_url}
+              className="w-full h-full"
+              allowFullScreen
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              loading="lazy"
+            />
+          )}
+        </div>
       </div>
     );
   }
