@@ -207,6 +207,13 @@ export function FunnelsClient() {
                       campaign
                     </Link>
                     <a
+                      href={`/funnels/${funnel.id}/analytics`}
+                      className="material-symbols-outlined text-outline hover:text-primary transition-colors text-xl p-1"
+                      title="Analytics öffnen"
+                    >
+                      analytics
+                    </a>
+                    <a
                       href={`/funnels/${funnel.id}/editor`}
                       className="material-symbols-outlined text-outline hover:text-primary transition-colors text-xl p-1"
                       title="Editor öffnen"

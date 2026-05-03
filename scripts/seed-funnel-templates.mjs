@@ -101,6 +101,20 @@ const blockThankYou = (headline, subtext) => ({
   content: { headline, subtext },
 });
 
+// VSL-Block: leere URL = Operator füllt im Editor (Properties-Panel) einen
+// YouTube-/Vimeo-Link ein. Im Player wird der Block übersprungen wenn URL leer
+// ist, also stört nichts solange der Operator es nicht customisiert hat.
+const blockVideo = ({ video_url = "", aspect = "16/9", max_width = "100%" } = {}) => ({
+  id: uid(),
+  type: "video",
+  content: {
+    video_url,
+    video_provider: video_url ? "youtube" : "youtube",
+    video_aspect: aspect,
+    video_max_width: max_width,
+  },
+});
+
 // ─── Templates ────────────────────────────────────────────────────────────────
 
 const templates = [
@@ -120,6 +134,9 @@ const templates = [
         page_order: 1,
         is_required: true,
         blocks: [
+          // VSL: Operator paste hier YouTube-/Vimeo-Link mit 60-90s Recruiting-
+          // Video (Backstube zeigen, Team vorstellen, "Bewerbe dich heute")
+          blockVideo({ aspect: "16/9" }),
           blockProfileHeader({
             headline: "Wir suchen dich für unsere Backstube!",
             subtext: "Faires Gehalt · familiäres Team · Entwicklungsmöglichkeiten",

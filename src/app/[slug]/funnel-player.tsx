@@ -410,7 +410,40 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         });
       }, 2000);
     }
+
+    // Funnel-Analytics: View-Event (1× pro Mount). UTM + Referrer aus Browser.
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      void fetch("/api/funnels/track", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          funnel_id: funnel.id,
+          event_type: "view",
+          utm: {
+            source: params.get("utm_source"),
+            medium: params.get("utm_medium"),
+            campaign: params.get("utm_campaign"),
+          },
+          referrer: document.referrer || null,
+        }),
+      }).catch(() => { /* fire-and-forget — Tracking-Fehler dürfen Funnel nicht blocken */ });
+    }
   }, []);
+
+  // Page-View-Event bei jedem Wechsel der Page
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    void fetch("/api/funnels/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        funnel_id: funnel.id,
+        event_type: "page_view",
+        page_order: pageIdx + 1,
+      }),
+    }).catch(() => {});
+  }, [pageIdx, funnel.id]);
 
   // Auto-advance loading screen + fire Contact event when contact form is shown
   useEffect(() => {
@@ -529,6 +562,17 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     // Success → advance to thank-you, then fire pixel/CV-analyse asynchronously.
     setSubmitted(true);
     setSubmitting(false);
+
+    // Analytics: Submit-Event tracken
+    void fetch("/api/funnels/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        funnel_id: funnel.id,
+        event_type: "submit",
+        page_order: pages.length,
+      }),
+    }).catch(() => {});
     advance();
 
     if (typeof window !== "undefined" && (window as Window & { fbq?: (...args: unknown[]) => void }).fbq) {
