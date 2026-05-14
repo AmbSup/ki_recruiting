@@ -1,8 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSystemPrompt, buildFirstMessage } from "@/lib/vapi-prompts/builder";
 import { salesTools } from "@/lib/vapi-prompts/tool-definitions";
 import type { SalesProgramType } from "@/lib/vapi-prompts/schemas";
+
+// SECURITY: Vapi-Webhook-Secret-Verifikation.
+// Konfiguration: Vapi Dashboard → Assistant → Server URL → Secret-Field.
+// Vapi sendet den Wert als Header `X-Vapi-Secret` bei jedem Request.
+// Solange VAPI_WEBHOOK_SECRET nicht gesetzt ist (Transitional-Mode), läuft der
+// Endpoint OHNE Verifikation — mit WARN-Log auf jeden Call. Sobald env-Var
+// gesetzt ist, fail-closed: ungültige/fehlende Secrets → 401.
+function checkVapiSecret(req: NextRequest): { ok: true } | { ok: false; status: number; error: string } {
+  const expected = process.env.VAPI_WEBHOOK_SECRET;
+  if (!expected) {
+    console.warn("[vapi-webhook] VAPI_WEBHOOK_SECRET nicht gesetzt — Endpoint offen (Transitional-Mode). Setze das Secret in Vapi-Dashboard + Vercel-Env, um fail-closed zu aktivieren.");
+    return { ok: true };
+  }
+  const provided = req.headers.get("x-vapi-secret") ?? "";
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
+    return { ok: false, status: 401, error: "Unauthorized" };
+  }
+  return { ok: true };
+}
 
 // ---------------------------------------------------------------------------
 // POST /api/webhook/vapi
@@ -51,6 +73,11 @@ type CachedLead = {
 };
 
 export async function POST(req: NextRequest) {
+  const sec = checkVapiSecret(req);
+  if (!sec.ok) {
+    return NextResponse.json({ error: sec.error }, { status: sec.status });
+  }
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();

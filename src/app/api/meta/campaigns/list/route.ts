@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import { listMetaCampaigns } from '@/services/meta/campaigns';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireReader } from '@/lib/auth/guards';
 
 export async function GET() {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   try {
     const [metaCampaigns, supabase] = await Promise.all([
       listMetaCampaigns(),

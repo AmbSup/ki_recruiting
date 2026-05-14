@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireWriterOrN8n } from '@/lib/auth/guards';
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriterOrN8n(req);
+  if (!auth.ok) return auth.response;
   const { application_id } = await req.json();
 
   if (!application_id) {

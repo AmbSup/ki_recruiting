@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireReader } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const supabase = createAdminClient();
 

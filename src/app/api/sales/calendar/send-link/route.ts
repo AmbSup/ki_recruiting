@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendBookingLinkSms } from "@/lib/cal-com/sms";
+import { requireWriterOrN8n } from "@/lib/auth/guards";
 
 export const maxDuration = 30;
 export const runtime = "nodejs";
@@ -15,6 +16,8 @@ export const runtime = "nodejs";
 //  - vom UI als Operator-Action (zukünftig)
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriterOrN8n(req);
+  if (!auth.ok) return auth.response;
   let body: { sales_call_id?: string; sales_lead_id?: string };
   try {
     body = await req.json();

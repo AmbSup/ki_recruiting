@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCallAnalysis, TranscriptMessage } from "@/agents/call-analyzer";
+import { verifyN8nSecret } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const auth = verifyN8nSecret(req);
+  if (!auth.ok) return auth.response;
   let body: {
     application_id?: string;
     vapi_call_id?: string | null;

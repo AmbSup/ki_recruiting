@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 30;
 export const runtime = "nodejs";
@@ -58,6 +59,8 @@ function slugify(s: string): string {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   let body: Body;
   try {
     body = (await req.json()) as Body;

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone, isTerminalSalesStatus } from "@/lib/phone";
 import { generateTextHaiku } from "@/services/claude/client";
+import { extractPreferenceTags } from "@/lib/sales/funnel-tags";
+import type { Json } from "@/types/database";
 
 export const maxDuration = 60;
 
@@ -295,7 +297,7 @@ async function handleSalesSubmission(args: {
   const [{ data: program, error: programErr }, { data: pagesRaw }] = await Promise.all([
     supabase
       .from("sales_programs")
-      .select("id, auto_dial, product_pitch, target_persona")
+      .select("id, auto_dial, product_pitch, target_persona, program_type, call_strategy")
       .eq("id", sales_program_id)
       .single(),
     supabase
@@ -330,12 +332,27 @@ async function handleSalesSubmission(args: {
     targetPersona: program.target_persona ?? null,
     qa: ctx.qa,
   });
-  const funnelCustomFields = {
+  const funnelCustomFields: Record<string, unknown> = {
     ...ctx.custom_fields,            // pro-Frage Keys
     funnel_summary: ctx.summary,      // markdown bullet list
     funnel_qa: ctx.qa,                // structured array
     lead_context,                     // 1-Satz natural-language hook
   };
+
+  // Product-Finder: Funnel-Antworten → Preference-Tags via call_strategy.matching.funnel_tag_map.
+  // Tags landen auf custom_fields.preference_tags. Andere program_types ignorieren das Feld.
+  if (program.program_type === "product_finder") {
+    const callStrategy = (program.call_strategy ?? {}) as Record<string, unknown>;
+    const matchingCfg = (callStrategy.matching ?? {}) as {
+      funnel_tag_map?: Record<string, Record<string, string>>;
+    };
+    if (matchingCfg.funnel_tag_map) {
+      const preference_tags = extractPreferenceTags(answers ?? {}, matchingCfg.funnel_tag_map);
+      if (preference_tags.length > 0) {
+        funnelCustomFields.preference_tags = preference_tags;
+      }
+    }
+  }
 
   if (existing) {
     const preserveStatus = isTerminalSalesStatus(existing.status);
@@ -353,8 +370,8 @@ async function handleSalesSubmission(args: {
       .update({
         // Core-Felder bewusst nicht überschreiben — Re-Submission soll nicht
         // existierende Daten zerstören. Consent-Timestamp refreshen (neue Einwilligung).
-        funnel_responses: mergedResponses,
-        custom_fields: mergedCustomFields,
+        funnel_responses: mergedResponses as Json,
+        custom_fields: mergedCustomFields as Json,
         consent_given: true,
         consent_source: "funnel_checkbox",
         consent_timestamp: nowIso,
@@ -388,8 +405,8 @@ async function handleSalesSubmission(args: {
       email: email || null,
       source: test_mode ? "test" : "funnel",
       source_ref: funnel_id,
-      funnel_responses: answers ?? {},
-      custom_fields: funnelCustomFields,
+      funnel_responses: (answers ?? {}) as Json,
+      custom_fields: funnelCustomFields as Json,
       consent_given: true,
       consent_source: "funnel_checkbox",
       consent_timestamp: nowIso,
@@ -418,8 +435,8 @@ async function handleSalesSubmission(args: {
         await supabase
           .from("sales_leads")
           .update({
-            funnel_responses: merged,
-            custom_fields: mergedCf,
+            funnel_responses: merged as Json,
+            custom_fields: mergedCf as Json,
             consent_timestamp: nowIso,
             updated_at: nowIso,
           })
@@ -453,10 +470,18 @@ async function handleSalesSubmission(args: {
 // variableValues mit custom_fields). n8n erwartet diesen Payload — ohne ihn fällt
 // der Vapi-API-Call still aus (Lead bleibt "new", kein Call).
 async function triggerSalesCall(origin: string, sales_lead_id: string): Promise<void> {
+  // Internal server-to-server fetch from public /api/apply route — kein User-
+  // Session vorhanden. Wir authentifizieren via X-N8N-Secret (siehe
+  // requireWriterOrN8n im Target-Endpoint).
+  const secret = process.env.N8N_WEBHOOK_SECRET;
+  if (!secret) {
+    console.error("[apply/sales] N8N_WEBHOOK_SECRET not set — cannot auto-dial");
+    return;
+  }
   try {
     await fetch(`${origin}/api/sales/trigger-call`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Webhook-Secret": secret },
       body: JSON.stringify({ sales_lead_id }),
     });
   } catch (err) {

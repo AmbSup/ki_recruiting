@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { requireReader, requireWriter } from '@/lib/auth/guards';
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const { id: jobId } = await params;
   const supabase = createAdminClient();
 
@@ -22,6 +25,8 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const { id: jobId } = await params;
   const imageId = req.nextUrl.searchParams.get('image_id');
   if (!imageId) return NextResponse.json({ error: 'image_id required' }, { status: 400 });
@@ -59,6 +64,8 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const { id: jobId } = await params;
   const { selected_ad_image_url } = await req.json();
 

@@ -37,6 +37,16 @@ interface InvolveMePayload {
 // Hilfsfunktionen zum Parsen des Payloads
 // ---------------------------------------------------------------------------
 
+type ApplicantSource = "facebook" | "instagram" | "linkedin" | "direct" | "referral";
+const APPLICANT_SOURCES: ReadonlySet<string> = new Set([
+  "facebook", "instagram", "linkedin", "direct", "referral",
+]);
+
+function normalizeApplicantSource(raw: string | undefined | null): ApplicantSource {
+  if (raw && APPLICANT_SOURCES.has(raw)) return raw as ApplicantSource;
+  return "direct";
+}
+
 /** Gibt den ersten String-Wert aus value / values zurück */
 function firstValue(r: InvolveMeResponse): string | null {
   if (typeof r.value === "string" && r.value.trim()) return r.value.trim();
@@ -127,15 +137,17 @@ function extractContactAndCv(responses: InvolveMeResponse[]): {
 export async function POST(req: NextRequest) {
   // 1. Webhook-Secret prüfen
   const webhookSecret = process.env.INVOLVEME_WEBHOOK_SECRET;
-  if (webhookSecret) {
-    const providedSecret =
-      req.nextUrl.searchParams.get("secret") ??
-      req.headers.get("x-webhook-secret") ??
-      req.headers.get("authorization")?.replace("Bearer ", "");
-
-    if (providedSecret !== webhookSecret) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  // Fail CLOSED: kein Secret konfiguriert → 500. Kein Query-String-Secret mehr,
+  // weil URLs (inkl. Query) in Vercel-Logs landen. Header-only.
+  if (!webhookSecret) {
+    console.error("[involveme-webhook] INVOLVEME_WEBHOOK_SECRET nicht gesetzt");
+    return NextResponse.json({ error: "Server misconfig" }, { status: 500 });
+  }
+  const providedSecret =
+    req.headers.get("x-webhook-secret") ??
+    req.headers.get("authorization")?.replace("Bearer ", "");
+  if (providedSecret !== webhookSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // 2. Payload parsen
@@ -162,9 +174,12 @@ export async function POST(req: NextRequest) {
   const finalEmail = email ?? contactObj.email ?? null;
   const finalPhone = phone ?? contactObj.phone ?? null;
 
-  // E-Mail ist Pflichtfeld
+  // E-Mail + Name sind Pflichtfelder (applicants.email/full_name sind NOT NULL)
   if (!finalEmail) {
     return NextResponse.json({ error: "E-Mail fehlt im Payload" }, { status: 422 });
+  }
+  if (!finalName) {
+    return NextResponse.json({ error: "Name fehlt im Payload" }, { status: 422 });
   }
 
   // 4. Query-Parameter auslesen
@@ -224,7 +239,7 @@ export async function POST(req: NextRequest) {
       job_id: resolvedJobId,
       funnel_id: funnelId,
       pipeline_stage: "new",
-      source: utmParams.source ?? utmParams.utm_source ?? "involveme",
+      source: normalizeApplicantSource(utmParams.source ?? utmParams.utm_source),
       utm_params: utmParams,
       funnel_responses: qualificationAnswers,
       applied_at: payload.submittedAt ?? payload.created_at ?? new Date().toISOString(),

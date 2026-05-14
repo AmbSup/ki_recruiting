@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/phone";
 import { validateCustomFields, SalesProgramType } from "@/lib/vapi-prompts/schemas";
+import { requireReader, requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
@@ -13,6 +14,8 @@ const EDITABLE_FIELDS = [
 ] as const;
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const supabase = createAdminClient();
 
@@ -27,6 +30,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const supabase = createAdminClient();
   let body: Record<string, unknown>;
@@ -116,6 +121,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const supabase = createAdminClient();
   const { error } = await supabase.from("sales_leads").delete().eq("id", id);

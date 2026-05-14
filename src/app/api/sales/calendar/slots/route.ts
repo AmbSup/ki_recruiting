@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { fetchAvailableSlots, resolveCalIdentity } from "@/lib/cal-com/client";
 import { formatSlots } from "@/lib/cal-com/format-slots";
+import { requireWriterOrN8n } from "@/lib/auth/guards";
 
 export const maxDuration = 30;
 export const runtime = "nodejs";
@@ -18,6 +19,8 @@ export const runtime = "nodejs";
 // Default-Range: heute bis +14 Tage.
 
 export async function GET(req: NextRequest) {
+  const auth = await requireWriterOrN8n(req);
+  if (!auth.ok) return auth.response;
   const { searchParams } = new URL(req.url);
   const programId = searchParams.get("program_id");
   const dateFrom = searchParams.get("date_from");

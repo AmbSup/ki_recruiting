@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone, isTerminalSalesStatus } from "@/lib/phone";
 import { parseCsv } from "@/lib/csv";
+import { requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
@@ -11,6 +12,8 @@ const KNOWN_COLUMNS = new Set([
 ]);
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const contentType = req.headers.get("content-type") ?? "";
   let csvText: string;
   let salesProgramId: string | null = null;

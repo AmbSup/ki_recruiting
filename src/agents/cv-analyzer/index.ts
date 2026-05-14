@@ -4,6 +4,25 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
+// CVs liegen jetzt im privaten Bucket, exposed über /api/cvs/<path>-Proxy.
+// Server-side können wir den HTTP-Hop überspringen und direkt aus Storage laden.
+// Legacy-public-URLs (vor Migration 20260510) werden weiter via fetch geholt.
+async function fetchCvBytes(url: string): Promise<{ contentType: string; buffer: ArrayBuffer }> {
+  const proxyMatch = url.match(/^\/api\/cvs\/(.+)$/);
+  if (proxyMatch) {
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.storage.from("cvs").download(proxyMatch[1]);
+    if (error || !data) throw new Error(error?.message ?? "CV-Download fehlgeschlagen");
+    const buffer = await data.arrayBuffer();
+    return { contentType: data.type || "application/octet-stream", buffer };
+  }
+  const response = await fetch(url);
+  return {
+    contentType: response.headers.get("content-type") ?? "",
+    buffer: await response.arrayBuffer(),
+  };
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export type CvAnalysisResult = {
@@ -69,9 +88,9 @@ Antworte IMMER als valides JSON ohne Markdown-Codeblöcke.`;
   if (options.cv_file_url) {
     // Try to fetch and analyze the actual CV file
     try {
-      const response = await fetch(options.cv_file_url);
-      const contentType = response.headers.get("content-type") ?? "";
-      const buffer = await response.arrayBuffer();
+      const fetched = await fetchCvBytes(options.cv_file_url);
+      const contentType = fetched.contentType;
+      const buffer = fetched.buffer;
       const base64 = Buffer.from(buffer).toString("base64");
 
       // Detect DOCX via Content-Type oder Filename-Endung. DOCX wird mit mammoth

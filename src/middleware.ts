@@ -1,10 +1,16 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import type { Database } from '@/types/database'
 
-export async function proxy(request: NextRequest) {
+const PROTECTED_UI_PREFIXES = [
+  '/dashboard', '/companies', '/jobs', '/funnels', '/applicants',
+  '/campaigns', '/calls', '/invoices', '/users', '/settings', '/sales',
+];
+
+export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
@@ -26,8 +32,7 @@ export async function proxy(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname;
-  const protectedPrefixes = ['/dashboard', '/companies', '/jobs', '/funnels', '/applicants', '/campaigns', '/calls', '/invoices', '/users', '/settings'];
-  const isProtected = protectedPrefixes.some((p) => pathname.startsWith(p));
+  const isProtected = PROTECTED_UI_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();

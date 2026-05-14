@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runCallAnalysis, TranscriptMessage } from "@/agents/call-analyzer";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
@@ -28,11 +29,11 @@ type VapiCall = {
  * existiert, wird sie (cascade) gelöscht und neu angelegt. Keine Duplikate.
  *
  * Body: { vapi_call_id: string, application_id: string }
- * Auth: server-side admin-client; UI ruft mit operator-session auf, kein
- *       zusätzlicher Auth-Check hier (Endpoint ist nicht öffentlich verlinkt,
- *       aber sollte langfristig session-gegated sein — Backlog).
+ * Auth: requireWriter — operator-session erforderlich (admin/operator role).
  */
 export async function POST(req: NextRequest) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const apiKey = process.env.VAPI_API_KEY;
   if (!apiKey) {
     return NextResponse.json(

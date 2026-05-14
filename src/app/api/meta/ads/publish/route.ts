@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { uploadImageToMeta } from '@/services/meta/images';
 import { createMetaAd } from '@/services/meta/ads';
+import { requireWriter } from '@/lib/auth/guards';
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   try {
     const body = await req.json();
     const { ad_id, image_base64, page_id: bodyPageId } = body as {
@@ -72,7 +75,7 @@ export async function POST(req: NextRequest) {
     // 3. Update DB
     await supabase
       .from('ads')
-      .update({ meta_ad_id: metaAd.id, image_hash, status: 'paused', updated_at: new Date().toISOString() })
+      .update({ meta_ad_id: metaAd.id, image_hash, status: 'PAUSED', updated_at: new Date().toISOString() })
       .eq('id', ad_id);
 
     return NextResponse.json({ success: true, meta_ad_id: metaAd.id, image_hash });

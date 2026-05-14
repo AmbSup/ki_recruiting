@@ -4,6 +4,11 @@ import { runCvAnalysis } from "@/agents/cv-analyzer";
 
 export const maxDuration = 60;
 
+// SECURITY-TODO: Diese Route wird vom public funnel-player nach CV-Upload gerufen
+// (siehe src/app/[slug]/funnel-player.tsx:587). Eine Auth-Protection würde
+// einen Refactor verlangen (apply triggert cv-analyse intern statt funnel-player).
+// Aktuelle Risiko-Bewertung: niedrig — Endpoint validiert application_id, gibt
+// keine Daten zurück, einziges Risiko ist Anthropic-Spend-DoS bei bekannter UUID.
 export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const { application_id } = await req.json();

@@ -5,6 +5,7 @@ import { realEstateUseCase } from "./use-cases/real_estate";
 import { coachingUseCase } from "./use-cases/coaching";
 import { ecommerceHightickedUseCase } from "./use-cases/ecommerce_highticket";
 import { handwerkUseCase } from "./use-cases/handwerk";
+import { productFinderUseCase } from "./use-cases/product_finder";
 import type { SalesProgramType } from "./schemas";
 import type { PromptVariables, UseCaseTemplate } from "./types";
 
@@ -15,6 +16,7 @@ const templatesByType: Record<SalesProgramType, UseCaseTemplate> = {
   coaching: coachingUseCase,
   ecommerce_highticket: ecommerceHightickedUseCase,
   handwerk: handwerkUseCase,
+  product_finder: productFinderUseCase,
 };
 
 // Einfacher Mustache-ähnlicher {{variable}}-Replacer. Unbekannte Variablen

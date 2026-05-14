@@ -3,6 +3,9 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { buildSystemPrompt, buildFirstMessage } from "@/lib/vapi-prompts/builder";
 import { salesTools } from "@/lib/vapi-prompts/tool-definitions";
 import type { SalesProgramType } from "@/lib/vapi-prompts/schemas";
+import { requireWriterOrN8n } from "@/lib/auth/guards";
+import { matchOfferForLead, type MatchedOffer } from "@/lib/sales/match";
+import type { Json } from "@/types/database";
 
 export const maxDuration = 60;
 
@@ -50,6 +53,8 @@ type Lead = {
 };
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriterOrN8n(req);
+  if (!auth.ok) return auth.response;
   const supabase = createAdminClient();
   let body: { sales_lead_id?: string };
   try { body = await req.json(); }
@@ -185,6 +190,38 @@ export async function POST(req: NextRequest) {
   const now = new Date();
   const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][now.getDay()];
 
+  // Product-Finder Pre-Match: lade Top-Offer basierend auf preference_tags aus
+  // custom_fields. Wenn Match → in variableValues injizieren + custom_fields
+  // persistieren, damit send_offer_link das gleiche Offer findet.
+  let matchedOffer: MatchedOffer | null = null;
+  if (programType === "product_finder") {
+    const tags = Array.isArray(cleanedCustomFields.preference_tags)
+      ? (cleanedCustomFields.preference_tags as unknown[]).filter((t): t is string => typeof t === "string")
+      : [];
+    if (tags.length > 0) {
+      const matchingCfg = (callStrategy.matching ?? {}) as {
+        min_match_score?: number;
+        fallback_message?: string;
+      };
+      const result = await matchOfferForLead({
+        supabase,
+        sales_program_id: program.id,
+        preference_tags: tags,
+        min_score: matchingCfg.min_match_score,
+        fallback_message: matchingCfg.fallback_message,
+      });
+      matchedOffer = result.offer;
+      if (matchedOffer) {
+        // Persistiere matched_offer_id, damit /api/sales/offers/send-link es findet
+        cleanedCustomFields = { ...cleanedCustomFields, matched_offer_id: matchedOffer.id };
+        await supabase
+          .from("sales_leads")
+          .update({ custom_fields: cleanedCustomFields as Json })
+          .eq("id", lead.id);
+      }
+    }
+  }
+
   // Backward-Compat: alte Programs hatten hook_promise/hard_qualifier_questions als Strategy-Keys.
   // Neue Strategie-Keys (hook_one_liner, discovery_questions) gewinnen, falls beide gesetzt.
   const hookOneLiner = (callStrategy.hook_one_liner as string | undefined)
@@ -262,6 +299,13 @@ export async function POST(req: NextRequest) {
     cal_username: program.cal_username ?? "",
     cal_event_type_slug: program.cal_event_type_slug ?? "",
     cal_timezone: program.cal_timezone ?? "Europe/Vienna",
+
+    // Product-Finder: matched_offer_* + has_match — vom Pre-Match oben gesetzt.
+    // In allen anderen Use-Cases einfach leer / "false" (Prompt ignoriert sie).
+    matched_offer_name: matchedOffer?.name ?? "",
+    matched_offer_summary: matchedOffer?.summary ?? "",
+    matched_offer_url: matchedOffer?.detail_url ?? "",
+    has_match: matchedOffer ? "true" : "false",
   };
 
   // custom_fields top-level flatten — damit Vapi-side {{house_type}} ohne Dot-Notation

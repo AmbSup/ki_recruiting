@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runSalesCallAnalysis, TranscriptMessage } from "@/agents/sales-call-analyzer";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { verifyN8nSecret } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
 export async function POST(req: NextRequest) {
+  const auth = verifyN8nSecret(req);
+  if (!auth.ok) return auth.response;
   let body: {
     sales_call_id?: string;
     customer_phone?: string;

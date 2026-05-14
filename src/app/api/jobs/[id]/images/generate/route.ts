@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Anthropic from '@anthropic-ai/sdk';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { composeAdImage } from '@/services/meta/image-composer';
+import { requireWriter } from '@/lib/auth/guards';
 
 export const maxDuration = 60;
 
@@ -110,6 +111,8 @@ export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   try {
     const { id: jobId } = await params;
     const body = await req.json().catch(() => ({}));

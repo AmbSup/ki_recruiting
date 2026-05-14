@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireReader, requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const supabase = createAdminClient();
   const { searchParams } = new URL(req.url);
   const companyId = searchParams.get("company_id");
@@ -23,6 +26,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const supabase = createAdminClient();
   let body: Record<string, unknown>;
   try {

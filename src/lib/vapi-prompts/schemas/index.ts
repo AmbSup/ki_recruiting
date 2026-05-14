@@ -9,6 +9,7 @@ import { realEstateSchema, realEstateFieldMeta } from "./real_estate";
 import { coachingSchema, coachingFieldMeta } from "./coaching";
 import { ecommerceHighticketSchema, ecommerceHighticketFieldMeta } from "./ecommerce_highticket";
 import { handwerkSchema, handwerkFieldMeta } from "./handwerk";
+import { productFinderSchema, productFinderFieldMeta } from "./product_finder";
 
 export type SalesProgramType =
   | "generic"
@@ -16,7 +17,8 @@ export type SalesProgramType =
   | "real_estate"
   | "coaching"
   | "ecommerce_highticket"
-  | "handwerk";
+  | "handwerk"
+  | "product_finder";
 
 /** Render-Metadaten für das Lead-Modal (Label, Input-Type, Enum-Werte, required). */
 export type FieldMeta = {
@@ -36,6 +38,7 @@ export const schemasByProgramType: Record<SalesProgramType, ZodTypeAny> = {
   coaching: coachingSchema,
   ecommerce_highticket: ecommerceHighticketSchema,
   handwerk: handwerkSchema,
+  product_finder: productFinderSchema,
 };
 
 export const fieldMetaByProgramType: Record<SalesProgramType, FieldMetaMap> = {
@@ -45,6 +48,7 @@ export const fieldMetaByProgramType: Record<SalesProgramType, FieldMetaMap> = {
   coaching: coachingFieldMeta,
   ecommerce_highticket: ecommerceHighticketFieldMeta,
   handwerk: handwerkFieldMeta,
+  product_finder: productFinderFieldMeta,
 };
 
 /**

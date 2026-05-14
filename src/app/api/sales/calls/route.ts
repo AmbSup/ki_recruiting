@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireReader } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const supabase = createAdminClient();
   const { searchParams } = new URL(req.url);
   const programId = searchParams.get("sales_program_id");

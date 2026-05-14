@@ -78,4 +78,12 @@ export type PromptVariables = {
   cal_username?: string;
   cal_event_type_slug?: string;
   cal_timezone?: string;
+
+  // Product-Finder-Variablen — gesetzt von /api/sales/trigger-call wenn
+  // program_type='product_finder' und der Lead Funnel-Antworten hat.
+  // Sind in anderen Use-Cases einfach leer / "false" und stören nicht.
+  matched_offer_name?: string;
+  matched_offer_summary?: string;
+  matched_offer_url?: string;
+  has_match?: string; // "true" | "false"
 };

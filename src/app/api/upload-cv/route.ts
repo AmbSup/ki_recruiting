@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  const { data } = supabase.storage.from("cvs").getPublicUrl(path);
-  return NextResponse.json({ url: data.publicUrl });
+  // Same-origin Proxy-URL — Bucket ist privat, Auth + Signed URL passieren in
+  // /api/cvs/[...path]/route.ts auf jedem Klick.
+  return NextResponse.json({ url: `/api/cvs/${path}`, path });
 }

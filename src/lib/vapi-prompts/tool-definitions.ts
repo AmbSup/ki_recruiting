@@ -194,6 +194,41 @@ const qualifyLead: VapiTool = {
   server: { url: TOOLS_WEBHOOK_URL },
 };
 
+const matchOffer: VapiTool = {
+  type: "function",
+  function: {
+    name: "match_offer",
+    description:
+      "Sucht das beste Angebot aus dem Programm-Katalog basierend auf Präferenz-Tags. Nur aufrufen, wenn der Kunde im Call EXPLIZIT andere Wünsche äußert als das vor-gematche Top-Angebot (matched_offer_name). Übergib die Präferenzen als Tag-Liste (z.B. ['usa','luxury','familie']).",
+    parameters: {
+      type: "object",
+      properties: {
+        preference_tags: {
+          type: "array",
+          items: { type: "string" },
+          description:
+            "Liste der Präferenz-Tags des Leads. Extrahiere sie aus dem Gespräch in der gleichen Schreibweise wie die Programm-Tags (kleingeschrieben, deutsch oder englisch — z.B. 'asien', 'aktiv', '<2k', '2-5k').",
+        },
+      },
+      required: ["preference_tags"],
+    },
+  },
+  async: false,
+  server: { url: TOOLS_WEBHOOK_URL },
+};
+
+const sendOfferLink: VapiTool = {
+  type: "function",
+  function: {
+    name: "send_offer_link",
+    description:
+      "Sendet dem Lead den Detail-Link zum aktuell besprochenen Angebot per SMS UND WhatsApp. Aufrufen NACHDEM der Kunde explizit zugestimmt hat ('Ja, schick mal'). Keine Argumente nötig — Tool zieht das letzte gematchte Angebot aus dem Lead-Kontext.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  async: false,
+  server: { url: TOOLS_WEBHOOK_URL },
+};
+
 export const salesTools: VapiTool[] = [
   getProgram,
   getLeadContext,
@@ -203,4 +238,6 @@ export const salesTools: VapiTool[] = [
   logObjection,
   requestFileUpload,
   qualifyLead,
+  matchOffer,
+  sendOfferLink,
 ];

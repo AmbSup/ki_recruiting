@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { createBooking, resolveCalIdentity } from "@/lib/cal-com/client";
 import { sendBookingLinkSms } from "@/lib/cal-com/sms";
+import { requireWriterOrN8n } from "@/lib/auth/guards";
 
 export const maxDuration = 30;
 export const runtime = "nodejs";
@@ -25,6 +26,8 @@ type BookResult =
   | { ok: false; reason: string; fallback?: { sms_sid: string } | { error: string } };
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriterOrN8n(req);
+  if (!auth.ok) return auth.response;
   let body: { sales_call_id?: string; start?: string; notes?: string };
   try {
     body = await req.json();

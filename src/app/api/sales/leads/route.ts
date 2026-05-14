@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone } from "@/lib/phone";
 import { validateCustomFields, SalesProgramType } from "@/lib/vapi-prompts/schemas";
+import { requireReader, requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
 export async function GET(req: NextRequest) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const supabase = createAdminClient();
   const { searchParams } = new URL(req.url);
   const programId = searchParams.get("sales_program_id");
@@ -27,6 +30,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const auth = await requireWriter();
+  if (!auth.ok) return auth.response;
   const supabase = createAdminClient();
   let body: Record<string, unknown>;
   try { body = await req.json(); }

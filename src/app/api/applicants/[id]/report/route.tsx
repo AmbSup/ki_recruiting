@@ -5,6 +5,7 @@ import {
   ApplicantReportPDF,
   ApplicantReportData,
 } from "@/components/operator/applicant-report-pdf";
+import { requireReader } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 // React-PDF nutzt Buffer/Stream APIs — kein Edge.
@@ -89,6 +90,8 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const supabase = createAdminClient();
 

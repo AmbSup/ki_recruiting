@@ -212,7 +212,9 @@ export async function computeCallMetrics(
       .in("sales_lead_id", leadIds);
     const completed = (calls ?? []).filter((c: { status?: string }) => c.status === "completed");
     const durations = completed.map((c: { duration_seconds: number | null }) => c.duration_seconds).filter((d: number | null): d is number => typeof d === "number" && d > 0);
-    const analyses = completed.flatMap((c: { analysis: Array<{ meeting_booked: boolean | null; call_rating: number | null }> | null }) => c.analysis ?? []);
+    const analyses = completed
+      .map((c) => c.analysis)
+      .filter((a): a is { meeting_booked: boolean; call_rating: number | null } => a != null);
     const ratings = analyses.map((a) => a.call_rating).filter((r): r is number => typeof r === "number");
     const meetingsBooked = analyses.filter((a) => a.meeting_booked === true).length;
     return {

@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runAudienceOptimizer } from '@/agents/audience-optimizer';
-
-function isAuthorized(req: NextRequest): boolean {
-  const secret = process.env.N8N_WEBHOOK_SECRET;
-  if (!secret) return true;
-  return req.headers.get('x-webhook-secret') === secret;
-}
+import { verifyN8nSecret } from '@/lib/auth/guards';
 
 export async function POST(req: NextRequest) {
-  if (!isAuthorized(req)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-  }
+  const auth = verifyN8nSecret(req);
+  if (!auth.ok) return auth.response;
 
   try {
     const result = await runAudienceOptimizer();

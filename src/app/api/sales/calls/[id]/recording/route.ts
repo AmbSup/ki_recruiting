@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { requireReader } from "@/lib/auth/guards";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -10,6 +11,8 @@ export const dynamic = "force-dynamic";
 //   2. Vapi-Storage-URL (Fallback bei alten Calls, die noch nicht migriert sind)
 //      → Proxy-Stream (Vapi unterstützt Range-Requests nicht immer direkt)
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await requireReader();
+  if (!auth.ok) return auth.response;
   const { id } = await params;
   const supabase = createAdminClient();
 
