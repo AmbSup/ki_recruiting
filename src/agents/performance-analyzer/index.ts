@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getInsights } from '@/services/meta/insights';
 import type { PerformanceScoreInput } from '@/types/meta-ads';
+import type { Json } from '@/types/database';
 
 // Normalize a value between min (worst) and max (best) to 0–1
 function normalize(value: number, worst: number, best: number): number {
@@ -64,7 +65,7 @@ export async function runPerformanceAnalyzer(): Promise<{
         ctr: insights.ctr,
         cpc_cents: insights.cpc_cents,
         cpl_cents: insights.cpl_cents,
-        raw_insights: insights.raw as Record<string, unknown>,
+        raw_insights: insights.raw as Json,
       },
       { onConflict: 'entity_type,entity_id,date_start', ignoreDuplicates: false }
     );

@@ -175,8 +175,11 @@ export async function runAudienceOptimizer(): Promise<{
     return { lookalikes_created, new_adsets };
   }
 
-  // Group emails by campaign
+  // Group emails by campaign. Skip leads ohne campaign-FK (z.B. Sales-Leads
+  // pre-Match oder unmatched Meta-Leadgen-Rows) — sonst landen sie unter
+  // dem "null"-Schlüssel und blasen das Aggregat.
   const emailsByCampaign = leads.reduce<Record<string, string[]>>((acc, lead) => {
+    if (!lead.ad_campaign_id) return acc;
     if (!acc[lead.ad_campaign_id]) acc[lead.ad_campaign_id] = [];
     if (lead.email) acc[lead.ad_campaign_id].push(lead.email);
     return acc;

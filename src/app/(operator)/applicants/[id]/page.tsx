@@ -3,6 +3,7 @@
 import { useState, useEffect, use } from "react";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
+import type { Database } from "@/types/database";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -258,7 +259,7 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
 
   async function updateStage(stage: string) {
     setStageSaving(true);
-    await supabase.from("applications").update({ pipeline_stage: stage }).eq("id", id);
+    await supabase.from("applications").update({ pipeline_stage: stage as Database["public"]["Enums"]["pipeline_stage"] }).eq("id", id);
     setApp((prev) => prev ? { ...prev, pipeline_stage: stage } : prev);
     setStageSaving(false);
   }

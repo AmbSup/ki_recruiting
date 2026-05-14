@@ -4,6 +4,9 @@ import { createMetaAdSet } from '@/services/meta/adsets';
 import { generateCreatives } from '@/agents/creative-generator';
 import { getFunnelPublicUrl } from '@/lib/funnel-url';
 import type { CampaignCreateOptions, MetaTargeting } from '@/types/meta-ads';
+import type { Database, Json } from '@/types/database';
+
+type MetaAdObjectiveDb = Database['public']['Enums']['meta_ad_objective'];
 
 // Meta region key IDs for Austrian states (Bundesländer)
 const AT_REGION_KEYS: Record<string, string> = {
@@ -187,7 +190,7 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
       company_id: options.company_id,
       meta_campaign_id: metaCampaign.id,
       name: campaignName,
-      objective: objective as string,
+      objective: objective as MetaAdObjectiveDb,
       status: 'PAUSED',
       daily_budget_cents: options.daily_budget_cents,
       funnel_id: options.funnel_id ?? null,
@@ -267,7 +270,7 @@ export async function createRecruitingCampaign(options: CampaignCreateOptions): 
         name: `${campaignName} – ${variant.name}`,
         status: 'PAUSED',
         daily_budget_cents: Math.floor(options.daily_budget_cents / targetingVariants.length),
-        targeting: variant.targeting,
+        targeting: variant.targeting as unknown as Json,
       })
       .select('id')
       .single();
