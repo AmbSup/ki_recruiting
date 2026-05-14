@@ -86,4 +86,12 @@ export type PromptVariables = {
   matched_offer_summary?: string;
   matched_offer_url?: string;
   has_match?: string; // "true" | "false"
+
+  // Notification-Channels — abhängig von Env (TWILIO_WHATSAPP_NUMBER gesetzt?).
+  // Damit der AI nicht "WhatsApp" verspricht solange Twilio-WhatsApp-Production
+  // nicht eingerichtet ist. notify_channels = "SMS und WhatsApp" oder "SMS";
+  // notify_channels_short = "WhatsApp" oder "SMS" (für kürzere Phrasen).
+  notify_channels?: string;
+  notify_channels_short?: string;
+  has_whatsapp?: string; // "true" | "false"
 };

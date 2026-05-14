@@ -306,6 +306,13 @@ export async function POST(req: NextRequest) {
     matched_offer_summary: matchedOffer?.summary ?? "",
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
+
+    // Notify-Channels — abhängig von Twilio-Setup. Wenn WhatsApp-Nummer im
+    // Env steht (Sandbox oder Production), darf der AI WhatsApp versprechen.
+    // Sonst nur SMS — damit kein leeres Versprechen rausgeht.
+    notify_channels: process.env.TWILIO_WHATSAPP_NUMBER ? "SMS und WhatsApp" : "SMS",
+    notify_channels_short: process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS",
+    has_whatsapp: process.env.TWILIO_WHATSAPP_NUMBER ? "true" : "false",
   };
 
   // custom_fields top-level flatten — damit Vapi-side {{house_type}} ohne Dot-Notation

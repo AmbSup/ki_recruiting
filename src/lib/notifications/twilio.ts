@@ -99,10 +99,41 @@ async function sendWhatsApp(
     );
     return null;
   }
+
+  // Twilio WhatsApp Production verlangt einen pre-approved Content-Template
+  // OUTSIDE des 24h-Service-Windows. Free-Form-Messages funktionieren nur in
+  // Sandbox-Mode (Lead muss vorher Join-Code an Sandbox-Nummer schicken).
+  //
+  // Wenn TWILIO_WHATSAPP_CONTENT_SID gesetzt ist → Template-Send mit Variablen.
+  // Wenn nicht → Free-Form (klappt in Sandbox, scheitert in Production).
+  const contentSid = process.env.TWILIO_WHATSAPP_CONTENT_SID;
+  const fromAddr = `whatsapp:${waSender}`;
+  const toAddr = `whatsapp:${opts.toPhone}`;
+
+  if (contentSid) {
+    // Template-Variables-Reihenfolge muss mit dem im Twilio-Content-Builder
+    // angelegten Template übereinstimmen. Default-Schema (1=name, 2=offerName,
+    // 3=summary, 4=detailUrl) lässt sich anpassen indem TWILIO_WHATSAPP_CONTENT_SID
+    // auf ein anderes Template zeigt.
+    const contentVariables = JSON.stringify({
+      "1": opts.leadFirstName?.trim() || "",
+      "2": opts.offerName,
+      "3": opts.detailUrl,
+    });
+    const msg = await client.messages.create({
+      to: toAddr,
+      from: fromAddr,
+      contentSid,
+      contentVariables,
+    });
+    return msg.sid;
+  }
+
+  // Fallback: Free-Form (Sandbox / 24h-Service-Window)
   const body = composeBody(opts);
   const msg = await client.messages.create({
-    to: `whatsapp:${opts.toPhone}`,
-    from: `whatsapp:${waSender}`,
+    to: toAddr,
+    from: fromAddr,
     body,
     ...(opts.imageUrl ? { mediaUrl: [opts.imageUrl] } : {}),
   });
