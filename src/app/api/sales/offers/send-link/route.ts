@@ -72,10 +72,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Channel-Auswahl: nur WhatsApp (Twilio-SMS-Nummer ist voice-only).
+  // Bei SMS-capable-Nummer in Env: ["sms", "whatsapp"] parallel senden.
+  const channels: ("sms" | "whatsapp")[] = process.env.TWILIO_WHATSAPP_NUMBER
+    ? ["whatsapp"]
+    : ["sms"];
+
   try {
     const result = await sendOfferLink({
       toPhone: lead.phone,
-      channels: ["sms", "whatsapp"],
+      channels,
       leadFirstName: lead.first_name ?? undefined,
       offerName: offer.name,
       detailUrl: offer.detail_url,
