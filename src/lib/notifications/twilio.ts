@@ -112,13 +112,18 @@ async function sendWhatsApp(
 
   if (contentSid) {
     // Template-Variables-Reihenfolge muss mit dem im Twilio-Content-Builder
-    // angelegten Template übereinstimmen. Default-Schema (1=name, 2=offerName,
-    // 3=summary, 4=detailUrl) lässt sich anpassen indem TWILIO_WHATSAPP_CONTENT_SID
-    // auf ein anderes Template zeigt.
+    // angelegten Template übereinstimmen. Card-Template-Schema:
+    //   {{1}} = Vorname (Body)
+    //   {{2}} = Offer-Name (Body)
+    //   {{3}} = Detail-URL (Button-CTA)
+    //   {{4}} = Image-URL (Media-Header) — Fallback auf generisches Reise-Bild
+    //          falls Offer kein image_url hat (Twilio würde sonst auf leere URL hängen).
     const contentVariables = JSON.stringify({
       "1": opts.leadFirstName?.trim() || "",
       "2": opts.offerName,
       "3": opts.detailUrl,
+      "4": opts.imageUrl ||
+        "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=800",
     });
     const msg = await client.messages.create({
       to: toAddr,
