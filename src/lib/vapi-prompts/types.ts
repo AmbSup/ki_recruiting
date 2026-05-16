@@ -84,6 +84,8 @@ export type PromptVariables = {
   // Sind in anderen Use-Cases einfach leer / "false" und stören nicht.
   matched_offer_name?: string;
   matched_offer_summary?: string;
+  matched_offer_description?: string; // Long-form mit Locations, Dauer, inkl. Services
+  matched_offer_price?: string;       // Formatiert "5.499 Euro" oder leer
   matched_offer_url?: string;
   has_match?: string; // "true" | "false"
 

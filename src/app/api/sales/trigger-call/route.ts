@@ -304,6 +304,10 @@ export async function POST(req: NextRequest) {
     // In allen anderen Use-Cases einfach leer / "false" (Prompt ignoriert sie).
     matched_offer_name: matchedOffer?.name ?? "",
     matched_offer_summary: matchedOffer?.summary ?? "",
+    matched_offer_description: matchedOffer?.description ?? "",
+    matched_offer_price: matchedOffer?.price_cents != null
+      ? `${(matchedOffer.price_cents / 100).toLocaleString("de-DE")} ${matchedOffer.currency ?? "Euro"}`
+      : "",
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
 

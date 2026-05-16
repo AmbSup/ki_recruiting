@@ -12,6 +12,8 @@ export type MatchedOffer = {
   detail_url: string;
   image_url: string | null;
   tags: string[];
+  price_cents: number | null;
+  currency: string | null;
   score: number;
 };
 
@@ -59,7 +61,7 @@ export async function matchOfferForLead(opts: {
   const { data, error } = await opts.supabase
     .from("sales_offers")
     .select(
-      "id, name, summary, description, detail_url, image_url, tags",
+      "id, name, summary, description, detail_url, image_url, tags, price_cents, currency",
     )
     .eq("sales_program_id", opts.sales_program_id)
     .eq("active", true)
@@ -74,7 +76,7 @@ export async function matchOfferForLead(opts: {
 
   const rows = (data ?? []) as Pick<
     OfferRow,
-    "id" | "name" | "summary" | "description" | "detail_url" | "image_url" | "tags"
+    "id" | "name" | "summary" | "description" | "detail_url" | "image_url" | "tags" | "price_cents" | "currency"
   >[];
 
   if (rows.length === 0) {
@@ -92,6 +94,8 @@ export async function matchOfferForLead(opts: {
         name: row.name,
         summary: row.summary,
         description: row.description,
+        price_cents: row.price_cents,
+        currency: row.currency,
         detail_url: row.detail_url,
         image_url: row.image_url,
         tags: offerTags,
