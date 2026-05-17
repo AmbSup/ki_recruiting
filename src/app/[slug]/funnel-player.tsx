@@ -1011,9 +1011,13 @@ function BlockRenderer({
 
   // ── IMAGE ──
   if (block.type === "image" && c.url) {
+    // full_bleed: kein Padding rundherum, keine abgerundeten Ecken → echte
+    // randlose Full-Width-Optik (Hero-Image-Style). Default-Verhalten (false)
+    // bleibt mit Padding + optional rounded.
+    const fullBleed = c.full_bleed === true;
     return (
-      <div className="px-5 py-3">
-        <img src={c.url as string} alt={(c.alt as string) ?? ""} className={`${c.rounded ? "rounded-2xl" : ""}`}
+      <div className={fullBleed ? "" : "px-5 py-3"}>
+        <img src={c.url as string} alt={(c.alt as string) ?? ""} className={`${c.rounded && !fullBleed ? "rounded-2xl" : ""}`}
           style={{
             width: (c.img_width as string) || "100%",
             height: (c.img_height as string) || "auto",
