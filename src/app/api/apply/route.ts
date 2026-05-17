@@ -368,8 +368,14 @@ async function handleSalesSubmission(args: {
     await supabase
       .from("sales_leads")
       .update({
-        // Core-Felder bewusst nicht überschreiben — Re-Submission soll nicht
-        // existierende Daten zerstören. Consent-Timestamp refreshen (neue Einwilligung).
+        // Name + Email: bei Re-Submission den frischen Funnel-Eintrag gewinnen
+        // lassen. User-explicite Eingabe ist authoritativ. Operator-UI-Edits
+        // werden so überschrieben — falls das problematisch wird, später ein
+        // "manual_override"-Flag auf der Tabelle einführen.
+        first_name: firstName || null,
+        last_name: lastName,
+        full_name: name,
+        email: email || null,
         funnel_responses: mergedResponses as Json,
         custom_fields: mergedCustomFields as Json,
         consent_given: true,

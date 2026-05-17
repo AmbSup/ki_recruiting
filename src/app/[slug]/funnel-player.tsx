@@ -562,6 +562,9 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     // Success → advance to thank-you, then fire pixel/CV-analyse asynchronously.
     setSubmitted(true);
     setSubmitting(false);
+    // Automatisch zur Thank-You-Page springen falls vorhanden. advance() ist
+    // no-op wenn keine weitere Page existiert.
+    advance();
 
     // Analytics: Submit-Event tracken
     void fetch("/api/funnels/track", {
