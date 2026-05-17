@@ -596,6 +596,11 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   }
 
   if (!currentPage) {
+    // Wenn funnel.thank_you_text gepflegt ist → den nehmen (Operator-Control).
+    // Sonst neutraler Default-Text der für Recruiting + Sales + alles passt.
+    const fallbackMessage =
+      funnel.thank_you_text?.trim() ||
+      "Deine Anfrage wurde erfolgreich übermittelt. Wir melden uns gleich bei dir.";
     return (
       <Screen color={color} textColor={textColor} branding={branding}>
         <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
@@ -603,7 +608,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
             <span className="text-2xl font-bold" style={{ color: textColor }}>✓</span>
           </div>
           <h2 className="text-lg font-black text-gray-900 mb-2">Vielen Dank!</h2>
-          <p className="text-sm text-gray-500">Deine Bewerbung wurde erfolgreich übermittelt.</p>
+          <p className="text-sm text-gray-500 whitespace-pre-line">{fallbackMessage}</p>
         </div>
       </Screen>
     );
