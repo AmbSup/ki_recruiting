@@ -184,6 +184,30 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
     await load();
   }
 
+  // Terminal-Status reset: setzt status='new' und ENTFERNT matched_offer_id +
+  // preference_tags aus custom_fields, damit der nächste Auto-Dial / Pre-Match
+  // sauber neu läuft. Pflicht-Confirm weil destructive (löscht Pipeline-State).
+  async function resetLead() {
+    if (!lead) return;
+    if (!confirm(
+      `Lead "${lead.full_name || lead.first_name || "(unbekannt)"}" wirklich auf NEU zurücksetzen?\n\n` +
+      `→ Status: ${lead.status} → new\n` +
+      `→ matched_offer_id + preference_tags werden gelöscht\n\n` +
+      `Auto-Dial / Funnel-Resubmit kann danach wieder einen Call triggern.`
+    )) return;
+    const currentCustom = (lead as unknown as { custom_fields?: Record<string, unknown> }).custom_fields ?? {};
+    const cleanCustom: Record<string, unknown> = { ...currentCustom };
+    delete cleanCustom.matched_offer_id;
+    delete cleanCustom.preference_tags;
+    const res = await fetch(`/api/sales/leads/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "new", custom_fields: cleanCustom }),
+    });
+    if (res.ok) load();
+    else alert("Reset fehlgeschlagen: " + ((await res.json()).error ?? "unbekannt"));
+  }
+
   async function triggerCall() {
     setTriggering(true);
     setTriggerError(null);
@@ -256,6 +280,16 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
             <span className="font-label text-xs font-bold uppercase tracking-widest text-primary">
               {triggerMsg}
             </span>
+          )}
+          {["contacted", "meeting_booked", "not_interested", "do_not_call"].includes(lead.status) && (
+            <button
+              onClick={resetLead}
+              title="Lead wieder auf NEU setzen — erlaubt neuen Auto-Dial / Funnel-Resubmit. Löscht matched_offer + preference_tags."
+              className="flex items-center gap-2 border border-tertiary/40 text-tertiary px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-tertiary-container/20 transition-colors"
+            >
+              <span className="material-symbols-outlined text-sm">restart_alt</span>
+              Re-Aktivieren
+            </button>
           )}
           <button
             onClick={triggerCall}
