@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { normalizePhone, isTerminalSalesStatus } from "@/lib/phone";
+import { normalizePhone, isHardOptOutStatus } from "@/lib/phone";
 import { generateTextHaiku } from "@/services/claude/client";
 import { extractPreferenceTags } from "@/lib/sales/funnel-tags";
 import type { Json } from "@/types/database";
@@ -355,7 +355,9 @@ async function handleSalesSubmission(args: {
   }
 
   if (existing) {
-    const preserveStatus = isTerminalSalesStatus(existing.status);
+    // Nur HARD-Opt-Out (not_interested + do_not_call) preserven. "contacted"
+    // und "meeting_booked" sind soft-terminal → Funnel-Resubmit darf re-aktivieren.
+    const preserveStatus = isHardOptOutStatus(existing.status);
     const mergedResponses = {
       ...(existing.funnel_responses as Record<string, unknown>),
       ...(answers ?? {}),

@@ -32,7 +32,7 @@ export function normalizePhone(input: string | null | undefined, defaultCountry:
   return null;
 }
 
-// Terminal-Status, die bei Re-Submission NICHT auf "new" zurückgesetzt werden
+// Terminal-Status (alle Stati nach einem ersten Touch — für Filter/Display).
 export const TERMINAL_SALES_LEAD_STATUSES = [
   "contacted",
   "meeting_booked",
@@ -43,4 +43,16 @@ export const TERMINAL_SALES_LEAD_STATUSES = [
 export function isTerminalSalesStatus(status: string | null | undefined): boolean {
   if (!status) return false;
   return (TERMINAL_SALES_LEAD_STATUSES as readonly string[]).includes(status);
+}
+
+// Hard-Opt-Out-Status: User hat explizit NEIN gesagt. Diese NIEMALS auf "new"
+// zurücksetzen — auch nicht bei Funnel-Resubmit. Schutz gegen Belästigung.
+// Im Gegensatz dazu sind "contacted" + "meeting_booked" "soft terminal" —
+// die dürfen bei Funnel-Resubmit re-aktiviert werden, weil ein neuer Submit
+// ein explizites Re-Engagement-Signal des Leads ist.
+export const HARD_OPT_OUT_STATUSES = ["not_interested", "do_not_call"] as const;
+
+export function isHardOptOutStatus(status: string | null | undefined): boolean {
+  if (!status) return false;
+  return (HARD_OPT_OUT_STATUSES as readonly string[]).includes(status);
 }
