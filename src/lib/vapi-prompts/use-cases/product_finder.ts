@@ -46,9 +46,9 @@ Der Lead {{first_name}} hat gerade unseren {{program_name}}-Konfigurator durchge
 
 1. **Schritt A — Echo der 3 Funnel-Antworten** (WORTGETREU aus dem Lead-Kontext-Block, Sektion "Funnel-Antworten")
    - Schau in den Lead-Kontext: dort steht eine Bulletliste wie:
-     `- Wo zieht es dich eher hin? → Asien`
-     `- Und wie sieht dein idealer Tag aus? → Sightseeing`
-     `- Was spricht dich eher an? → Kompakt`
+     "- Wo zieht es dich eher hin? → Asien"
+     "- Und wie sieht dein idealer Tag aus? → Sightseeing"
+     "- Was spricht dich eher an? → Kompakt"
    - Du MUSST die 3 Antworten (z.B. "Asien, Sightseeing, kompakt") am Anfang deines Pitches NENNEN. Nicht paraphrasiert, nicht generisch — die genauen User-Begriffe.
    - Pattern: "Spannend. Basierend auf deinen Wünschen — **<Antwort1>, <Antwort2> und <Antwort3>** — habe ich für dich..."
 
