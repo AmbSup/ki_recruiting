@@ -305,8 +305,16 @@ export async function POST(req: NextRequest) {
     matched_offer_name: matchedOffer?.name ?? "",
     matched_offer_summary: matchedOffer?.summary ?? "",
     matched_offer_description: matchedOffer?.description ?? "",
+    // Preis: integer ohne Tausender-Trenner (sonst liest Vapi-TTS "5.499" als
+    // "five point four nine nine"). Currency-Code zu ausgeschriebener Form
+    // wandeln (EUR→Euro statt "E-U-R" buchstabiert).
     matched_offer_price: matchedOffer?.price_cents != null
-      ? `${(matchedOffer.price_cents / 100).toLocaleString("de-DE")} ${matchedOffer.currency ?? "Euro"}`
+      ? `${Math.round(matchedOffer.price_cents / 100)} ${
+          matchedOffer.currency === "USD" ? "Dollar"
+          : matchedOffer.currency === "GBP" ? "Pfund"
+          : matchedOffer.currency === "CHF" ? "Franken"
+          : "Euro"
+        }`
       : "",
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
