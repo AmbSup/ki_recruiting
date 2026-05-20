@@ -1,4 +1,4 @@
-import { basePromptHeader, consentGateBlock } from "./base-prompt";
+import { consentGateBlock, pickBasePromptHeader } from "./base-prompt";
 import { genericUseCase } from "./use-cases/generic";
 import { recruitingUseCase } from "./use-cases/recruiting";
 import { realEstateUseCase } from "./use-cases/real_estate";
@@ -179,7 +179,7 @@ export function buildSystemPrompt(
   // require_consent default = true (opt-out), damit EU-AI-Act-konform.
   const consentEnabled = vars.require_consent !== false;
   const raw =
-    interpolate(basePromptHeader, vars) +
+    interpolate(pickBasePromptHeader(language), vars) +
     (consentEnabled ? interpolate(consentGateBlock, vars) : "") +
     interpolate(bodyTemplate, vars) +
     buildStrategyBlock(vars) +

@@ -374,6 +374,28 @@ export async function POST(req: NextRequest) {
   const llmProvider = (callStrategy.llm_provider as string | undefined) ?? "openai";
   const llmModel = (callStrategy.llm_model as string | undefined) ?? "gpt-4o";
 
+  // Sprach-spezifische Transcriber/Voice-Overrides: der Vapi-Assistant ist im
+  // Dashboard für Deutsch konfiguriert (Deepgram nova-2 de + deutsche TTS).
+  // Für EN-Programs MÜSSEN wir das überschreiben, sonst transcribiert Deepgram
+  // englische Sprache als deutsch-Pseudo-Phoneme (z.B. "yes" → "jess") und
+  // die KI bekommt Garbage-Input + antwortet auf Deutsch zurück.
+  //
+  // Transcriber-Override ist Pflicht für EN. Voice-Override ist optional und
+  // per Program konfigurierbar via call_strategy.voice = {provider, voiceId}.
+  // Fallback ist ElevenLabs Rachel (englische Stimme, in den meisten Vapi-
+  // Accounts vorhanden). Falls dein Vapi-Account keine ElevenLabs-Integration
+  // hat, setze call_strategy.voice oder lass das Feld weg und akzeptiere
+  // deutschen Voice-Akzent beim Vorlesen von Englisch.
+  const transcriberOverride = isEn
+    ? { provider: "deepgram", model: "nova-2", language: "en" }
+    : undefined;
+  const voiceOverrideRaw = (callStrategy.voice as { provider?: string; voiceId?: string } | undefined);
+  const voiceOverride = voiceOverrideRaw?.provider && voiceOverrideRaw?.voiceId
+    ? { provider: voiceOverrideRaw.provider, voiceId: voiceOverrideRaw.voiceId }
+    : isEn
+      ? { provider: "11labs", voiceId: "21m00Tcm4TlvDq8ikWAM" /* "Rachel" */ }
+      : undefined;
+
   const vapiPayload = {
     phoneNumberId,
     customer: { number: lead.phone },
@@ -385,6 +407,8 @@ export async function POST(req: NextRequest) {
         messages: [{ role: "system", content: systemPrompt }],
         tools: salesTools,
       },
+      ...(transcriberOverride ? { transcriber: transcriberOverride } : {}),
+      ...(voiceOverride ? { voice: voiceOverride } : {}),
       firstMessage,
       variableValues: vars,
     },
