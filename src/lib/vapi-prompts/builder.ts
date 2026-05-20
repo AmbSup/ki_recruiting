@@ -6,18 +6,30 @@ import { coachingUseCase } from "./use-cases/coaching";
 import { ecommerceHightickedUseCase } from "./use-cases/ecommerce_highticket";
 import { handwerkUseCase } from "./use-cases/handwerk";
 import { productFinderUseCase } from "./use-cases/product_finder";
+import { productFinderEnUseCase } from "./use-cases/product_finder_en";
 import type { SalesProgramType } from "./schemas";
 import type { PromptVariables, UseCaseTemplate } from "./types";
 
-const templatesByType: Record<SalesProgramType, UseCaseTemplate> = {
-  generic: genericUseCase,
-  recruiting: recruitingUseCase,
-  real_estate: realEstateUseCase,
-  coaching: coachingUseCase,
-  ecommerce_highticket: ecommerceHightickedUseCase,
-  handwerk: handwerkUseCase,
-  product_finder: productFinderUseCase,
+// Language-aware lookup: keys sind "${program_type}:${language}".
+// Fallback-Kaskade in pickTemplate(): exact lang → de-default → genericUseCase.
+// Damit z.B. ein neues product_finder:fr ohne Code-Change auf product_finder:de
+// fällt bis eine fr-Variante angelegt wird.
+const templatesByTypeAndLang: Record<string, UseCaseTemplate> = {
+  "generic:de": genericUseCase,
+  "recruiting:de": recruitingUseCase,
+  "real_estate:de": realEstateUseCase,
+  "coaching:de": coachingUseCase,
+  "ecommerce_highticket:de": ecommerceHightickedUseCase,
+  "handwerk:de": handwerkUseCase,
+  "product_finder:de": productFinderUseCase,
+  "product_finder:en": productFinderEnUseCase,
 };
+
+function pickTemplate(programType: SalesProgramType, language: string): UseCaseTemplate {
+  return templatesByTypeAndLang[`${programType}:${language}`]
+    ?? templatesByTypeAndLang[`${programType}:de`]
+    ?? genericUseCase;
+}
 
 // Einfacher Mustache-ähnlicher {{variable}}-Replacer. Unbekannte Variablen
 // werden durch "" ersetzt, damit keine {{…}}-Literale im Prompt landen.
@@ -157,8 +169,9 @@ ${vars.product_pitch ? `**Pitch:** ${vars.product_pitch}\n` : ""}${vars.value_pr
 export function buildSystemPrompt(
   programType: SalesProgramType,
   vars: Partial<PromptVariables>,
+  language: string = "de",
 ): string {
-  const template = templatesByType[programType] ?? genericUseCase;
+  const template = pickTemplate(programType, language);
   // Per-program override hat Priorität — erlaubt Custom-Prompts pro sales_program
   // ohne neue Use-Case-Datei. Falls leer/null → Use-Case-Template-Body.
   const bodyTemplate = vars.system_prompt_override?.trim() || template.systemPromptBody;
@@ -187,20 +200,25 @@ export function buildSystemPrompt(
 export function buildFirstMessage(
   programType: SalesProgramType,
   vars: Partial<PromptVariables>,
+  language: string = "de",
 ): string {
-  const template = templatesByType[programType] ?? genericUseCase;
+  const template = pickTemplate(programType, language);
   const openerSrc = vars.first_message_override?.trim() || template.firstMessageTemplate;
   const opener = interpolate(openerSrc, vars).trim();
 
-  const disclosure =
-    "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird verarbeitet und ausgewertet.";
+  const isEn = language === "en";
+  const disclosure = isEn
+    ? "Just so you know upfront: I'm an AI assistant, and this conversation will be processed and reviewed."
+    : "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird verarbeitet und ausgewertet.";
 
   const consentEnabled = vars.require_consent !== false;
   const consentQuestion = consentEnabled
-    ? " Sind Sie damit einverstanden, dass wir das Gespräch führen? Drücken Sie einfach die Eins auf Ihrer Tastatur oder sagen Sie einfach Ja. Wenn nicht, legen Sie einfach auf — kein Problem."
+    ? (isEn
+        ? " Are you okay with us having this conversation? Just press one on your keypad or say yes. If not, you can simply hang up — no problem."
+        : " Sind Sie damit einverstanden, dass wir das Gespräch führen? Drücken Sie einfach die Eins auf Ihrer Tastatur oder sagen Sie einfach Ja. Wenn nicht, legen Sie einfach auf — kein Problem.")
     : "";
 
   return `${opener} ${disclosure}${consentQuestion}`;
 }
 
-export { templatesByType };
+export { templatesByTypeAndLang };

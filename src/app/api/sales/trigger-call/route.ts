@@ -23,6 +23,7 @@ type Program = {
   vapi_phone_number_id: string | null;
   caller_phone_number: string | null;
   program_type: SalesProgramType | null;
+  language: string | null;
   call_strategy: Record<string, unknown> | null;
   auto_dial: boolean;
   system_prompt_override: string | null;
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
       program:sales_programs(
         id, name, product_pitch, value_proposition, target_persona, booking_link,
         vapi_assistant_id, vapi_phone_number_id, caller_phone_number,
-        program_type, call_strategy, auto_dial,
+        program_type, language, call_strategy, auto_dial,
         system_prompt_override, first_message_override,
         cal_username, cal_event_type_slug, cal_timezone,
         company:companies(name)
@@ -187,8 +188,11 @@ export async function POST(req: NextRequest) {
   // Prompt rendern — use-case-spezifisch via builder
   const programType = (program.program_type ?? "generic") as SalesProgramType;
   const callStrategy = (program.call_strategy ?? {}) as Record<string, unknown>;
+  const language = (program.language ?? "de").toLowerCase();
+  const isEn = language === "en";
   const now = new Date();
   const weekdayDe = ["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"][now.getDay()];
+  const weekdayEn = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][now.getDay()];
 
   // Product-Finder Pre-Match: lade Top-Offer basierend auf preference_tags aus
   // custom_fields. Wenn Match → in variableValues injizieren + custom_fields
@@ -293,7 +297,7 @@ export async function POST(req: NextRequest) {
     sales_call_id: "",
     sales_program_id: program.id,
     today_iso: now.toISOString().slice(0, 10),
-    today_weekday_de: weekdayDe,
+    today_weekday_de: isEn ? weekdayEn : weekdayDe,
     system_prompt_override: program.system_prompt_override ?? "",
     first_message_override: program.first_message_override ?? "",
     cal_username: program.cal_username ?? "",
@@ -306,26 +310,29 @@ export async function POST(req: NextRequest) {
     matched_offer_summary: matchedOffer?.summary ?? "",
     matched_offer_description: matchedOffer?.description ?? "",
     // Preis: integer ohne Tausender-Trenner (sonst liest Vapi-TTS "5.499" als
-    // "five point four nine nine"). Currency-Code zu ausgeschriebener Form
-    // wandeln (EUR→Euro statt "E-U-R" buchstabiert).
-    matched_offer_price: matchedOffer?.price_cents != null
-      ? `${Math.round(matchedOffer.price_cents / 100)} ${
-          matchedOffer.currency === "USD" ? "Dollar"
-          : matchedOffer.currency === "GBP" ? "Pfund"
-          : matchedOffer.currency === "CHF" ? "Franken"
-          : "Euro"
-        }`
-      : "",
+    // "five point four nine nine"). Currency-Code + Format ist language-aware:
+    //   - DE: "Euro" / "Dollar" / "Pfund" / "Franken"
+    //   - EN: "Euros" / "Dollars" / "Pounds" / "Francs"
+    // price_format aus call_strategy.matching steuert die Phrasierung:
+    //   - "per_person" (Reise-Default): "5499 Euro"
+    //   - "monthly": "499 Euro per month"
+    //   - "purchase": "25000 Euro purchase price"
+    //   - "monthly_with_purchase": "499 Euro per month, or 25000 Euro purchase price"
+    matched_offer_price: formatMatchedOfferPrice(matchedOffer, callStrategy, language),
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
 
-    // Notify-Channels — bewusst auf WhatsApp-only beschränkt, weil die
-    // Twilio-SMS-Nummer (+43 26224 5816) voice-only ist. Falls später eine
-    // SMS-capable Nummer hinzukommt, kann das wieder zu "SMS und WhatsApp"
-    // erweitert werden + send-link channels parallel aktivieren.
-    notify_channels: process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS",
-    notify_channels_short: process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS",
-    has_whatsapp: process.env.TWILIO_WHATSAPP_NUMBER ? "true" : "false",
+    // Notify-Channels — V1 für EN ist SMS-only (Twilio EN-Content-Template
+    // existiert noch nicht, Meta-Approval würde 24-72h warten). Für DE bleibt
+    // WhatsApp-Default solange TWILIO_WHATSAPP_NUMBER gesetzt ist.
+    notify_channels: isEn
+      ? "SMS"
+      : (process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS"),
+    notify_channels_short: isEn
+      ? "SMS"
+      : (process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS"),
+    has_whatsapp: !isEn && process.env.TWILIO_WHATSAPP_NUMBER ? "true" : "false",
+    language,
   };
 
   // custom_fields top-level flatten — damit Vapi-side {{house_type}} ohne Dot-Notation
@@ -358,8 +365,8 @@ export async function POST(req: NextRequest) {
   const salesCallId = callRow.id as string;
   vars.sales_call_id = salesCallId;
 
-  const systemPrompt = buildSystemPrompt(programType, vars);
-  const firstMessage = buildFirstMessage(programType, vars);
+  const systemPrompt = buildSystemPrompt(programType, vars, language);
+  const firstMessage = buildFirstMessage(programType, vars, language);
 
   // Vapi requires full model object in assistantOverrides (provider + model,
   // nicht nur messages). Defaults entsprechen der typischen Dashboard-Config;
@@ -429,6 +436,43 @@ export async function POST(req: NextRequest) {
     vapi_assistant_id: assistantId,
     vapi_phone_number_id: phoneNumberId,
   });
+}
+
+// Rendert den matched_offer_price-String den die KI im Pitch verwendet.
+// Sprach- + price_format-aware: liest call_strategy.matching.price_format und
+// produziert eine TTS-freundliche Phrase ohne Tausender-Trenner.
+function formatMatchedOfferPrice(
+  offer: MatchedOffer | null,
+  callStrategy: Record<string, unknown>,
+  language: string,
+): string {
+  if (!offer?.price_cents) return "";
+  const isEn = language === "en";
+  const currencyMap = isEn
+    ? { EUR: "Euro", USD: "Dollars", GBP: "Pounds", CHF: "Francs" }
+    : { EUR: "Euro", USD: "Dollar", GBP: "Pfund", CHF: "Franken" };
+  const currency = (offer.currency ?? "EUR") as keyof typeof currencyMap;
+  const word = currencyMap[currency] ?? "Euro";
+  const monthly = Math.round(offer.price_cents / 100);
+  const purchase = offer.purchase_price_cents != null
+    ? Math.round(offer.purchase_price_cents / 100)
+    : null;
+  const matchingCfg = (callStrategy.matching ?? {}) as { price_format?: string };
+  const fmt = matchingCfg.price_format ?? "per_person";
+
+  if (fmt === "monthly_with_purchase" && purchase != null) {
+    return isEn
+      ? `starting at ${monthly} ${word} per month, or ${purchase} ${word} purchase price`
+      : `ab ${monthly} ${word} pro Monat, oder ${purchase} ${word} Kaufpreis`;
+  }
+  if (fmt === "monthly") {
+    return isEn ? `${monthly} ${word} per month` : `${monthly} ${word} pro Monat`;
+  }
+  if (fmt === "purchase") {
+    return isEn ? `${monthly} ${word} purchase price` : `${monthly} ${word} Kaufpreis`;
+  }
+  // per_person (default für Reise)
+  return `${monthly} ${word}`;
 }
 
 // Entfernt funnel-spezifische Felder aus custom_fields. Genutzt wenn der Lead

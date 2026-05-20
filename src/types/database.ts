@@ -1049,6 +1049,7 @@ export type Database = {
           intro_image_url: string | null
           intro_subtext: string | null
           job_id: string | null
+          language: string
           name: string
           published_at: string | null
           sales_program_id: string | null
@@ -1069,6 +1070,7 @@ export type Database = {
           intro_image_url?: string | null
           intro_subtext?: string | null
           job_id?: string | null
+          language?: string
           name: string
           published_at?: string | null
           sales_program_id?: string | null
@@ -1089,6 +1091,7 @@ export type Database = {
           intro_image_url?: string | null
           intro_subtext?: string | null
           job_id?: string | null
+          language?: string
           name?: string
           published_at?: string | null
           sales_program_id?: string | null
@@ -1815,6 +1818,7 @@ export type Database = {
           metadata: Json | null
           name: string
           price_cents: number | null
+          purchase_price_cents: number | null
           sales_program_id: string
           summary: string | null
           tags: Json
@@ -1831,6 +1835,7 @@ export type Database = {
           metadata?: Json | null
           name: string
           price_cents?: number | null
+          purchase_price_cents?: number | null
           sales_program_id: string
           summary?: string | null
           tags?: Json
@@ -1847,6 +1852,7 @@ export type Database = {
           metadata?: Json | null
           name?: string
           price_cents?: number | null
+          purchase_price_cents?: number | null
           sales_program_id?: string
           summary?: string | null
           tags?: Json
@@ -1876,6 +1882,7 @@ export type Database = {
           custom_field_schema: Json
           first_message_override: string | null
           id: string
+          language: string
           meta_form_ids: Json
           name: string
           product_pitch: string | null
@@ -1902,6 +1909,7 @@ export type Database = {
           custom_field_schema?: Json
           first_message_override?: string | null
           id?: string
+          language?: string
           meta_form_ids?: Json
           name: string
           product_pitch?: string | null
@@ -1928,6 +1936,7 @@ export type Database = {
           custom_field_schema?: Json
           first_message_override?: string | null
           id?: string
+          language?: string
           meta_form_ids?: Json
           name?: string
           product_pitch?: string | null

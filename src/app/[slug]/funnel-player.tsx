@@ -205,11 +205,56 @@ type Funnel = {
   id: string; name: string; slug: string; status: string;
   funnel_type: string; external_url: string | null;
   branding: FunnelBranding | null; consent_text: string | null;
+  thank_you_text?: string | null;
+  // Sprach-Code (de|en). Steuert hardcoded UI-Strings (Submit-Button,
+  // Validation-Errors, Thank-You-Fallback, Test-Mode-Banner). Operator-
+  // pflegbare Strings (cta_text, headlines, consent_text) bleiben DB-driven.
+  language?: string | null;
   // Polymorph: genau eines von beiden ist gesetzt (DB-seitig via XOR-Check)
   job_id: string | null;
   sales_program_id: string | null;
   job: { title: string; company: { name: string } } | null;
 };
+
+// Mini-i18n für hardcoded UI-Chrome im Funnel-Player. Operator-Content
+// (Headlines, CTAs, Consent-Text) bleibt DB-driven und muss vom Operator
+// selber in der richtigen Sprache gepflegt werden.
+const I18N: Record<string, Record<string, string>> = {
+  de: {
+    submit_default: "Bewerbung absenden →",
+    weiter: "Weiter →",
+    contact_form_headline: "Wie können wir dich erreichen?",
+    sending: "Wird gesendet…",
+    name_missing: "Bitte Namen eingeben.",
+    email_missing: "Bitte E-Mail eingeben.",
+    consent_missing: "Bitte Datenschutz zustimmen.",
+    thank_you_heading: "Vielen Dank!",
+    thank_you_fallback: "Deine Anfrage wurde erfolgreich übermittelt. Wir melden uns gleich bei dir.",
+    submit_failed_prefix: "Senden fehlgeschlagen",
+    submit_retry: "Bitte erneut versuchen.",
+    network_failed: "Verbindung zum Server fehlgeschlagen. Bitte Internet prüfen und erneut versuchen.",
+    test_mode: 'TEST-MODUS aktiv — Submissions landen mit source="test" und werden nicht angerufen',
+  },
+  en: {
+    submit_default: "Submit →",
+    weiter: "Next →",
+    contact_form_headline: "How can we reach you?",
+    sending: "Sending…",
+    name_missing: "Please enter your name.",
+    email_missing: "Please enter your email.",
+    consent_missing: "Please accept the privacy policy.",
+    thank_you_heading: "Thank you!",
+    thank_you_fallback: "Your request was successfully submitted. We'll be in touch shortly.",
+    submit_failed_prefix: "Submission failed",
+    submit_retry: "Please try again.",
+    network_failed: "Connection to server failed. Please check your internet and try again.",
+    test_mode: 'TEST MODE active — submissions tagged with source="test" and will not be called',
+  },
+};
+function t(lang: string | null | undefined, key: string): string {
+  const l = (lang ?? "de").toLowerCase();
+  return I18N[l]?.[key] ?? I18N.de[key] ?? key;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -265,6 +310,7 @@ type RenderCtx = {
   color: string;
   textColor: string;
   branding: FunnelBranding;
+  language: string;
   answers: Record<string, string[]>;
   answerKey: (block: Block) => string;
   toggleChoice: (blockId: string, value: string, selection: "single" | "multiple", questionKey?: string) => void;
@@ -346,6 +392,7 @@ function renderBlock(block: Block, ctx: RenderCtx): React.ReactNode {
         color={ctx.color}
         textColor={ctx.textColor}
         branding={ctx.branding}
+        language={ctx.language}
         answers={ctx.answers[ctx.answerKey(block)] ?? []}
         onToggleChoice={(value, selection) => ctx.toggleChoice(block.id, value, selection, ctx.answerKey(block))}
         onAdvance={ctx.advance}
@@ -547,14 +594,14 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         console.error("[funnel] apply failed:", r.status, body);
         let serverMsg = "";
         try { serverMsg = JSON.parse(body).error ?? ""; } catch { /* not json */ }
-        setSubmitError(serverMsg || `Senden fehlgeschlagen (Status ${r.status}). Bitte erneut versuchen.`);
+        setSubmitError(serverMsg || `${t(funnel.language, "submit_failed_prefix")} (Status ${r.status}). ${t(funnel.language, "submit_retry")}`);
         setSubmitting(false);
         return;
       }
       applyJson = await r.json();
     } catch (err) {
       console.error("[funnel] apply network error:", err);
-      setSubmitError("Verbindung zum Server fehlgeschlagen. Bitte Internet prüfen und erneut versuchen.");
+      setSubmitError(t(funnel.language, "network_failed"));
       setSubmitting(false);
       return;
     }
@@ -600,14 +647,14 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     // Sonst neutraler Default-Text der für Recruiting + Sales + alles passt.
     const fallbackMessage =
       funnel.thank_you_text?.trim() ||
-      "Deine Anfrage wurde erfolgreich übermittelt. Wir melden uns gleich bei dir.";
+      t(funnel.language, "thank_you_fallback");
     return (
       <Screen color={color} textColor={textColor} branding={branding}>
         <div className="flex flex-col items-center justify-center h-full text-center px-6 py-12">
           <div className="w-14 h-14 rounded-full flex items-center justify-center mb-4" style={{ background: color }}>
             <span className="text-2xl font-bold" style={{ color: textColor }}>✓</span>
           </div>
-          <h2 className="text-lg font-black text-gray-900 mb-2">Vielen Dank!</h2>
+          <h2 className="text-lg font-black text-gray-900 mb-2">{t(funnel.language, "thank_you_heading")}</h2>
           <p className="text-sm text-gray-500 whitespace-pre-line">{fallbackMessage}</p>
         </div>
       </Screen>
@@ -619,7 +666,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
       {/* Test-mode banner: visible warning so submissions don't get mistaken for real leads. */}
       {testMode && (
         <div className="w-full bg-amber-100 border-b border-amber-300 px-4 py-1.5 text-center text-[11px] font-semibold text-amber-900 flex-shrink-0">
-          🧪 TEST-MODUS aktiv — Submissions landen mit source=&quot;test&quot; und werden nicht angerufen
+          🧪 {t(funnel.language, "test_mode")}
         </div>
       )}
 
@@ -635,7 +682,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
       <div ref={containerRef} className="flex-1 overflow-y-auto">
         {currentPage.blocks.map((block) => renderBlock(block, {
-          color, textColor, branding, answers, answerKey, toggleChoice,
+          color, textColor, branding, language: (funnel.language ?? "de").toLowerCase(),
+          answers, answerKey, toggleChoice,
           advance, form, setForm, consent, setConsent, consentText: funnel.consent_text,
           cvFile, setCvFile, submitting, handleSubmit, submitted, submitError,
         }))}
@@ -695,11 +743,12 @@ function FieldRow({
 // ─── Block Renderer ───────────────────────────────────────────────────────────
 
 function BlockRenderer({
-  block, color, textColor, branding, answers, onToggleChoice, onAdvance,
+  block, color, textColor, branding, language, answers, onToggleChoice, onAdvance,
   form, onFormChange, consent, onConsentChange, consentText,
   cvFile, onCvChange, submitting, onSubmit, submitted, submitError,
 }: {
   block: Block; color: string; textColor: string; branding: FunnelBranding;
+  language: string;
   answers: string[]; onToggleChoice: (value: string, sel: "single" | "multiple") => void;
   onAdvance: () => void;
   form: Record<string, string>;
@@ -953,7 +1002,7 @@ function BlockRenderer({
         </button>
         {!isValid && (form.name || form.email) && (
           <p className="text-xs text-red-500 mb-3 text-center">
-            {!form.name ? "Bitte Namen eingeben." : !form.email ? "Bitte E-Mail eingeben." : "Bitte Datenschutz zustimmen."}
+            {!form.name ? t(language, "name_missing") : !form.email ? t(language, "email_missing") : t(language, "consent_missing")}
           </p>
         )}
         {submitError && (
@@ -967,7 +1016,7 @@ function BlockRenderer({
           className="w-full py-4 font-black text-sm transition-all active:scale-95 disabled:opacity-50"
           style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, borderRadius: (c.btn_radius as number) != null ? `${c.btn_radius}px` : "16px" }}
         >
-          {submitting ? "Wird gesendet…" : c.cta_text || "Bewerbung absenden →"}
+          {submitting ? t(language, "sending") : c.cta_text || t(language, "submit_default")}
         </button>
       </div>
     );

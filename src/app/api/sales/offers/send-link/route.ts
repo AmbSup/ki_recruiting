@@ -38,15 +38,25 @@ export async function POST(req: NextRequest) {
   }
 
   const supabase = createAdminClient();
-  const { data: lead } = await supabase
+  const { data: leadRaw } = await supabase
     .from("sales_leads")
-    .select("phone, first_name, custom_fields")
+    .select("phone, first_name, custom_fields, program:sales_programs(language)")
     .eq("id", sales_lead_id)
     .maybeSingle();
 
-  if (!lead) {
+  if (!leadRaw) {
     return NextResponse.json({ error: "Lead nicht gefunden" }, { status: 404 });
   }
+
+  const lead = leadRaw as unknown as {
+    phone: string;
+    first_name: string | null;
+    custom_fields: Record<string, unknown> | null;
+    program: { language: string | null } | { language: string | null }[] | null;
+  };
+  const programObj = Array.isArray(lead.program) ? lead.program[0] : lead.program;
+  const language = (programObj?.language ?? "de").toLowerCase();
+  const isEn = language === "en";
 
   const customFields = (lead.custom_fields ?? {}) as Record<string, unknown>;
   const offerId = typeof customFields.matched_offer_id === "string"
@@ -72,11 +82,14 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Channel-Auswahl: nur WhatsApp (Twilio-SMS-Nummer ist voice-only).
-  // Bei SMS-capable-Nummer in Env: ["sms", "whatsapp"] parallel senden.
-  const channels: ("sms" | "whatsapp")[] = process.env.TWILIO_WHATSAPP_NUMBER
-    ? ["whatsapp"]
-    : ["sms"];
+  // Channel-Auswahl:
+  //   - DE: WhatsApp wenn TWILIO_WHATSAPP_NUMBER gesetzt, sonst SMS.
+  //   - EN (V1): SMS-only — kein approved EN-Twilio-Content-Template, Meta-
+  //     Approval-Wait. Sobald TWILIO_WHATSAPP_CONTENT_SID_EN existiert kann
+  //     diese Branch zu ["sms","whatsapp"] erweitert werden.
+  const channels: ("sms" | "whatsapp")[] = isEn
+    ? ["sms"]
+    : (process.env.TWILIO_WHATSAPP_NUMBER ? ["whatsapp"] : ["sms"]);
 
   try {
     const result = await sendOfferLink({
