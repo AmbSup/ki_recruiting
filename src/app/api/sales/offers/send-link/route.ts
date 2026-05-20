@@ -99,6 +99,7 @@ export async function POST(req: NextRequest) {
       offerName: offer.name,
       detailUrl: offer.detail_url,
       imageUrl: offer.image_url ?? undefined,
+      language,
     });
     return NextResponse.json({
       success: result.errors.length === 0 || Boolean(result.smsSid || result.whatsappSid),

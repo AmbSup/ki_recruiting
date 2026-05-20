@@ -26,6 +26,7 @@ export async function sendOfferLink(opts: {
   offerName: string;
   detailUrl: string;
   imageUrl?: string;
+  language?: string; // "de" | "en" — Default "de". Steuert SMS-Body + Free-Form-WhatsApp.
 }): Promise<SendOfferLinkResult> {
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
@@ -69,7 +70,7 @@ export async function sendOfferLink(opts: {
 
 async function sendSms(
   client: ReturnType<typeof twilio>,
-  opts: { toPhone: string; leadFirstName?: string; offerName: string; detailUrl: string },
+  opts: { toPhone: string; leadFirstName?: string; offerName: string; detailUrl: string; language?: string },
 ): Promise<string> {
   const from = process.env.TWILIO_PHONE_NUMBER_SMS || process.env.TWILIO_PHONE_NUMBER;
   if (!from) {
@@ -148,11 +149,13 @@ function composeBody(opts: {
   leadFirstName?: string;
   offerName: string;
   detailUrl: string;
+  language?: string;
 }): string {
   const greet = opts.leadFirstName?.trim();
-  const intro = greet
-    ? `Hallo ${greet}, hier ist dein Top-Angebot:`
-    : `Hier ist dein Top-Angebot:`;
+  const isEn = (opts.language ?? "de").toLowerCase() === "en";
+  const intro = isEn
+    ? (greet ? `Hi ${greet}, here is your top offer:` : `Here is your top offer:`)
+    : (greet ? `Hallo ${greet}, hier ist dein Top-Angebot:` : `Hier ist dein Top-Angebot:`);
   return `${intro}\n\n${opts.offerName}\n\n${opts.detailUrl}`;
 }
 
