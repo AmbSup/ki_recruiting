@@ -322,16 +322,12 @@ export async function POST(req: NextRequest) {
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
 
-    // Notify-Channels — V1 für EN ist SMS-only (Twilio EN-Content-Template
-    // existiert noch nicht, Meta-Approval würde 24-72h warten). Für DE bleibt
-    // WhatsApp-Default solange TWILIO_WHATSAPP_NUMBER gesetzt ist.
-    notify_channels: isEn
-      ? "SMS"
-      : (process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS"),
-    notify_channels_short: isEn
-      ? "SMS"
-      : (process.env.TWILIO_WHATSAPP_NUMBER ? "WhatsApp" : "SMS"),
-    has_whatsapp: !isEn && process.env.TWILIO_WHATSAPP_NUMBER ? "true" : "false",
+    // Notify-Channels — V1 SMS-only für alle Programs. KI verspricht im Pitch
+    // SMS, send-link route liefert SMS. WhatsApp ist temporär deaktiviert
+    // (Template-Approval-Overhead). Für Re-Enable: hier wieder switchen.
+    notify_channels: "SMS",
+    notify_channels_short: "SMS",
+    has_whatsapp: "false",
     language,
   };
 

@@ -82,14 +82,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Channel-Auswahl:
-  //   - DE: WhatsApp wenn TWILIO_WHATSAPP_NUMBER gesetzt, sonst SMS.
-  //   - EN (V1): SMS-only — kein approved EN-Twilio-Content-Template, Meta-
-  //     Approval-Wait. Sobald TWILIO_WHATSAPP_CONTENT_SID_EN existiert kann
-  //     diese Branch zu ["sms","whatsapp"] erweitert werden.
-  const channels: ("sms" | "whatsapp")[] = isEn
-    ? ["sms"]
-    : (process.env.TWILIO_WHATSAPP_NUMBER ? ["whatsapp"] : ["sms"]);
+  // Channel: SMS-only für alle Programs. WhatsApp ist temporär deaktiviert
+  // weil die SMS-capable Twilio-Nummer jetzt für alles reicht und WhatsApp-
+  // Template-Approval / Meta-Verifikation Overhead spart. Für Re-Enable von
+  // WhatsApp: hier wieder branchen auf isEn/TWILIO_WHATSAPP_CONTENT_SID_EN
+  // bzw. TWILIO_WHATSAPP_NUMBER + isEn-Check zurückbauen.
+  const channels: ("sms" | "whatsapp")[] = ["sms"];
 
   try {
     const result = await sendOfferLink({
