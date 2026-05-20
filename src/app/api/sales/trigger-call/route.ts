@@ -382,10 +382,10 @@ export async function POST(req: NextRequest) {
   //
   // Transcriber-Override ist Pflicht für EN. Voice-Override ist optional und
   // per Program konfigurierbar via call_strategy.voice = {provider, voiceId}.
-  // Fallback ist ElevenLabs Rachel (englische Stimme, in den meisten Vapi-
-  // Accounts vorhanden). Falls dein Vapi-Account keine ElevenLabs-Integration
-  // hat, setze call_strategy.voice oder lass das Feld weg und akzeptiere
-  // deutschen Voice-Akzent beim Vorlesen von Englisch.
+  // Default-EN-Voice ist Vapi's eigene "Elliot" (in jedem Vapi-Account ohne
+  // Extra-API-Key vorhanden). ElevenLabs blockt auf Free-Plans — daher NICHT
+  // als Default. Falls du eine eigene Voice willst (z.B. ElevenLabs auf
+  // bezahltem Plan), setz call_strategy.voice = {provider, voiceId}.
   const transcriberOverride = isEn
     ? { provider: "deepgram", model: "nova-2", language: "en" }
     : undefined;
@@ -393,7 +393,7 @@ export async function POST(req: NextRequest) {
   const voiceOverride = voiceOverrideRaw?.provider && voiceOverrideRaw?.voiceId
     ? { provider: voiceOverrideRaw.provider, voiceId: voiceOverrideRaw.voiceId }
     : isEn
-      ? { provider: "11labs", voiceId: "21m00Tcm4TlvDq8ikWAM" /* "Rachel" */ }
+      ? { provider: "vapi", voiceId: "Elliot" }
       : undefined;
 
   const vapiPayload = {
