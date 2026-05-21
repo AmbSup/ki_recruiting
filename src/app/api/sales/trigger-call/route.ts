@@ -376,21 +376,23 @@ export async function POST(req: NextRequest) {
   // englische Sprache als deutsch-Pseudo-Phoneme (z.B. "yes" → "jess") und
   // die KI bekommt Garbage-Input + antwortet auf Deutsch zurück.
   //
-  // Transcriber-Override ist Pflicht für EN. Voice-Override ist optional und
-  // per Program konfigurierbar via call_strategy.voice = {provider, voiceId}.
-  // Default-EN-Voice ist Vapi's eigene "Elliot" (in jedem Vapi-Account ohne
-  // Extra-API-Key vorhanden). ElevenLabs blockt auf Free-Plans — daher NICHT
-  // als Default. Falls du eine eigene Voice willst (z.B. ElevenLabs auf
-  // bezahltem Plan), setz call_strategy.voice = {provider, voiceId}.
+  // Transcriber-Override ist Pflicht für EN, damit Deepgram englische Audio
+  // korrekt transkribiert (sonst landet "jess" statt "yes" beim Model).
+  //
+  // Voice-Override ist OPTIONAL und per Program konfigurierbar via
+  // call_strategy.voice = {provider, voiceId}. Ohne expliziten Override
+  // bleibt die Dashboard-Default-Voice aktiv (typischerweise Cartesia,
+  // multilingual — spricht Englisch mit leichtem Akzent, aber zuverlässig).
+  // Erfahrung: vapi/Elliot + 11labs/Rachel führten zu Pipeline-Failures
+  // (Free-Plan, nicht aktivierte Provider, etc.) — daher kein Default-EN-
+  // Override mehr, lieber stumm fallback auf Dashboard-Voice.
   const transcriberOverride = isEn
     ? { provider: "deepgram", model: "nova-2", language: "en" }
     : undefined;
   const voiceOverrideRaw = (callStrategy.voice as { provider?: string; voiceId?: string } | undefined);
   const voiceOverride = voiceOverrideRaw?.provider && voiceOverrideRaw?.voiceId
     ? { provider: voiceOverrideRaw.provider, voiceId: voiceOverrideRaw.voiceId }
-    : isEn
-      ? { provider: "vapi", voiceId: "Elliot" }
-      : undefined;
+    : undefined;
 
   const vapiPayload = {
     phoneNumberId,
