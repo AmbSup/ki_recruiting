@@ -44,7 +44,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     : `Jetzt bewerben: ${job?.title ?? d?.name ?? "Offene Stelle"}`;
 
   // Image: Recruiting nimmt job.selected_ad_image_url, Sales muss aus dem
-  // ersten image-Block der funnel_pages holen (das Hero-Bild im Funnel).
+  // ersten Hero-image-Block der funnel_pages holen. "Hero" = ohne
+  // img_width-Einschränkung ODER img_width ≥ 50%. Damit überspringen wir
+  // kleine Logo-Blocks (z.B. img_width: "30%") und landen beim ersten echten
+  // Banner-Bild.
   let imageUrl: string | undefined = job?.selected_ad_image_url ?? undefined;
   if (isSales && d?.id) {
     const { data: pages } = await supabase
@@ -55,7 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       .limit(3);
     for (const page of (pages ?? []) as Array<{ blocks?: unknown }>) {
       const blocks = Array.isArray(page.blocks) ? (page.blocks as Array<{ type?: string; content?: Record<string, unknown> }>) : [];
-      const imgBlock = blocks.find((b) => b.type === "image" && typeof b.content?.url === "string");
+      const imgBlock = blocks.find(isHeroImageBlock);
       if (imgBlock) {
         imageUrl = imgBlock.content!.url as string;
         break;
@@ -78,6 +81,25 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
       ...(imageUrl ? { images: [imageUrl] } : {}),
     },
   };
+}
+
+// Erkennt Hero-image-Blocks aus funnel_pages.blocks für OG-Image-Auswahl.
+// Skipped:
+//   - Nicht-image-Typen
+//   - image-Blocks ohne content.url
+//   - image-Blocks mit img_width < 50% (typischerweise Logos/Inline-Icons)
+// img_width Format aus Operator-UI: "30%", "60%", "70%" o.ä.
+function isHeroImageBlock(block: { type?: string; content?: Record<string, unknown> }): boolean {
+  if (block.type !== "image") return false;
+  if (typeof block.content?.url !== "string") return false;
+  const w = block.content.img_width;
+  if (typeof w === "string") {
+    const num = parseInt(w, 10);
+    if (!isNaN(num) && num < 50) return false;
+  } else if (typeof w === "number" && w < 50) {
+    return false;
+  }
+  return true;
 }
 
 export default async function FunnelPage({ params }: { params: Promise<{ slug: string }> }) {
