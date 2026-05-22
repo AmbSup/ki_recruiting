@@ -10,7 +10,9 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("funnels")
-    .select("name, job:jobs(title, selected_ad_image_url, company:companies(name))")
+    .select(
+      "id, name, language, intro_headline, intro_subtext, job_id, sales_program_id, job:jobs(title, selected_ad_image_url, company:companies(name)), sales_program:sales_programs(name, product_pitch, value_proposition, company:companies(name))",
+    )
     .eq("slug", slug)
     .single();
 
@@ -18,20 +20,61 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const d = data as any;
   const job = Array.isArray(d?.job) ? d.job[0] : d?.job;
   const company = Array.isArray(job?.company) ? job.company[0] : job?.company;
-  const title = job?.title ? `${job.title} — ${company?.name ?? ""}` : d?.name ?? "Bewerbung";
-  const imageUrl = job?.selected_ad_image_url ?? undefined;
+  const salesProgram = Array.isArray(d?.sales_program) ? d.sales_program[0] : d?.sales_program;
+  const salesCompany = Array.isArray(salesProgram?.company) ? salesProgram.company[0] : salesProgram?.company;
+  const isSales = Boolean(d?.sales_program_id);
+  const lang = (d?.language ?? "de").toLowerCase();
+
+  // Title: Recruiting → "Job-Titel — Firma" / Sales → "Funnel-Name — Firma"
+  const title = isSales
+    ? `${d?.name ?? "Special-Aktion"}${salesCompany?.name ? ` — ${salesCompany.name}` : ""}`
+    : job?.title
+      ? `${job.title} — ${company?.name ?? ""}`
+      : d?.name ?? "Bewerbung";
+
+  // Description: Sales sollte NICHT "Jetzt bewerben" sagen. Wir nutzen den
+  // operator-pflegbaren intro_subtext oder fallen auf den Funnel-Pitch.
+  const description = isSales
+    ? (d?.intro_subtext?.trim() ||
+        salesProgram?.product_pitch?.trim() ||
+        salesProgram?.value_proposition?.trim() ||
+        (lang === "en"
+          ? `Discover now: ${d?.name ?? "Special offer"}`
+          : `Jetzt entdecken: ${d?.name ?? "Special-Aktion"}`))
+    : `Jetzt bewerben: ${job?.title ?? d?.name ?? "Offene Stelle"}`;
+
+  // Image: Recruiting nimmt job.selected_ad_image_url, Sales muss aus dem
+  // ersten image-Block der funnel_pages holen (das Hero-Bild im Funnel).
+  let imageUrl: string | undefined = job?.selected_ad_image_url ?? undefined;
+  if (isSales && d?.id) {
+    const { data: pages } = await supabase
+      .from("funnel_pages")
+      .select("blocks")
+      .eq("funnel_id", d.id)
+      .order("page_order")
+      .limit(3);
+    for (const page of (pages ?? []) as Array<{ blocks?: unknown }>) {
+      const blocks = Array.isArray(page.blocks) ? (page.blocks as Array<{ type?: string; content?: Record<string, unknown> }>) : [];
+      const imgBlock = blocks.find((b) => b.type === "image" && typeof b.content?.url === "string");
+      if (imgBlock) {
+        imageUrl = imgBlock.content!.url as string;
+        break;
+      }
+    }
+  }
 
   return {
     title,
-    description: `Jetzt bewerben: ${job?.title ?? d?.name ?? "Offene Stelle"}`,
+    description,
     openGraph: {
       title,
-      description: `Jetzt bewerben: ${job?.title ?? d?.name ?? "Offene Stelle"}`,
+      description,
       ...(imageUrl ? { images: [{ url: imageUrl, width: 1200, height: 630 }] } : {}),
     },
     twitter: {
       card: imageUrl ? "summary_large_image" : "summary",
       title,
+      description,
       ...(imageUrl ? { images: [imageUrl] } : {}),
     },
   };
