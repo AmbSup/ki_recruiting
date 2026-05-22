@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { normalizePhone, isHardOptOutStatus } from "@/lib/phone";
 import { generateTextHaiku } from "@/services/claude/client";
@@ -391,7 +392,11 @@ async function handleSalesSubmission(args: {
     // Auto-Dial NUR wenn Status nicht terminal (sonst würden wir einen "not_interested"-
     // Lead erneut anrufen, nur weil er das Formular nochmal ausgefüllt hat).
     if (!preserveStatus && program.auto_dial) {
-      void triggerSalesCall(origin, existing.id);
+      // Vercel kills `void`-fire-and-forget Promises nach dem Response.
+      // `after()` aus next/server hält die Function alive bis das Promise
+      // resolved — Vapi-Call wird auch dann gestartet wenn der HTTP-Response
+      // schon beim Browser angekommen ist.
+      after(() => triggerSalesCall(origin, existing.id));
     }
 
     return NextResponse.json({
