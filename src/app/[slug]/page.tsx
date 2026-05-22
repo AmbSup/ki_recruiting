@@ -123,7 +123,6 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
 
   const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (
     <>
       {pixelId && (
@@ -137,6 +136,7 @@ export default async function FunnelPage({ params }: { params: Promise<{ slug: s
           fbq('track', 'PageView');
         `}</Script>
       )}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
       <FunnelPlayer funnel={funnel as any} pages={(pages ?? []) as any} />
     </>
   );
