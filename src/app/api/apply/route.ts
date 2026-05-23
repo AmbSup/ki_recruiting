@@ -215,8 +215,9 @@ export async function POST(req: NextRequest) {
         test_mode,
       });
       // Notification (fire-and-forget via after — survival auf Vercel).
-      // Nur bei 2xx, nicht im Test-Mode.
-      if (response.status >= 200 && response.status < 300 && !test_mode) {
+      // Auch bei test_mode aktiv, damit der Operator beim Testen sieht ob
+      // alles durchläuft.
+      if (response.status >= 200 && response.status < 300) {
         after(() => notifyFunnelSubmit({
           funnel_name: funnelName,
           person_name: name,
@@ -280,14 +281,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Notification (fire-and-forget via after — survival auf Vercel).
-    if (!test_mode) {
-      after(() => notifyFunnelSubmit({
-        funnel_name: funnelName,
-        person_name: name,
-        phone: phone || "",
-        side: "recruiting",
-      }));
-    }
+    // Auch bei test_mode aktiv, damit der Operator beim Testen sieht ob
+    // alles durchläuft.
+    after(() => notifyFunnelSubmit({
+      funnel_name: funnelName,
+      person_name: name,
+      phone: phone || "",
+      side: "recruiting",
+    }));
 
     // Return application_id so client can trigger CV analysis in a separate request
     return NextResponse.json({ success: true, application_id: applicationId });
