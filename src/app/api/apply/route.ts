@@ -189,9 +189,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Weder job_id noch sales_program_id gesetzt" }, { status: 400 });
     }
 
+    // Funnel-Name für die Notification-Email laden — beide Branches brauchen ihn.
+    // Fail-soft: wenn Lookup scheitert, fallback auf "Unbekannter Funnel".
+    let funnelName = "Unbekannter Funnel";
+    try {
+      const { data: f } = await supabase
+        .from("funnels")
+        .select("name")
+        .eq("id", funnel_id)
+        .single();
+      if (f?.name) funnelName = f.name;
+    } catch { /* ignore — Notification soll Submit nicht blockieren */ }
+
     // ─── Sales-Branch ────────────────────────────────────────────────────────
     if (sales_program_id) {
-      return await handleSalesSubmission({
+      const response = await handleSalesSubmission({
         supabase,
         funnel_id,
         sales_program_id,
@@ -202,6 +214,17 @@ export async function POST(req: NextRequest) {
         origin: req.nextUrl.origin,
         test_mode,
       });
+      // Notification (fire-and-forget via after — survival auf Vercel).
+      // Nur bei 2xx, nicht im Test-Mode.
+      if (response.status >= 200 && response.status < 300 && !test_mode) {
+        after(() => notifyFunnelSubmit({
+          funnel_name: funnelName,
+          person_name: name,
+          phone: phone || "",
+          side: "sales",
+        }));
+      }
+      return response;
     }
 
     // ─── Recruiting-Branch (unverändert) ─────────────────────────────────────
@@ -254,6 +277,16 @@ export async function POST(req: NextRequest) {
 
     if (!applicationId) {
       return NextResponse.json({ error: "Bewerbungs-ID fehlt" }, { status: 500 });
+    }
+
+    // Notification (fire-and-forget via after — survival auf Vercel).
+    if (!test_mode) {
+      after(() => notifyFunnelSubmit({
+        funnel_name: funnelName,
+        person_name: name,
+        phone: phone || "",
+        side: "recruiting",
+      }));
     }
 
     // Return application_id so client can trigger CV analysis in a separate request
@@ -499,5 +532,38 @@ async function triggerSalesCall(origin: string, sales_lead_id: string): Promise<
     });
   } catch (err) {
     console.error("[apply/sales] trigger-call failed:", err);
+  }
+}
+
+// Schickt eine Notification an n8n nach erfolgreichem Funnel-Submit. n8n macht
+// daraus eine Email an martinamon@chello.at via Gmail/SMTP-Node. Fail-soft —
+// Submit blockt nicht wenn n8n down ist.
+//
+// n8n-Workflow: Webhook "/webhook/funnel-submit-notify" → Email-Node mit
+// to=martinamon@chello.at, subject="Funnel-Submit: {{funnel_name}}",
+// body="Name: {{person_name}}\nTelefon: {{phone}}\nFunnel: {{funnel_name}}\nSide: {{side}}".
+async function notifyFunnelSubmit(payload: {
+  funnel_name: string;
+  person_name: string;
+  phone: string;
+  side: "sales" | "recruiting";
+}): Promise<void> {
+  const n8nBase = process.env.N8N_BASE_URL;
+  const secret = process.env.N8N_WEBHOOK_SECRET;
+  if (!n8nBase) {
+    console.warn("[apply/notify] N8N_BASE_URL nicht gesetzt — skip notify");
+    return;
+  }
+  try {
+    await fetch(`${n8nBase}/webhook/funnel-submit-notify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(secret ? { "X-Webhook-Secret": secret } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+  } catch (err) {
+    console.error("[apply/notify] notification webhook failed:", err);
   }
 }

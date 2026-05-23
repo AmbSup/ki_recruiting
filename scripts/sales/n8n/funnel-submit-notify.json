@@ -1,0 +1,60 @@
+{
+  "name": "Funnel Submit — Email Notification",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "funnel-submit-notify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "9c8c9b1f-1a3e-4d6b-bf3a-7e3a91b001a1",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"ok\": true }"
+      },
+      "id": "9c8c9b1f-1a3e-4d6b-bf3a-7e3a91b001a2",
+      "name": "Respond OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [460, 200]
+    },
+    {
+      "parameters": {
+        "fromEmail": "noreply@neuronic-automation.ai",
+        "toEmail": "martinamon@chello.at",
+        "subject": "=Funnel-Submit: {{ $('Webhook').item.json.body.funnel_name }}",
+        "emailFormat": "text",
+        "text": "=Neuer Funnel-Submit eingegangen:\n\nFunnel: {{ $('Webhook').item.json.body.funnel_name }}\nName: {{ $('Webhook').item.json.body.person_name }}\nTelefon: {{ $('Webhook').item.json.body.phone }}\nSeite: {{ $('Webhook').item.json.body.side }}\n\n— Automatisches Notification aus /api/apply\n",
+        "options": {}
+      },
+      "id": "9c8c9b1f-1a3e-4d6b-bf3a-7e3a91b001a3",
+      "name": "Send Email",
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [680, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "Respond OK", "type": "main", "index": 0 },
+          { "node": "Send Email", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "none",
+    "saveManualExecutions": true
+  }
+}
