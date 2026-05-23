@@ -280,15 +280,19 @@ export function FunnelsClient() {
                 </a>
 
                 {/* Metrics */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="grid grid-cols-4 gap-2 mb-4">
                   {[
-                    { label: "Views",       value: funnel.views,       icon: "visibility" },
-                    { label: "Bewerbungen", value: funnel.submissions,  icon: "send" },
-                    { label: "Conversion",  value: `${cr}%`,           icon: "percent" },
+                    { label: "Views",      value: funnel.views },
+                    { label: "Submits",    value: funnel.submissions },
+                    // Abbrüche = Views - Submissions (Lead hat Funnel geöffnet aber
+                    // nicht abgeschlossen). Negativ-Schutz für edge-cases wo
+                    // submissions > views aus alter Tracking-Implementation.
+                    { label: "Abbrüche",   value: Math.max(0, funnel.views - funnel.submissions) },
+                    { label: "Conversion", value: `${cr}%` },
                   ].map((m) => (
                     <div key={m.label} className="text-center">
-                      <div className="font-headline text-2xl text-on-surface">{m.value}</div>
-                      <div className="font-label text-xs text-outline uppercase tracking-widest">{m.label}</div>
+                      <div className="font-headline text-xl text-on-surface">{m.value}</div>
+                      <div className="font-label text-[10px] text-outline uppercase tracking-widest">{m.label}</div>
                     </div>
                   ))}
                 </div>

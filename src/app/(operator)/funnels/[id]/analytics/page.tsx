@@ -81,9 +81,16 @@ export default async function FunnelAnalyticsPage({ params }: { params: Promise<
       </div>
 
       {/* ── KPI-Tiles ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <KpiTile label="Besuche" value={kpis.visits.toString()} icon="visibility" />
         <KpiTile label="Conversions" value={kpis.conversions.toString()} icon="check_circle" />
+        {/* Abbrüche = Besuche - Conversions. Negativ-Schutz weil die zwei
+            Zahlen aus verschiedenen Tracking-Events kommen können. */}
+        <KpiTile
+          label="Abbrüche"
+          value={Math.max(0, kpis.visits - kpis.conversions).toString()}
+          icon="cancel"
+        />
         <KpiTile label="Conversion-Rate" value={`${kpis.conversionRate.toFixed(1)}%`} icon="trending_up" accent={accent} />
         <KpiTile label="Top-Quelle" value={kpis.topSource} icon="ads_click" />
       </div>
