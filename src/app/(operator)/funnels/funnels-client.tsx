@@ -48,16 +48,46 @@ export function FunnelsClient() {
   const load = useCallback(async () => {
     setLoading(true);
     const supabase = createClient();
-    const { data } = await supabase
-      .from("funnels")
-      .select(`
-        id, name, slug, status, funnel_type, external_url, views, submissions, published_at, created_at,
-        job_id, sales_program_id,
-        job:jobs(id, title, selected_ad_image_url, company:companies(name)),
-        sales_program:sales_programs(id, name, company:companies(name))
-      `)
-      .order("created_at", { ascending: false });
-    setFunnels((data ?? []) as unknown as Funnel[]);
+    // funnels.views/submissions sind unzuverlässig (submissions wird gar nicht
+    // inkrementiert). Wir laden funnel_events parallel und aggregieren live:
+    //   - event_type='view'   → echter Funnel-Load
+    //   - event_type='submit' → echte Form-Submission
+    const [funnelsRes, eventsRes] = await Promise.all([
+      supabase
+        .from("funnels")
+        .select(`
+          id, name, slug, status, funnel_type, external_url, views, submissions, published_at, created_at,
+          job_id, sales_program_id,
+          job:jobs(id, title, selected_ad_image_url, company:companies(name)),
+          sales_program:sales_programs(id, name, company:companies(name))
+        `)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("funnel_events")
+        .select("funnel_id, event_type")
+        .in("event_type", ["view", "submit"]),
+    ]);
+
+    const counts: Record<string, { views: number; submits: number }> = {};
+    for (const e of (eventsRes.data ?? []) as Array<{ funnel_id: string; event_type: string }>) {
+      if (!counts[e.funnel_id]) counts[e.funnel_id] = { views: 0, submits: 0 };
+      if (e.event_type === "view") counts[e.funnel_id].views++;
+      else if (e.event_type === "submit") counts[e.funnel_id].submits++;
+    }
+
+    // Merge live-Counts in funnels-Objekte. Fallback auf die DB-Counter falls
+    // funnel_events leer (z.B. ganz neuer Funnel, oder Tracking-Bug).
+    const enriched = ((funnelsRes.data ?? []) as unknown as Funnel[]).map((f) => {
+      const c = counts[f.id];
+      if (!c) return f;
+      return {
+        ...f,
+        views: c.views || f.views,
+        submissions: c.submits || f.submissions,
+      };
+    });
+
+    setFunnels(enriched);
     setLoading(false);
   }, []);
 
