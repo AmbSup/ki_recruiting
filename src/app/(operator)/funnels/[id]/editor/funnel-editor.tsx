@@ -68,6 +68,14 @@ type BlockContent = {
   // contact_form
   show_cv_upload?: boolean;
   show_city?: boolean;
+  // Override des funnel-level consent_text NUR auf diesem Block. Wenn leer →
+  // fällt auf funnels.consent_text zurück (vom Operator im Funnel-Setup).
+  consent_text?: string;
+  // KI-Anruf-Pflicht-Einwilligung (EU AI Act Art. 50 / DSGVO). Wenn ein
+  // String gesetzt ist, rendert der Funnel-Player eine ZWEITE Checkbox unter
+  // der Datenschutz-Checkbox. Beide müssen ticked sein, sonst kein Submit.
+  // Leer/undefined → Checkbox NICHT angezeigt (existing-Funnels bleiben unverändert).
+  ai_consent_text?: string;
   // text
   content?: string;
   size?: "sm" | "md" | "lg" | "xl";
@@ -1994,6 +2002,31 @@ function PropertiesPanel({ block, onUpdate, onAddChild }: { block: Block; onUpda
             <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">Recruiting</span>
             {toggle("Wie gefunden", "Quelle", (c.show_source as boolean) ?? false, (v) => onUpdate({ show_source: v }))}
             {toggle("Positionsinteresse", "Dropdown", (c.show_position_interest as boolean) ?? false, (v) => onUpdate({ show_position_interest: v }))}
+          </div>
+
+          {/* DSGVO / Einwilligungen — Datenschutz-Override + KI-Anruf-Checkbox */}
+          <div className="bg-surface-container-low rounded-xl p-3 space-y-3">
+            <span className="font-label text-[10px] font-bold uppercase tracking-widest text-outline">
+              DSGVO / Einwilligungen
+            </span>
+            {textarea(
+              "Datenschutz-Text (Override)",
+              c.consent_text ?? "",
+              (v) => onUpdate({ consent_text: v }),
+              3,
+            )}
+            <p className="font-label text-[10px] text-outline -mt-2">
+              Leer lassen → übernimmt den globalen Funnel-Datenschutz-Text.
+            </p>
+            {textarea(
+              "KI-Anruf-Einwilligung",
+              c.ai_consent_text ?? "",
+              (v) => onUpdate({ ai_consent_text: v }),
+              3,
+            )}
+            <p className="font-label text-[10px] text-outline -mt-2">
+              Leer lassen → keine zweite Checkbox. Sobald Text gesetzt: Pflicht-Checkbox erscheint unter dem Datenschutz-Hinweis.
+            </p>
           </div>
         </>
       )}
