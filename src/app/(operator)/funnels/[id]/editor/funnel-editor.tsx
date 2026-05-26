@@ -1071,13 +1071,26 @@ function BlockPreview({
               );
             })()}
           </div>
-          {/* Zweite Checkbox-Vorschau für KI-Anruf-Einwilligung, wenn aktiv */}
+          {/* Zweite Checkbox-Vorschau für KI-Anruf-Einwilligung, wenn aktiv.
+              Klickbar wie der Datenschutz-Text → tp() + ts() registriert den
+              Text als Style-Field, damit der Operator Größe/Farbe/Alignment
+              via den text-styling-controls anpassen kann. Style-Keys:
+              ai_consent_size / ai_consent_color / ai_consent_align. */}
           {typeof c.ai_consent_text === "string" && (c.ai_consent_text as string).trim().length > 0 && (
             <div className="mt-2 flex items-start gap-1.5">
               <div className="w-3 h-3 border border-gray-300 rounded mt-0.5 flex-shrink-0" />
-              <span className="text-[10px]" style={{ color: "#9CA3AF", lineHeight: 1.4 }}>
-                {c.ai_consent_text as string}
-              </span>
+              {(() => {
+                const cp = tp("ai_consent");
+                return (
+                  <span
+                    onClick={cp.onClick}
+                    className={cp.className}
+                    style={ts("ai_consent", { size: "sm", color: "#9CA3AF", align: "left", lineHeight: 1.4 })}
+                  >
+                    {c.ai_consent_text as string}
+                  </span>
+                );
+              })()}
             </div>
           )}
           <button {...tp("btn")} className={`w-full mt-3 py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}

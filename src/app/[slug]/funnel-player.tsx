@@ -1030,7 +1030,9 @@ function BlockRenderer({
             {(c.consent_text as string) || consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden."}
           </span>
         </button>
-        {/* AI-Consent — zweite Checkbox, sichtbar nur wenn block.content.ai_consent_text gepflegt */}
+        {/* AI-Consent — zweite Checkbox, sichtbar nur wenn block.content.ai_consent_text gepflegt.
+            Style-Key "ai_consent" — der Operator kann Size/Color/Align separat
+            vom Standard-Datenschutz-Consent über den Editor setzen. */}
         {aiConsentRequired && (
           <button
             onClick={() => onAiConsentChange(!aiConsent)}
@@ -1042,7 +1044,7 @@ function BlockRenderer({
             >
               {aiConsent && <span className="text-white text-xs font-black">✓</span>}
             </div>
-            <span style={vtileTextStyle(c, "consent", { color: "#6B7280", align: "left", lineHeight: 1.5 })}>
+            <span style={vtileTextStyle(c, "ai_consent", { color: "#6B7280", align: "left", lineHeight: 1.5 })}>
               {aiConsentText}
             </span>
           </button>
