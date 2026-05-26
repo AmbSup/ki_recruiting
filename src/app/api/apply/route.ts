@@ -181,6 +181,9 @@ export async function POST(req: NextRequest) {
     // Normalize phone: replace leading 00 with + (e.g. 004367... → +4367...)
     const phone = body.phone ? String(body.phone).replace(/^00/, "+") : body.phone;
     const test_mode = body.test_mode === true;
+    // KI-Anruf-Einwilligung (zweite Pflicht-Checkbox am contact_form-Block).
+    // Vom funnel-player gesendet als body.ai_consent_given (boolean).
+    const ai_consent_given = body.ai_consent_given === true;
 
     if (!funnel_id || !name || !email) {
       return NextResponse.json({ error: "Pflichtfelder fehlen (funnel_id, name, email)" }, { status: 400 });
@@ -207,6 +210,7 @@ export async function POST(req: NextRequest) {
         supabase,
         funnel_id,
         sales_program_id,
+        ai_consent_given,
         name,
         email,
         rawPhone: phone,
@@ -262,12 +266,28 @@ export async function POST(req: NextRequest) {
       (answers ?? {}) as Record<string, unknown>,
     );
 
+    // KI-Anruf-Einwilligung als Audit-Record in funnel_responses persistieren
+    // (DSGVO / EU AI Act Art. 50). Wir speichern given/timestamp/text exakt
+    // wie im Sales-Branch — identisches JSONB-Shape, damit Audit-Tools beide
+    // Pipelines gleich auswerten können.
+    const aiConsentTextShown = extractAiConsentText(
+      (funnelPagesForLabels ?? []) as Array<{ blocks?: unknown }>,
+    );
+    const funnelResponsesWithConsent: Record<string, unknown> = { ...resolvedAnswers };
+    if (aiConsentTextShown) {
+      funnelResponsesWithConsent.ai_consent = {
+        given: ai_consent_given,
+        timestamp: new Date().toISOString(),
+        text: aiConsentTextShown,
+      };
+    }
+
     // 2b. Create new application (fresh applicant → no unique constraint conflict)
     const { data: newApplication, error: appicErr } = await supabase.from("applications").insert({
       applicant_id: applicantId,
       job_id,
       funnel_id,
-      funnel_responses: resolvedAnswers,
+      funnel_responses: funnelResponsesWithConsent,
       source: "direct",
     }).select("id").single();
 
@@ -309,6 +329,7 @@ async function handleSalesSubmission(args: {
   supabase: SupabaseAdmin;
   funnel_id: string;
   sales_program_id: string;
+  ai_consent_given: boolean;
   name: string;
   email: string;
   rawPhone: string | null;
@@ -373,6 +394,21 @@ async function handleSalesSubmission(args: {
     funnel_qa: ctx.qa,                // structured array
     lead_context,                     // 1-Satz natural-language hook
   };
+
+  // KI-Anruf-Einwilligung als separates Audit-Record persistieren (DSGVO /
+  // EU AI Act Art. 50). Wir speichern:
+  //   - given: Boolean (Ja-Klick im Funnel)
+  //   - timestamp: ISO-Datum vom Submit
+  //   - text: Exakter Wortlaut der Checkbox die der User gesehen hat
+  // Nur speichern wenn der Funnel überhaupt eine KI-Consent-Checkbox hatte.
+  const aiConsentTextShown = extractAiConsentText(pagesRaw as Array<{ blocks?: unknown }> | null);
+  if (aiConsentTextShown) {
+    funnelCustomFields.ai_consent = {
+      given: args.ai_consent_given,
+      timestamp: nowIso,
+      text: aiConsentTextShown,
+    };
+  }
 
   // Product-Finder: Funnel-Antworten → Preference-Tags via call_strategy.matching.funnel_tag_map.
   // Tags landen auf custom_fields.preference_tags. Andere program_types ignorieren das Feld.
@@ -534,6 +570,24 @@ async function triggerSalesCall(origin: string, sales_lead_id: string): Promise<
   } catch (err) {
     console.error("[apply/sales] trigger-call failed:", err);
   }
+}
+
+// Liest den exakten Wortlaut der KI-Anruf-Einwilligungs-Checkbox aus den
+// funnel_pages.blocks. Wird beim Submit in custom_fields/funnel_responses
+// gespeichert (Audit-Trail für DSGVO / EU AI Act Art. 50). Wenn kein
+// contact_form-Block mit ai_consent_text existiert → null = keine Speicherung.
+function extractAiConsentText(pages: Array<{ blocks?: unknown }> | null): string | null {
+  if (!pages) return null;
+  for (const p of pages) {
+    const blocks = Array.isArray(p.blocks) ? (p.blocks as Array<{ type?: string; content?: Record<string, unknown> }>) : [];
+    for (const b of blocks) {
+      if (b.type === "contact_form" && typeof b.content?.ai_consent_text === "string") {
+        const t = (b.content.ai_consent_text as string).trim();
+        if (t.length > 0) return t;
+      }
+    }
+  }
+  return null;
 }
 
 // Schickt eine Notification an n8n nach erfolgreichem Funnel-Submit. n8n macht
