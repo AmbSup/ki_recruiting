@@ -529,6 +529,35 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
               </span>
             </div>
           )}
+          {/* KI-Anruf-Einwilligung — Audit-Trail aus funnel_responses.ai_consent.
+              Snapshot zum Submit-Zeitpunkt: given + timestamp + Wortlaut. */}
+          {(() => {
+            const aiConsent = (app.funnel_responses as Record<string, unknown> | null)?.ai_consent as
+              | { given?: boolean; timestamp?: string; text?: string }
+              | undefined;
+            if (!aiConsent) return null;
+            return (
+              <div className="mt-2 pt-3 border-t border-outline-variant/10 flex items-start gap-1.5">
+                <span
+                  className={`material-symbols-outlined text-xs ${aiConsent.given ? "text-primary" : "text-error"}`}
+                  style={{ fontVariationSettings: "'FILL' 1" }}
+                >
+                  {aiConsent.given ? "verified_user" : "block"}
+                </span>
+                <div className="flex-1">
+                  <div className="font-label text-xs text-outline">
+                    KI-Anruf-Einwilligung {aiConsent.given ? "erteilt" : "abgelehnt"}
+                    {aiConsent.timestamp ? ` am ${new Date(aiConsent.timestamp).toLocaleString("de-AT", { dateStyle: "short", timeStyle: "short" })}` : ""}
+                  </div>
+                  {aiConsent.text && (
+                    <div className="font-label text-[10px] text-outline-variant italic mt-1 leading-relaxed">
+                      Wortlaut: &ldquo;{aiConsent.text}&rdquo;
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Score + Actions */}
@@ -1347,14 +1376,17 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
             })
           )}
 
-          {/* Funnel Responses — value→label resolution via funnelLabelMap (best-effort). */}
-          {Object.keys(app.funnel_responses ?? {}).length > 0 && (
+          {/* Funnel Responses — value→label resolution via funnelLabelMap (best-effort).
+              ai_consent ist ein Audit-Object (given/timestamp/text), KEINE Antwort —
+              wird unten in einer eigenen Sektion gerendert. Hier rausfiltern, damit
+              React nicht versucht das Object zu rendern. */}
+          {Object.keys(app.funnel_responses ?? {}).filter((k) => k !== "ai_consent").length > 0 && (
             <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)]">
               <h3 className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-4">
                 Funnel-Antworten
               </h3>
               <div className="space-y-4">
-                {Object.entries(app.funnel_responses).map(([key, rawAnswers]) => {
+                {Object.entries(app.funnel_responses).filter(([k]) => k !== "ai_consent").map(([key, rawAnswers]) => {
                   // Question-Resolution: wenn key eine block.id ist (kein menschenlesbares Frage-Text),
                   // schau nach in funnelLabelMap.questionByBlockId. Sonst nutze key direkt.
                   const question = funnelLabelMap?.questionByBlockId[key] || key;

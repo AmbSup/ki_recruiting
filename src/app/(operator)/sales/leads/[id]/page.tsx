@@ -553,11 +553,15 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
                 const restEntries = Object.entries(cf).filter(
                   ([k]) => {
                     if (k === "funnel_qa" || k === "funnel_summary" || k === "lead_context") return false;
+                    if (k === "ai_consent") return false;                          // separat in eigener Sektion gerendert
                     if (qaKeysToHide.has(k) && !showFunnelData) return false;     // stale per-Frage-Slugs unterdrücken
                     if (qaKeysToHide.has(k) && showFunnelData) return false;       // bereits in Q→A-Liste
                     return true;
                   },
                 );
+                const aiConsent = cf.ai_consent as
+                  | { given?: boolean; timestamp?: string; text?: string }
+                  | undefined;
                 return (
                   <>
                     {leadCtx && (
@@ -597,6 +601,33 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
                               : <span className="font-mono text-[10px]">{JSON.stringify(v)}</span>}
                           />
                         ))}
+                      </div>
+                    )}
+                    {/* KI-Anruf-Einwilligung — Audit-Snapshot zum Submit-Zeitpunkt */}
+                    {aiConsent && (
+                      <div className="pt-2 mt-2 border-t border-outline-variant/10">
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
+                          KI-Anruf-Einwilligung
+                        </span>
+                        <div className="flex items-start gap-1.5">
+                          <span
+                            className={`material-symbols-outlined text-xs ${aiConsent.given ? "text-primary" : "text-error"}`}
+                            style={{ fontVariationSettings: "'FILL' 1" }}
+                          >
+                            {aiConsent.given ? "verified_user" : "block"}
+                          </span>
+                          <div className="flex-1">
+                            <div className="font-label text-xs text-outline">
+                              {aiConsent.given ? "erteilt" : "abgelehnt"}
+                              {aiConsent.timestamp ? ` am ${new Date(aiConsent.timestamp).toLocaleString("de-AT", { dateStyle: "short", timeStyle: "short" })}` : ""}
+                            </div>
+                            {aiConsent.text && (
+                              <div className="font-label text-[10px] text-outline-variant italic mt-1 leading-relaxed">
+                                Wortlaut: &ldquo;{aiConsent.text}&rdquo;
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     )}
                   </>
