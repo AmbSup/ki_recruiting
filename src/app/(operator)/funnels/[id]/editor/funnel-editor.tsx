@@ -1071,6 +1071,15 @@ function BlockPreview({
               );
             })()}
           </div>
+          {/* Zweite Checkbox-Vorschau für KI-Anruf-Einwilligung, wenn aktiv */}
+          {typeof c.ai_consent_text === "string" && (c.ai_consent_text as string).trim().length > 0 && (
+            <div className="mt-2 flex items-start gap-1.5">
+              <div className="w-3 h-3 border border-gray-300 rounded mt-0.5 flex-shrink-0" />
+              <span className="text-[10px]" style={{ color: "#9CA3AF", lineHeight: 1.4 }}>
+                {c.ai_consent_text as string}
+              </span>
+            </div>
+          )}
           <button {...tp("btn")} className={`w-full mt-3 py-2.5 rounded-2xl font-black text-xs cursor-pointer transition-all ${activeFieldKey === "btn" ? "ring-2 ring-blue-400 ring-offset-1" : "hover:ring-1 hover:ring-blue-200 hover:ring-offset-1"}`}
             style={{ background: (c.btn_bg as string) || color, color: (c.btn_color as string) || textColor, ...((c.btn_radius as number) != null ? { borderRadius: `${c.btn_radius}px` } : {}) }}>
             {renderTextWithIcons((c.cta_text as string) || "Bewerbung absenden →")}
@@ -2018,15 +2027,34 @@ function PropertiesPanel({ block, onUpdate, onAddChild }: { block: Block; onUpda
             <p className="font-label text-[10px] text-outline -mt-2">
               Leer lassen → übernimmt den globalen Funnel-Datenschutz-Text.
             </p>
-            {textarea(
+
+            {/* KI-Anruf-Einwilligung als Toggle. Bei aktiv → Default-Text wird
+                gesetzt + Textarea zum Editieren wird sichtbar. Bei deaktiv →
+                ai_consent_text wird auf leeren String gesetzt (Funnel-Player
+                interpretiert das als "Checkbox nicht anzeigen"). */}
+            {toggle(
               "KI-Anruf-Einwilligung",
-              c.ai_consent_text ?? "",
-              (v) => onUpdate({ ai_consent_text: v }),
-              3,
+              "Zusätzliche Pflicht-Checkbox für KI-Anruf",
+              Boolean((c.ai_consent_text as string | undefined)?.trim()),
+              (v) => onUpdate({
+                ai_consent_text: v
+                  ? (c.ai_consent_text || "Ich willige ein, dass mich Neuronic Automation telefonisch durch einen KI-Assistenten kontaktiert. Widerruf jederzeit per E-Mail möglich.")
+                  : "",
+              }),
             )}
-            <p className="font-label text-[10px] text-outline -mt-2">
-              Leer lassen → keine zweite Checkbox. Sobald Text gesetzt: Pflicht-Checkbox erscheint unter dem Datenschutz-Hinweis.
-            </p>
+            {Boolean((c.ai_consent_text as string | undefined)?.trim()) && (
+              <>
+                {textarea(
+                  "KI-Anruf-Text",
+                  c.ai_consent_text ?? "",
+                  (v) => onUpdate({ ai_consent_text: v }),
+                  3,
+                )}
+                <p className="font-label text-[10px] text-outline -mt-2">
+                  Wird unter dem Datenschutz-Text als zweite Pflicht-Checkbox angezeigt.
+                </p>
+              </>
+            )}
           </div>
         </>
       )}
