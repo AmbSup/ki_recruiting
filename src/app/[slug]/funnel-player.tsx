@@ -228,6 +228,7 @@ const I18N: Record<string, Record<string, string>> = {
     name_missing: "Bitte Namen eingeben.",
     email_missing: "Bitte E-Mail eingeben.",
     consent_missing: "Bitte Datenschutz zustimmen.",
+    ai_consent_missing: "Bitte der KI-Anruf-Einwilligung zustimmen.",
     thank_you_heading: "Vielen Dank!",
     thank_you_fallback: "Deine Anfrage wurde erfolgreich übermittelt. Wir melden uns gleich bei dir.",
     submit_failed_prefix: "Senden fehlgeschlagen",
@@ -243,6 +244,7 @@ const I18N: Record<string, Record<string, string>> = {
     name_missing: "Please enter your name.",
     email_missing: "Please enter your email.",
     consent_missing: "Please accept the privacy policy.",
+    ai_consent_missing: "Please accept the AI-call consent.",
     thank_you_heading: "Thank you!",
     thank_you_fallback: "Your request was successfully submitted. We'll be in touch shortly.",
     submit_failed_prefix: "Submission failed",
@@ -319,6 +321,8 @@ type RenderCtx = {
   setForm: (updater: (f: Record<string, string>) => Record<string, string>) => void;
   consent: boolean;
   setConsent: (v: boolean) => void;
+  aiConsent: boolean;
+  setAiConsent: (v: boolean) => void;
   consentText: string | null;
   cvFile: File | null;
   setCvFile: (f: File | null) => void;
@@ -400,6 +404,8 @@ function renderBlock(block: Block, ctx: RenderCtx): React.ReactNode {
         onFormChange={(patch) => ctx.setForm((f) => ({ ...f, ...patch }))}
         consent={ctx.consent}
         onConsentChange={ctx.setConsent}
+        aiConsent={ctx.aiConsent}
+        onAiConsentChange={ctx.setAiConsent}
         consentText={ctx.consentText}
         cvFile={ctx.cvFile}
         onCvChange={ctx.setCvFile}
@@ -425,6 +431,11 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   const [answers, setAnswers] = useState<Record<string, string[]>>({});
   const [form, setForm] = useState<Record<string, string>>({ name: "", email: "", phone: "", city: "" });
   const [consent, setConsent] = useState(false);
+  // Separate Einwilligung für KI-Anruf (Recruiting + Sales) — wird im
+  // contact_form-Block per `ai_consent_text` aktiviert. Wenn das Feld leer
+  // ist, wird die Checkbox nicht angezeigt und nicht validiert (aiConsent
+  // bleibt false, blockiert aber nicht).
+  const [aiConsent, setAiConsent] = useState(false);
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -532,9 +543,20 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
 
   async function handleSubmit() {
     const hasName = form.name || (form.first_name && form.last_name);
-    console.log("[funnel] handleSubmit called", { hasName, email: form.email, consent, submitted });
+    // AI-Consent ist nur Pflicht, wenn IRGENDEIN contact_form-Block auf den
+    // Pages ai_consent_text gesetzt hat. Wir checken das einmal hier statt
+    // in jedem BlockRenderer einzeln.
+    const requiresAiConsent = pages.some((p) =>
+      p.blocks.some((b) =>
+        b.type === "contact_form" &&
+        typeof b.content.ai_consent_text === "string" &&
+        (b.content.ai_consent_text as string).trim().length > 0,
+      ),
+    );
+    console.log("[funnel] handleSubmit called", { hasName, email: form.email, consent, aiConsent, requiresAiConsent, submitted });
     if (!hasName || !form.email) { console.log("[funnel] missing name or email"); return; }
     if (!consent) { console.log("[funnel] consent not given"); return; }
+    if (requiresAiConsent && !aiConsent) { console.log("[funnel] ai consent not given"); return; }
     if (submitted) { console.log("[funnel] already submitted"); return; }
     setSubmitting(true);
     setSubmitError(null);
@@ -585,6 +607,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           cv_url,
           cv_file_name: cvFile?.name ?? null,
           answers: { ...answers, ...extraAnswers },
+          ai_consent_given: aiConsent,
           test_mode: testMode,
         }),
       });
@@ -684,7 +707,8 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
         {currentPage.blocks.map((block) => renderBlock(block, {
           color, textColor, branding, language: (funnel.language ?? "de").toLowerCase(),
           answers, answerKey, toggleChoice,
-          advance, form, setForm, consent, setConsent, consentText: funnel.consent_text,
+          advance, form, setForm, consent, setConsent, aiConsent, setAiConsent,
+          consentText: funnel.consent_text,
           cvFile, setCvFile, submitting, handleSubmit, submitted, submitError,
         }))}
       </div>
@@ -744,7 +768,7 @@ function FieldRow({
 
 function BlockRenderer({
   block, color, textColor, branding, language, answers, onToggleChoice, onAdvance,
-  form, onFormChange, consent, onConsentChange, consentText,
+  form, onFormChange, consent, onConsentChange, aiConsent, onAiConsentChange, consentText,
   cvFile, onCvChange, submitting, onSubmit, submitted, submitError,
 }: {
   block: Block; color: string; textColor: string; branding: FunnelBranding;
@@ -754,6 +778,7 @@ function BlockRenderer({
   form: Record<string, string>;
   onFormChange: (patch: Record<string, string>) => void;
   consent: boolean; onConsentChange: (v: boolean) => void;
+  aiConsent: boolean; onAiConsentChange: (v: boolean) => void;
   consentText: string | null;
   cvFile: File | null; onCvChange: (f: File | null) => void;
   submitting: boolean; onSubmit: () => Promise<void>; submitted: boolean;
@@ -916,7 +941,12 @@ function BlockRenderer({
   // ── CONTACT FORM ──
   if (block.type === "contact_form") {
     const nameValid = c.show_name_split ? (form.first_name && form.last_name) : form.name;
-    const isValid = nameValid && form.email && consent;
+    // ai_consent_text aktiviert eine zweite Pflicht-Checkbox für die KI-Anruf-
+    // Einwilligung (EU AI Act Art. 50 / DSGVO). Wenn das Feld leer ist, wird
+    // weder die Checkbox angezeigt noch die Validierung erweitert.
+    const aiConsentText = typeof c.ai_consent_text === "string" ? c.ai_consent_text.trim() : "";
+    const aiConsentRequired = aiConsentText.length > 0;
+    const isValid = nameValid && form.email && consent && (aiConsentRequired ? aiConsent : true);
     return (
       <div className="px-5 py-6">
         <h2 className="font-black mb-4" style={{ ...headlineStyle(c, "headline", { lineHeight: 1.2 }) }}>{renderTextWithIcons((c.headline as string) || "Deine Kontaktdaten")}</h2>
@@ -1000,9 +1030,32 @@ function BlockRenderer({
             {(c.consent_text as string) || consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden."}
           </span>
         </button>
+        {/* AI-Consent — zweite Checkbox, sichtbar nur wenn block.content.ai_consent_text gepflegt */}
+        {aiConsentRequired && (
+          <button
+            onClick={() => onAiConsentChange(!aiConsent)}
+            className="flex items-start gap-3 text-left w-full mb-5"
+          >
+            <div
+              className="w-5 h-5 rounded-md border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all"
+              style={{ borderColor: aiConsent ? color : "#D1D5DB", background: aiConsent ? color : "white" }}
+            >
+              {aiConsent && <span className="text-white text-xs font-black">✓</span>}
+            </div>
+            <span style={vtileTextStyle(c, "consent", { color: "#6B7280", align: "left", lineHeight: 1.5 })}>
+              {aiConsentText}
+            </span>
+          </button>
+        )}
         {!isValid && (form.name || form.email) && (
           <p className="text-xs text-red-500 mb-3 text-center">
-            {!form.name ? t(language, "name_missing") : !form.email ? t(language, "email_missing") : t(language, "consent_missing")}
+            {!form.name
+              ? t(language, "name_missing")
+              : !form.email
+                ? t(language, "email_missing")
+                : !consent
+                  ? t(language, "consent_missing")
+                  : t(language, "ai_consent_missing")}
           </p>
         )}
         {submitError && (
