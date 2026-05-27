@@ -13,6 +13,7 @@ const navItems = [
   { href: "/ads-setup",    icon: "ads_click",      label: "Ads Setup" },
   { href: "/applicants",   icon: "people",         label: "Bewerber" },
   { href: "/sales",        icon: "trending_up",    label: "Sales" },
+  { href: "/sales/bulk-calls", icon: "phone_in_talk", label: "Massen-Anrufe" },
   { href: "/sales/calendar", icon: "event",        label: "Kalender" },
   { href: "/campaigns",    icon: "campaign",       label: "Kampagnen" },
   { href: "/calls",        icon: "call",           label: "Calls" },

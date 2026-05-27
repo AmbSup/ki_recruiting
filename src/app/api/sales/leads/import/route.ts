@@ -60,6 +60,10 @@ export async function POST(req: NextRequest) {
   let skippedTerminal = 0;
   let skippedInvalid = 0;
   const errors: { row: number; reason: string }[] = [];
+  // Track every lead-id that was created OR updated (NOT skipped_terminal, NOT
+  // invalid). Bulk-Calls-Engine nutzt das, um nur die "callable" Leads zu
+  // dialen — Hard-Opt-Outs sind dadurch automatisch raus.
+  const leadIds: string[] = [];
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
@@ -116,8 +120,9 @@ export async function POST(req: NextRequest) {
         .eq("id", existing.id);
       if (error) { errors.push({ row: i + 2, reason: error.message }); continue; }
       updated++;
+      leadIds.push(existing.id);
     } else {
-      const { error } = await supabase.from("sales_leads").insert({
+      const { data: inserted, error } = await supabase.from("sales_leads").insert({
         sales_program_id: salesProgramId,
         phone,
         ...coreFields,
@@ -126,22 +131,26 @@ export async function POST(req: NextRequest) {
         consent_given: true,
         consent_source: "manual_import",
         consent_timestamp: new Date().toISOString(),
-      });
+      }).select("id").single();
       if (error) {
         if ((error as { code?: string }).code === "23505") {
-          // Race — retry as update
-          await supabase
+          // Race — retry as update + fetch ID for the bulk-call list
+          const { data: raceRow } = await supabase
             .from("sales_leads")
             .update({ custom_fields: customFields, consent_timestamp: new Date().toISOString() })
             .eq("sales_program_id", salesProgramId)
-            .eq("phone", phone);
+            .eq("phone", phone)
+            .select("id")
+            .maybeSingle();
           updated++;
+          if (raceRow?.id) leadIds.push(raceRow.id);
         } else {
           errors.push({ row: i + 2, reason: error.message });
         }
         continue;
       }
       created++;
+      if (inserted?.id) leadIds.push(inserted.id);
     }
   }
 
@@ -151,5 +160,6 @@ export async function POST(req: NextRequest) {
     skipped_terminal: skippedTerminal,
     skipped_invalid: skippedInvalid,
     errors,
+    lead_ids: leadIds,
   });
 }
