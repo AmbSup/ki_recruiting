@@ -326,6 +326,31 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
     }
   }
 
+  // DSGVO Art. 17 — vollständige Löschung des Bewerbers + Bewerbungen + Calls
+  // + Transkripte + Analysen + CV-Datei. Doppel-Bestätigung via "LÖSCHEN".
+  async function eraseApplicantData() {
+    const applicantId = app?.applicant.id;
+    if (!applicantId) return;
+    const typed = window.prompt(
+      "DSGVO-Löschung (Art. 17): ALLE Daten dieses Bewerbers werden unwiderruflich gelöscht — Bewerbung(en), Calls, Transkripte, Analysen, CV.\n\nTippe LÖSCHEN zum Bestätigen:",
+    );
+    if (typed !== "LÖSCHEN") return;
+    const res = await fetch(`/api/applicants/${applicantId}/erase`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && res.status !== 207) {
+      alert(`Löschung fehlgeschlagen: ${data?.summary?.errors?.join(", ") ?? "unbekannt"}`);
+      return;
+    }
+    window.location.href = "/applicants";
+  }
+
+  // DSGVO Art. 15/20 — JSON-Export aller gespeicherten Daten als Download.
+  function exportApplicantData() {
+    const applicantId = app?.applicant.id;
+    if (!applicantId) return;
+    window.location.href = `/api/applicants/${applicantId}/export`;
+  }
+
   async function deleteCv() {
     if (!confirm("CV wirklich löschen?")) return;
     setDeletingCv(true);
@@ -441,12 +466,32 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
   return (
     <div className="px-8 pt-10 pb-32 max-w-[1400px]">
 
-      {/* Back */}
-      <Link href="/applicants"
-        className="inline-flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors mb-8">
-        <span className="material-symbols-outlined text-sm">arrow_back</span>
-        <span className="font-label text-xs font-bold uppercase tracking-widest">Bewerber-Pipeline</span>
-      </Link>
+      {/* Back + DSGVO-Aktionen */}
+      <div className="flex items-center justify-between mb-8">
+        <Link href="/applicants"
+          className="inline-flex items-center gap-1.5 text-outline hover:text-on-surface transition-colors">
+          <span className="material-symbols-outlined text-sm">arrow_back</span>
+          <span className="font-label text-xs font-bold uppercase tracking-widest">Bewerber-Pipeline</span>
+        </Link>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={exportApplicantData}
+            title="DSGVO Art. 15/20 — alle gespeicherten Daten als JSON exportieren"
+            className="flex items-center gap-1.5 border border-outline-variant/40 text-on-surface-variant px-4 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">download</span>
+            Daten exportieren
+          </button>
+          <button
+            onClick={eraseApplicantData}
+            title="DSGVO Art. 17 — vollständige Löschung inkl. Bewerbung, Calls, Transkripte, CV"
+            className="flex items-center gap-1.5 border border-error/30 text-error px-4 py-2 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-error-container/20 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">delete_forever</span>
+            DSGVO-Löschung
+          </button>
+        </div>
+      </div>
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-12 gap-5 mb-6">

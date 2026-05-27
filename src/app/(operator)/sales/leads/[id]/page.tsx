@@ -232,10 +232,26 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
     setTimeout(() => { setTriggerMsg(null); load(); }, 2500);
   }
 
+  // DSGVO Art. 17 — vollständige Löschung über den /erase-Endpoint (Cascade +
+  // Storage + Audit-Log). NICHT der alte /[id] DELETE, der Calls/Recordings
+  // verwaisen ließ. Doppel-Bestätigung via getipptem "LÖSCHEN".
   async function deleteLead() {
-    if (!confirm("Lead wirklich löschen? Alle Calls und Analysen gehen mit (cascade).")) return;
-    await fetch(`/api/sales/leads/${id}`, { method: "DELETE" });
+    const typed = window.prompt(
+      "DSGVO-Löschung (Art. 17): ALLE Daten dieser Person werden unwiderruflich gelöscht — Lead, Calls, Aufzeichnungen, Analysen, Uploads.\n\nTippe LÖSCHEN zum Bestätigen:",
+    );
+    if (typed !== "LÖSCHEN") return;
+    const res = await fetch(`/api/sales/leads/${id}/erase`, { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok && res.status !== 207) {
+      alert(`Löschung fehlgeschlagen: ${data?.summary?.errors?.join(", ") ?? "unbekannt"}`);
+      return;
+    }
     window.location.href = "/sales/leads";
+  }
+
+  // DSGVO Art. 15/20 — JSON-Export aller gespeicherten Daten als Download.
+  function exportData() {
+    window.location.href = `/api/sales/leads/${id}/export`;
   }
 
   if (loading) {
@@ -301,11 +317,20 @@ export default function SalesLeadDetailPage({ params }: { params: Promise<{ id: 
             Call starten
           </button>
           <button
+            onClick={exportData}
+            title="DSGVO Art. 15/20 — alle gespeicherten Daten als JSON exportieren"
+            className="flex items-center gap-1.5 border border-outline-variant/40 text-on-surface-variant px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">download</span>
+            Daten exportieren
+          </button>
+          <button
             onClick={deleteLead}
+            title="DSGVO Art. 17 — vollständige Löschung inkl. Calls, Aufzeichnungen, Analysen"
             className="flex items-center gap-1.5 border border-error/30 text-error px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-error-container/20 transition-colors"
           >
-            <span className="material-symbols-outlined text-sm">delete</span>
-            Löschen
+            <span className="material-symbols-outlined text-sm">delete_forever</span>
+            DSGVO-Löschung
           </button>
         </div>
       </div>

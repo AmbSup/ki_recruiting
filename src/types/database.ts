@@ -1118,6 +1118,33 @@ export type Database = {
           },
         ]
       }
+      gdpr_erasure_log: {
+        Row: {
+          deleted_at: string
+          deleted_by: string | null
+          id: string
+          subject_ref: string | null
+          subject_type: string
+          summary: Json
+        }
+        Insert: {
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          subject_ref?: string | null
+          subject_type: string
+          summary?: Json
+        }
+        Update: {
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          subject_ref?: string | null
+          subject_type?: string
+          summary?: Json
+        }
+        Relationships: []
+      }
       invoices: {
         Row: {
           company_id: string
