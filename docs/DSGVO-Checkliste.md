@@ -25,6 +25,7 @@ Stand: 2026-05-27 · Plattform: KI-Telefonie für Recruiting + Sales (Vapi/Twili
 | **Recht auf Auskunft/Portabilität (JSON-Export)** | **Art. 15/20** | ✅ `/api/{sales/leads,applicants}/[id]/export` |
 | Aufzeichnung explizit im KI-Disclosure benannt | Art. 13 / AI-Act 50 | ✅ „aufgezeichnet" (DE) / „being recorded" (EN), `buildFirstMessage` |
 | Datenschutz- + Impressum-Link im Funnel-Footer | Art. 13 | ✅ operator-pflegbar (branding.privacy_policy_url / imprint_url), `funnel-player.tsx` |
+| Consent server-seitig erzwungen (nicht nur UI) | Art. 6/7 | ✅ `/api/apply` 422 wenn kein consent_given (beide Pipelines) |
 
 ---
 
@@ -35,8 +36,8 @@ Priorisiert. Jeder Punkt ist ein abgrenzbares Software-Ticket:
 1. ~~Aufzeichnung explizit im Disclosure benennen~~ ✅ **erledigt** (siehe oben).
 2. ~~Datenschutz- + Impressum-Link im Funnel-Footer~~ ✅ **erledigt** — Operator
    pflegt die URLs im Funnel-Editor → Design-Panel.
-3. **Recruiting-Consent server-seitig erzwingen** — Funnel-Submit prüft Consent
-   nur clientseitig (umgehbar). → 422 in `/api/apply` wenn `consent != true`.
+3. ~~Recruiting-Consent server-seitig erzwingen~~ ✅ **erledigt** — `/api/apply`
+   gibt 422 wenn `consent_given !== true` (beide Pipelines, Test-Mode ausgenommen).
 4. **Aufbewahrungsfristen / Auto-Purge** (Art. 5 (1)(e) Speicherbegrenzung):
    - Cron-Job: Recordings/Transkripte/Leads älter als X Monate automatisch löschen
      (X = im Verarbeitungsverzeichnis definierte Frist, z.B. 6 Monate nach
