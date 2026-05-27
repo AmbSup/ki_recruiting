@@ -23,6 +23,8 @@ Stand: 2026-05-27 · Plattform: KI-Telefonie für Recruiting + Sales (Vapi/Twili
 | Rollen-/Zugriffskontrolle (RLS auf allen Personendaten-Tabellen) | Art. 32 | ✅ `supabase/rls.sql` |
 | **Recht auf Löschung (Cascade + Storage + Audit-Log)** | **Art. 17** | ✅ `/api/{sales/leads,applicants}/[id]/erase` + `gdpr_erasure_log` |
 | **Recht auf Auskunft/Portabilität (JSON-Export)** | **Art. 15/20** | ✅ `/api/{sales/leads,applicants}/[id]/export` |
+| Aufzeichnung explizit im KI-Disclosure benannt | Art. 13 / AI-Act 50 | ✅ „aufgezeichnet" (DE) / „being recorded" (EN), `buildFirstMessage` |
+| Datenschutz- + Impressum-Link im Funnel-Footer | Art. 13 | ✅ operator-pflegbar (branding.privacy_policy_url / imprint_url), `funnel-player.tsx` |
 
 ---
 
@@ -30,12 +32,9 @@ Stand: 2026-05-27 · Plattform: KI-Telefonie für Recruiting + Sales (Vapi/Twili
 
 Priorisiert. Jeder Punkt ist ein abgrenzbares Software-Ticket:
 
-1. **Aufzeichnung explizit im Disclosure benennen** — aktuell sagt die KI „dieses
-   Gespräch wird verarbeitet und ausgewertet". Für AT/DE rechtssicherer:
-   explizit „…und **aufgezeichnet**". → `base-prompt.ts` First-Message DE+EN.
-2. **Datenschutz- + Impressum-Link im Funnel-Footer** — aktuell nur Checkbox-Text
-   ohne klickbaren Link. Pflicht: verlinkte Datenschutzerklärung auf jeder
-   öffentlichen Funnel-Seite. → `funnel-player.tsx` Footer.
+1. ~~Aufzeichnung explizit im Disclosure benennen~~ ✅ **erledigt** (siehe oben).
+2. ~~Datenschutz- + Impressum-Link im Funnel-Footer~~ ✅ **erledigt** — Operator
+   pflegt die URLs im Funnel-Editor → Design-Panel.
 3. **Recruiting-Consent server-seitig erzwingen** — Funnel-Submit prüft Consent
    nur clientseitig (umgehbar). → 422 in `/api/apply` wenn `consent != true`.
 4. **Aufbewahrungsfristen / Auto-Purge** (Art. 5 (1)(e) Speicherbegrenzung):
