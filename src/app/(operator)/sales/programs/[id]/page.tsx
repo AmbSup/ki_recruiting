@@ -82,6 +82,7 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
   const [dirty, setDirty] = useState(false);
   const [metaFormInput, setMetaFormInput] = useState("");
   const [leadModalOpen, setLeadModalOpen] = useState(false);
+  const [testCallModalOpen, setTestCallModalOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [stats, setStats] = useState<PipelineStats | null>(null);
 
@@ -269,6 +270,13 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
           >
             <span className="material-symbols-outlined text-sm">person_add</span>
             Test-Lead anlegen
+          </button>
+          <button
+            onClick={() => setTestCallModalOpen(true)}
+            className="flex items-center gap-1.5 border border-primary/30 text-primary px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-container/20 transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">phone_in_talk</span>
+            Test-Call
           </button>
           <button
             onClick={del}
@@ -687,6 +695,200 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
         onClose={() => setLeadModalOpen(false)}
         defaultProgramId={id}
       />
+
+      {/* key forciert Remount bei jedem Open — interner Modal-State ist dann
+          automatisch frisch ohne useEffect-Reset-Pattern. */}
+      {testCallModalOpen && (
+        <TestCallModal
+          onClose={() => setTestCallModalOpen(false)}
+          programId={id}
+        />
+      )}
+    </div>
+  );
+}
+
+// Inline-Modal: Telefonnummer eingeben → Lead (source='test') anlegen ODER
+// existing Lead mit gleicher Phone in diesem Program wiederverwenden →
+// /api/sales/trigger-call → redirect zu /sales/calls/<id>. Eigentumsfrage:
+// Operator klickt das nur für sich selbst oder bekannte Test-Personen, daher
+// Consent-Checkbox als Pflicht-Self-Attestation.
+function TestCallModal({ onClose, programId }: { onClose: () => void; programId: string }) {
+  const [phone, setPhone] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function startTestCall() {
+    if (!phone.trim()) { setError("Telefonnummer eingeben"); return; }
+    if (!consent) { setError("Bitte Consent bestätigen"); return; }
+    setBusy(true);
+    setError(null);
+
+    const supabase = createClient();
+
+    // 1. Phone normalisieren — simple client-side: nur 00 → + replace, rest
+    //    macht die API. Für richtige Normalisierung wäre import von
+    //    normalizePhone nötig, aber das ist server-only.
+    const cleanPhone = phone.trim().replace(/^00/, "+");
+
+    // 2. Existing-Lead-Check via Supabase (Dedupe). Wenn vorhanden → ID
+    //    wiederverwenden, consent_given upsetzen damit trigger-call nicht 403'd.
+    let leadId: string | null = null;
+    const { data: existing } = await supabase
+      .from("sales_leads")
+      .select("id, consent_given")
+      .eq("sales_program_id", programId)
+      .eq("phone", cleanPhone)
+      .maybeSingle();
+
+    if (existing) {
+      leadId = existing.id;
+      if (!existing.consent_given) {
+        // Existing-Lead hat noch keinen Consent — wir setzen ihn jetzt via
+        // direktem Supabase-Update (operator-rolle hat RLS-Write-Rights).
+        // PATCH /api/sales/leads/[id] hat consent-Fields nicht im EDITABLE_FIELDS.
+        await supabase
+          .from("sales_leads")
+          .update({
+            consent_given: true,
+            consent_source: "test_call_self_attestation",
+            consent_timestamp: new Date().toISOString(),
+            ...(firstName.trim() ? { first_name: firstName.trim() } : {}),
+          })
+          .eq("id", existing.id);
+      }
+    } else {
+      // Neuer Lead anlegen
+      const r = await fetch("/api/sales/leads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sales_program_id: programId,
+          phone: cleanPhone,
+          first_name: firstName.trim() || null,
+          source: "test",
+          consent_given: true,
+          consent_source: "test_call_self_attestation",
+          consent_timestamp: new Date().toISOString(),
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        setBusy(false);
+        setError(d.error ?? "Lead konnte nicht angelegt werden");
+        return;
+      }
+      leadId = d.lead?.id ?? d.id;
+    }
+
+    if (!leadId) {
+      setBusy(false);
+      setError("Lead-ID nicht erkannt");
+      return;
+    }
+
+    // 3. Trigger-Call feuern
+    const tr = await fetch("/api/sales/trigger-call", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sales_lead_id: leadId }),
+    });
+    const td = await tr.json();
+    setBusy(false);
+    if (!tr.ok) {
+      setError(td.error ?? `Trigger-Call fehlgeschlagen (${tr.status})`);
+      return;
+    }
+    onClose();
+    if (td.sales_call_id) {
+      window.location.href = `/sales/calls/${td.sales_call_id}`;
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-inverse-surface/40 backdrop-blur-sm">
+      <div className="bg-surface-container-lowest rounded-2xl shadow-2xl max-w-md w-full p-6">
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <h3 className="font-headline text-2xl italic text-on-surface leading-none">Test-Call</h3>
+            <p className="font-label text-xs text-outline mt-1.5">Eigene Nummer eingeben → KI ruft sofort an</p>
+          </div>
+          <button onClick={onClose} className="text-outline hover:text-on-surface">
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
+              Telefonnummer *
+            </label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+436771234567"
+              className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              autoFocus
+              disabled={busy}
+            />
+            <p className="font-label text-[10px] text-outline mt-1">E.164 (mit +) bevorzugt. 00-Prefix wird automatisch konvertiert.</p>
+          </div>
+
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
+              Vorname (optional)
+            </label>
+            <input
+              type="text"
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+              placeholder="Martin"
+              className="w-full bg-surface-container-low border border-outline-variant/20 rounded-xl px-4 py-2.5 font-body text-sm text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors"
+              disabled={busy}
+            />
+            <p className="font-label text-[10px] text-outline mt-1">Wird vom Agent als Anrede verwendet ({"{{first_name}}"}).</p>
+          </div>
+
+          <div className="bg-tertiary-container/20 border border-tertiary-container/40 rounded-xl p-3">
+            <label className="flex items-start gap-2.5 cursor-pointer">
+              <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} className="mt-0.5" disabled={busy} />
+              <div className="flex-1">
+                <div className="font-body text-xs text-on-surface-variant leading-relaxed">
+                  Ich bestätige, dass die angerufene Person dem telefonischen Kontakt durch einen KI-Assistenten zugestimmt hat (z.B. ich rufe mich selbst zu Testzwecken an).
+                </div>
+              </div>
+            </label>
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 bg-error-container/20 border border-error-container/40 rounded-xl px-3 py-2.5">
+              <span className="material-symbols-outlined text-error text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+              <span className="font-body text-xs text-error">{error}</span>
+            </div>
+          )}
+
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              onClick={onClose}
+              disabled={busy}
+              className="flex-1 border border-outline-variant/30 text-on-surface-variant rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
+            >
+              Abbrechen
+            </button>
+            <button
+              onClick={startTestCall}
+              disabled={busy || !phone.trim() || !consent}
+              className="flex-1 flex items-center justify-center gap-2 bg-primary text-on-primary rounded-xl py-2.5 font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-sm">{busy ? "progress_activity" : "phone_in_talk"}</span>
+              {busy ? "Startet…" : "Anrufen"}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
