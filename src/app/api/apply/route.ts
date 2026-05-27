@@ -184,12 +184,24 @@ export async function POST(req: NextRequest) {
     // KI-Anruf-Einwilligung (zweite Pflicht-Checkbox am contact_form-Block).
     // Vom funnel-player gesendet als body.ai_consent_given (boolean).
     const ai_consent_given = body.ai_consent_given === true;
+    // Datenschutz-Consent (Pflicht-Checkbox). Vom funnel-player als
+    // body.consent_given gesendet. Server-seitiges Gate (vorher nur clientseitig
+    // im funnel-player validiert → umgehbar). Test-Mode ist ausgenommen.
+    const consent_given = body.consent_given === true;
 
     if (!funnel_id || !name || !email) {
       return NextResponse.json({ error: "Pflichtfelder fehlen (funnel_id, name, email)" }, { status: 400 });
     }
     if (!job_id && !sales_program_id) {
       return NextResponse.json({ error: "Weder job_id noch sales_program_id gesetzt" }, { status: 400 });
+    }
+    // DSGVO: Ohne dokumentierte Einwilligung kein Speichern + kein Call.
+    // Gilt für beide Pipelines. Test-Mode (Operator-Tests) ausgenommen.
+    if (!consent_given && !test_mode) {
+      return NextResponse.json(
+        { error: "Einwilligung fehlt — bitte Datenschutz-Checkbox bestätigen." },
+        { status: 422 },
+      );
     }
 
     // Funnel-Name für die Notification-Email laden — beide Branches brauchen ihn.

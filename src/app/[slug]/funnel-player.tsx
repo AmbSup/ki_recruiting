@@ -607,6 +607,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           cv_url,
           cv_file_name: cvFile?.name ?? null,
           answers: { ...answers, ...extraAnswers },
+          consent_given: consent,
           ai_consent_given: aiConsent,
           test_mode: testMode,
         }),
