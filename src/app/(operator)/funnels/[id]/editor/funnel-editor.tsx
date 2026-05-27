@@ -147,6 +147,9 @@ type FunnelBranding = {
   bg_color?: string;
   bg_gradient?: string;
   content_width?: string;
+  // DSGVO-Footer-Links (optional). Wenn gesetzt → erscheinen im Funnel-Footer.
+  privacy_policy_url?: string;
+  imprint_url?: string;
   [key: string]: unknown;
 };
 
@@ -2654,6 +2657,31 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
             className="w-24 bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-2 py-1.5 text-xs font-mono focus:outline-none focus:border-primary" />
           <span className="font-label text-[9px] text-outline">Mobil: automatisch 100%</span>
         </div>
+      </div>
+      {/* DSGVO-Footer-Links — erscheinen im Funnel-Footer wenn gesetzt */}
+      <div>
+        <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
+          DSGVO-Footer-Links
+        </label>
+        <div className="space-y-2">
+          <input
+            type="url"
+            value={branding.privacy_policy_url ?? ""}
+            onChange={(e) => onChange({ privacy_policy_url: e.target.value })}
+            placeholder="Datenschutz-URL (https://…)"
+            className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
+          />
+          <input
+            type="url"
+            value={branding.imprint_url ?? ""}
+            onChange={(e) => onChange({ imprint_url: e.target.value })}
+            placeholder="Impressum-URL (https://…)"
+            className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
+          />
+        </div>
+        <p className="font-label text-[9px] text-outline mt-1.5">
+          Leer lassen → kein Link. Gesetzt → erscheint im Funnel-Footer (Art. 13 Info-Pflicht).
+        </p>
       </div>
       {/* Preview */}
       <div className="border border-outline-variant/10 rounded-xl p-4 bg-surface-container-low">

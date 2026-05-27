@@ -207,9 +207,12 @@ export function buildFirstMessage(
   const opener = interpolate(openerSrc, vars).trim();
 
   const isEn = language === "en";
+  // DSGVO + EU-AI-Act Art. 50: explizit KI + Aufzeichnung benennen. "aufgezeichnet"
+  // ist bewusst drin (nicht nur "verarbeitet"), weil Gesprächsaufzeichnung in
+  // AT/DE eine eigene Rechtsgrundlage + klare Ansage braucht.
   const disclosure = isEn
-    ? "Just so you know upfront: I'm an AI assistant, and this conversation will be processed and reviewed."
-    : "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird verarbeitet und ausgewertet.";
+    ? "Just so you know upfront: I'm an AI assistant, and this call is being recorded, processed and reviewed."
+    : "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird aufgezeichnet, verarbeitet und ausgewertet.";
 
   const consentEnabled = vars.require_consent !== false;
   const consentQuestion = consentEnabled

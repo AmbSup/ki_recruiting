@@ -192,7 +192,7 @@ type FunnelPage = {
   settings?: Record<string, unknown>;
 };
 
-type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string; bg_color?: string; bg_gradient?: string; content_width?: string; [key: string]: unknown };
+type FunnelBranding = { primary_color: string; button_text_color: string; logo_url?: string; font_pair?: string; bg_color?: string; bg_gradient?: string; content_width?: string; privacy_policy_url?: string; imprint_url?: string; [key: string]: unknown };
 
 const fontFamilyMap: Record<string, { headline: string; body: string }> = {
   default: { headline: "var(--font-newsreader), serif", body: "var(--font-manrope), sans-serif" },
@@ -733,6 +733,27 @@ function Screen({ children, color, textColor, branding }: {
         )}
         {children}
         <div className="flex-shrink-0 py-3 text-center">
+          {/* DSGVO: Datenschutz-/Impressum-Link wenn operator-konfiguriert.
+              Pflicht auf öffentlichen Funnel-Seiten (Art. 13 Info-Pflicht). */}
+          {(branding.privacy_policy_url || branding.imprint_url) && (
+            <div className="flex items-center justify-center gap-3 mb-1.5">
+              {branding.privacy_policy_url && (
+                <a href={branding.privacy_policy_url} target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] text-gray-400 underline hover:text-gray-600">
+                  Datenschutz
+                </a>
+              )}
+              {branding.privacy_policy_url && branding.imprint_url && (
+                <span className="text-[10px] text-gray-300">·</span>
+              )}
+              {branding.imprint_url && (
+                <a href={branding.imprint_url} target="_blank" rel="noopener noreferrer"
+                  className="text-[10px] text-gray-400 underline hover:text-gray-600">
+                  Impressum
+                </a>
+              )}
+            </div>
+          )}
           <span className="text-[9px] text-gray-300">Powered by KI Recruiting</span>
         </div>
       </div>
