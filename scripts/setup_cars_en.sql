@@ -84,7 +84,7 @@ BEGIN
      '["suv","fuel","family","budget-low","used"]'::jsonb,
      29900, 2400000, 'EUR',
      'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=1200',
-     'https://ki-recruiting.vercel.app/cars/vw-tiguan',
+     'https://app.neuronic-automation.ai/cars/vw-tiguan',
      true),
 
     (v_program_id,
@@ -94,7 +94,7 @@ BEGIN
      '["sporty","fuel","budget-high","new"]'::jsonb,
      109900, 9200000, 'EUR',
      'https://images.unsplash.com/photo-1555215695-3004980ad54e?w=1200',
-     'https://ki-recruiting.vercel.app/cars/bmw-m3',
+     'https://app.neuronic-automation.ai/cars/bmw-m3',
      true),
 
     (v_program_id,
@@ -104,7 +104,7 @@ BEGIN
      '["suv","electric","family","budget-mid","new"]'::jsonb,
      54900, 5400000, 'EUR',
      'https://images.unsplash.com/photo-1617788138017-80ad40651399?w=1200',
-     'https://ki-recruiting.vercel.app/cars/tesla-model-y',
+     'https://app.neuronic-automation.ai/cars/tesla-model-y',
      true),
 
     (v_program_id,
@@ -114,7 +114,7 @@ BEGIN
      '["sporty","fuel","family","budget-high","new"]'::jsonb,
      89900, 12800000, 'EUR',
      'https://images.unsplash.com/photo-1503376780353-7e6692767b70?w=1200',
-     'https://ki-recruiting.vercel.app/cars/audi-rs6',
+     'https://app.neuronic-automation.ai/cars/audi-rs6',
      true),
 
     (v_program_id,
@@ -124,7 +124,7 @@ BEGIN
      '["family","fuel","budget-low","used"]'::jsonb,
      18900, 1800000, 'EUR',
      'https://images.unsplash.com/photo-1502877338535-766e1452684a?w=1200',
-     'https://ki-recruiting.vercel.app/cars/skoda-octavia',
+     'https://app.neuronic-automation.ai/cars/skoda-octavia',
      true),
 
     (v_program_id,
@@ -134,7 +134,7 @@ BEGIN
      '["suv","electric","family","budget-mid","used"]'::jsonb,
      39900, 3800000, 'EUR',
      'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?w=1200',
-     'https://ki-recruiting.vercel.app/cars/vw-id4',
+     'https://app.neuronic-automation.ai/cars/vw-id4',
      true),
 
     (v_program_id,
@@ -144,7 +144,7 @@ BEGIN
      '["sporty","electric","budget-high","new"]'::jsonb,
      129900, 11000000, 'EUR',
      'https://images.unsplash.com/photo-1619767886558-efdc259cde1a?w=1200',
-     'https://ki-recruiting.vercel.app/cars/porsche-taycan',
+     'https://app.neuronic-automation.ai/cars/porsche-taycan',
      true),
 
     (v_program_id,
@@ -154,7 +154,7 @@ BEGIN
      '["suv","electric","budget-low","new"]'::jsonb,
      29900, 3700000, 'EUR',
      'https://images.unsplash.com/photo-1592853625511-ad0fcc3b6cf0?w=1200',
-     'https://ki-recruiting.vercel.app/cars/hyundai-kona',
+     'https://app.neuronic-automation.ai/cars/hyundai-kona',
      true);
 
   -- 3. Funnel (English, language='en')
