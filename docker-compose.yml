@@ -1,5 +1,10 @@
 version: '3.8'
 
+# Lokale n8n-Dev-Instanz (separat von Production unter n8n.neuronic-automation.ai).
+# Für die Production muss die docker-compose / Env auf dem VPS gepflegt werden,
+# nicht hier. WEBHOOK_URL bestimmt welche Hostname/Port n8n in selbst-generierte
+# Resume-URLs (Wait-Nodes) einbaut. Wenn falsch → externe Dienste wie Vapi
+# können Wait-Nodes nicht resumen → Workflows hängen still.
 services:
   n8n:
     image: n8nio/n8n
@@ -15,3 +20,24 @@ services:
       - WEBHOOK_URL=http://localhost:5678/
     volumes:
       - ./n8n_data:/home/node/.n8n
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REFERENZ-CONFIG für PRODUCTION n8n auf dem VPS (NICHT hier ändern, sondern
+# auf dem Server wo n8n.neuronic-automation.ai läuft):
+#
+# environment:
+#   - N8N_BASIC_AUTH_ACTIVE=true
+#   - N8N_BASIC_AUTH_USER=<production-user>
+#   - N8N_BASIC_AUTH_PASSWORD=<strong-password-from-secret>
+#   - N8N_HOST=n8n.neuronic-automation.ai
+#   - N8N_PORT=5678
+#   - N8N_PROTOCOL=https
+#   - WEBHOOK_URL=https://n8n.neuronic-automation.ai/      # KEIN :5678
+#   - N8N_EDITOR_BASE_URL=https://n8n.neuronic-automation.ai/
+#
+# Der :5678 darf NICHT in WEBHOOK_URL stehen — sonst landet er in
+# Wait-Node-Resume-URLs und Vapi/Twilio können nicht resumen. Wir haben
+# defensiv einen DB-Trigger eingebaut (Migration 20260528) der :5678 aus
+# call_sessions.resume_url strippt, aber WEBHOOK_URL korrekt zu setzen ist
+# der saubere Root-Cause-Fix.
+# ─────────────────────────────────────────────────────────────────────────────
