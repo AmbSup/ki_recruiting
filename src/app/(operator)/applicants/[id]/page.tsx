@@ -1253,14 +1253,19 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
               const transcript = vc.transcripts[0] ?? null;
               const rec = ca?.recommendation ? recommendationConfig[ca.recommendation] : null;
               const isTranscriptOpen = transcriptOpen[vc.id] ?? false;
+              // Speaker-Heuristik im Line-Parser: Vapi/Recovery setzt "assistant" oder
+              // "user", aber bei manuellem full_text-Import könnten Präfixe variieren
+              // (KI:, Bot:, AI:, Agent:, …). Alles AI-artige normalisieren zu "assistant".
+              const AI_PREFIX = /^(assistant|ai|bot|agent|ki):/i;
+              const ANY_ROLE_PREFIX = /^(assistant|user|ai|bot|agent|ki|bewerber|human):\s*/i;
               const segments: { index: number; speaker: string; text: string }[] =
                 Array.isArray(transcript?.segments) && transcript.segments.length > 0
                   ? transcript.segments
                   : transcript?.full_text
                   ? transcript.full_text.split("\n").filter(Boolean).map((line, i) => ({
                       index: i,
-                      speaker: line.startsWith("assistant:") ? "assistant" : "user",
-                      text: line.replace(/^(assistant|user|KI|Bewerber):\s*/i, ""),
+                      speaker: AI_PREFIX.test(line) ? "assistant" : "user",
+                      text: line.replace(ANY_ROLE_PREFIX, ""),
                     }))
                   : [];
 
@@ -1455,23 +1460,36 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                       </button>
 
                       {isTranscriptOpen && (
-                        <div className="mt-3 max-h-80 overflow-y-auto space-y-2 pr-1">
+                        <div className="mt-3 max-h-96 overflow-y-auto space-y-3 pr-1">
                           {segments.length > 0 ? (
                             segments.map((seg, i) => {
-                              const isAI = seg.speaker === "assistant" || seg.speaker === "KI";
+                              // Robuste Erkennung — Recovery + Vapi setzen "assistant"/"user",
+                              // aber ältere Daten / Fallback-Parser könnten "AI", "Bot", "Agent",
+                              // "KI" liefern. Alles AI-artige → rechts; Rest → links.
+                              const speaker = (seg.speaker ?? "").toLowerCase().trim();
+                              const isAI = ["assistant", "ai", "bot", "agent", "ki"].includes(speaker);
                               return (
-                                <div key={i} className={`flex gap-2 ${isAI ? "" : "flex-row-reverse"}`}>
-                                  <div className={`w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[9px] font-bold mt-0.5 ${
-                                    isAI ? "bg-primary-container text-on-primary-container" : "bg-surface-container-high text-on-surface-variant"
-                                  }`}>
-                                    {isAI ? "KI" : "B"}
-                                  </div>
-                                  <div className={`max-w-[85%] px-3 py-2 rounded-xl font-body text-[11px] leading-relaxed ${
+                                <div key={i} className={`flex gap-2 items-end ${isAI ? "flex-row-reverse" : ""}`}>
+                                  <div className={`w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${
                                     isAI
-                                      ? "bg-surface-container text-on-surface"
-                                      : "bg-primary-container/20 text-on-surface"
+                                      ? "bg-primary text-on-primary"
+                                      : "bg-secondary-container text-on-secondary-container"
                                   }`}>
-                                    {seg.text}
+                                    {isAI ? "A" : "H"}
+                                  </div>
+                                  <div className="flex flex-col gap-0.5 max-w-[78%]">
+                                    <span className={`font-label text-[9px] uppercase tracking-widest px-1 ${
+                                      isAI ? "text-primary text-right" : "text-outline-variant"
+                                    }`}>
+                                      {isAI ? "Agent" : "Bewerber"}
+                                    </span>
+                                    <div className={`px-3.5 py-2 font-body text-xs leading-relaxed whitespace-pre-wrap ${
+                                      isAI
+                                        ? "bg-primary-container text-on-primary-container rounded-2xl rounded-tr-md"
+                                        : "bg-secondary-container text-on-secondary-container rounded-2xl rounded-tl-md"
+                                    }`}>
+                                      {seg.text}
+                                    </div>
                                   </div>
                                 </div>
                               );
