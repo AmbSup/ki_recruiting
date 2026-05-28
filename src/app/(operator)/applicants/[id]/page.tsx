@@ -1136,7 +1136,9 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
               </h3>
               {app.pipeline_stage === "call_scheduled" ? (
                 /* Call was triggered, waiting for n8n / Twilio. updated_at
-                   wurde beim Wechsel zu call_scheduled gestempelt = Trigger-Zeitpunkt. */
+                   wurde beim Wechsel zu call_scheduled gestempelt = Trigger-Zeitpunkt.
+                   Nach 3 min ohne voice_calls-Row gilt der Call als "wahrscheinlich
+                   verloren" (n8n/Vapi/Twilio-Pipeline-Hang) → Warnung + Retry-Pfade. */
                 (() => {
                   const triggeredAt = new Date(app.updated_at);
                   const triggeredHHMM = triggeredAt.toLocaleTimeString("de-AT", {
@@ -1148,14 +1150,17 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                     : elapsedSec < 3600
                       ? `vor ${Math.floor(elapsedSec / 60)} Min ${elapsedSec % 60} Sek`
                       : `vor ${Math.floor(elapsedSec / 3600)} Std ${Math.floor((elapsedSec % 3600) / 60)} Min`;
+                  const stale = elapsedSec > 180; // >3 min ohne voice_calls = höchstwahrscheinlich Pipeline-Hang
                   return (
                     <div className="flex flex-col items-center py-8 text-center gap-3">
-                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-xl text-primary animate-pulse">phone_forwarded</span>
+                      <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stale ? "bg-error/10" : "bg-primary/10"}`}>
+                        <span className={`material-symbols-outlined text-xl ${stale ? "text-error" : "text-primary animate-pulse"}`}>
+                          {stale ? "report" : "phone_forwarded"}
+                        </span>
                       </div>
                       <div>
-                        <p className="font-label text-xs font-bold uppercase tracking-widest text-primary">
-                          Anruf in Warteschlange
+                        <p className={`font-label text-xs font-bold uppercase tracking-widest ${stale ? "text-error" : "text-primary"}`}>
+                          {stale ? "Call wahrscheinlich verloren" : "Anruf in Warteschlange"}
                         </p>
                         <p className="font-body text-sm text-on-surface mt-2">
                           Call ausgelöst um <span className="font-mono font-bold">{triggeredHHMM}</span>
@@ -1163,17 +1168,43 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                         <p className="font-label text-xs text-outline-variant mt-0.5 tabular-nums">
                           {elapsedLabel}
                         </p>
-                        <p className="font-label text-[10px] text-outline mt-2">
-                          n8n prüft Geschäftszeiten — Vapi dialt sobald n8n den Job aufnimmt
+                        <p className="font-label text-[10px] text-outline mt-2 max-w-xs">
+                          {stale
+                            ? "Mehr als 3 Min ohne Call-Daten — die Pipeline hat den Anruf wahrscheinlich nicht durchgebracht. Bitte erneut auslösen oder Transcript per Vapi-Call-ID nachladen."
+                            : "n8n prüft Geschäftszeiten — Vapi dialt sobald n8n den Job aufnimmt"}
                         </p>
                       </div>
-                      <button
-                        onClick={loadApp}
-                        className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors mt-1"
-                      >
-                        <span className="material-symbols-outlined text-xs">refresh</span>
-                        Manuell aktualisieren
-                      </button>
+                      <div className="flex flex-wrap items-center justify-center gap-2 mt-1">
+                        <button
+                          onClick={loadApp}
+                          className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-xs">refresh</span>
+                          Aktualisieren
+                        </button>
+                        {stale && (
+                          <>
+                            <button
+                              onClick={triggerCall}
+                              disabled={triggeringCall}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label text-xs font-bold uppercase tracking-widest hover:bg-primary/90 disabled:opacity-50 transition-colors"
+                            >
+                              <span className="material-symbols-outlined text-xs">
+                                {triggeringCall ? "progress_activity" : "phone_in_talk"}
+                              </span>
+                              {triggeringCall ? "Wird ausgelöst…" : "Erneut anrufen"}
+                            </button>
+                            <button
+                              onClick={() => recoverTranscript(null, null)}
+                              className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors"
+                              title="Vapi-Call-ID manuell eingeben + Transcript nachladen"
+                            >
+                              <span className="material-symbols-outlined text-xs">download</span>
+                              Transcript per Vapi-ID nachladen
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   );
                 })()
