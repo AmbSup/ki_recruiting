@@ -734,27 +734,38 @@ function Screen({ children, color, textColor, branding }: {
         )}
         {children}
         <div className="flex-shrink-0 py-3 text-center">
-          {/* DSGVO: Datenschutz-/Impressum-Link wenn operator-konfiguriert.
-              Pflicht auf öffentlichen Funnel-Seiten (Art. 13 Info-Pflicht). */}
-          {(branding.privacy_policy_url || branding.imprint_url) && (
-            <div className="flex items-center justify-center gap-3 mb-1.5">
-              {branding.privacy_policy_url && (
-                <a href={branding.privacy_policy_url} target="_blank" rel="noopener noreferrer"
-                  className="text-[10px] text-gray-400 underline hover:text-gray-600">
-                  Datenschutz
-                </a>
-              )}
-              {branding.privacy_policy_url && branding.imprint_url && (
-                <span className="text-[10px] text-gray-300">·</span>
-              )}
-              {branding.imprint_url && (
-                <a href={branding.imprint_url} target="_blank" rel="noopener noreferrer"
-                  className="text-[10px] text-gray-400 underline hover:text-gray-600">
-                  Impressum
-                </a>
-              )}
-            </div>
-          )}
+          {/* DSGVO: Datenschutz-/Impressum-Link. Platform-Default landet IMMER
+              auf neuronic-automation.ai (Art. 13 Info-Pflicht erfüllt). Pro
+              Funnel kann Operator via branding.privacy_policy_url einen anderen
+              Link setzen (z.B. Kunden-eigene Datenschutzerklärung). Auch
+              überschreibbar via env NEXT_PUBLIC_PRIVACY_POLICY_URL. */}
+          {(() => {
+            const defaultPrivacy = process.env.NEXT_PUBLIC_PRIVACY_POLICY_URL
+              || "https://www.neuronic-automation.ai/datenschutz";
+            const defaultImprint = process.env.NEXT_PUBLIC_IMPRINT_URL || "";
+            const privacyUrl = (branding.privacy_policy_url ?? "").trim() || defaultPrivacy;
+            const imprintUrl = (branding.imprint_url ?? "").trim() || defaultImprint;
+            if (!privacyUrl && !imprintUrl) return null;
+            return (
+              <div className="flex items-center justify-center gap-3 mb-1.5">
+                {privacyUrl && (
+                  <a href={privacyUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] text-gray-400 underline hover:text-gray-600">
+                    Datenschutz
+                  </a>
+                )}
+                {privacyUrl && imprintUrl && (
+                  <span className="text-[10px] text-gray-300">·</span>
+                )}
+                {imprintUrl && (
+                  <a href={imprintUrl} target="_blank" rel="noopener noreferrer"
+                    className="text-[10px] text-gray-400 underline hover:text-gray-600">
+                    Impressum
+                  </a>
+                )}
+              </div>
+            );
+          })()}
           <span className="text-[9px] text-gray-300">Powered by KI Recruiting</span>
         </div>
       </div>

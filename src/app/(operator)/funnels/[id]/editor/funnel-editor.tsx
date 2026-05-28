@@ -2668,19 +2668,20 @@ function DesignPanel({ branding, onChange }: { branding: FunnelBranding; onChang
             type="url"
             value={branding.privacy_policy_url ?? ""}
             onChange={(e) => onChange({ privacy_policy_url: e.target.value })}
-            placeholder="Datenschutz-URL (https://…)"
+            placeholder="Default: neuronic-automation.ai/datenschutz"
             className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           />
           <input
             type="url"
             value={branding.imprint_url ?? ""}
             onChange={(e) => onChange({ imprint_url: e.target.value })}
-            placeholder="Impressum-URL (https://…)"
+            placeholder="Impressum-URL (optional)"
             className="w-full bg-surface-container-lowest border border-outline-variant/20 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary"
           />
         </div>
         <p className="font-label text-[9px] text-outline mt-1.5">
-          Leer lassen → kein Link. Gesetzt → erscheint im Funnel-Footer (Art. 13 Info-Pflicht).
+          Leer lassen → Default-URL (Datenschutz: neuronic-automation.ai/datenschutz) wird genutzt.
+          Eintragen → eigene URL überschreibt den Default für diesen Funnel.
         </p>
       </div>
       {/* Preview */}
