@@ -330,6 +330,8 @@ curl -X PUT -H "..." .../workflows/ID -d @workflow_put.json
 | `VAPI_SALES_ASSISTANT_ID` | **Optional fallback** | Sales-Assistant, wenn `sales_programs.vapi_assistant_id` null. Current known: `998f169b-6a78-4eb0-a516-350a64968a8e`. |
 | `META_APP_SECRET` | **Required only** if `/api/webhook/meta-leadgen` is wired in Meta | Used to verify the `x-hub-signature-256` HMAC of incoming Meta Leadgen events. If not set, route returns 500. |
 | `META_VERIFY_TOKEN` | **Required only** if subscribing the webhook in Meta Developer console | Must match the `hub.verify_token` query string Meta sends during the subscription-challenge handshake. User-chosen string, copy into both Meta app + Vercel. |
+| **`CRON_SECRET`** | **Erforderlich** für täglichen Retention-Purge-Cron (`/api/cron/retention-purge`). | Random-String (z.B. `openssl rand -hex 32`). Vercel Cron schickt `Authorization: Bearer <CRON_SECRET>` automatisch wenn die Var gesetzt ist. Ohne Secret: Endpoint gibt 500. |
+| `RETENTION_MONTHS` | **Optional** (Default 12) | Aufbewahrungsfrist in Monaten. Sales-Leads mit `updated_at` und Applicants mit `created_at` älter als das werden vom Cron komplett gelöscht (Cascade inkl. Calls/Recordings/Audit-Log). |
 
 Until Meta Leadgen ingest is turned on, the two `META_*` vars can stay unset — the route only errors when actually invoked.
 

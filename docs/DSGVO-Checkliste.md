@@ -26,6 +26,8 @@ Stand: 2026-05-27 · Plattform: KI-Telefonie für Recruiting + Sales (Vapi/Twili
 | Aufzeichnung explizit im KI-Disclosure benannt | Art. 13 / AI-Act 50 | ✅ „aufgezeichnet" (DE) / „being recorded" (EN), `buildFirstMessage` |
 | Datenschutz- + Impressum-Link im Funnel-Footer | Art. 13 | ✅ operator-pflegbar (branding.privacy_policy_url / imprint_url), `funnel-player.tsx` |
 | Consent server-seitig erzwungen (nicht nur UI) | Art. 6/7 | ✅ `/api/apply` 422 wenn kein consent_given (beide Pipelines) |
+| Aufbewahrungsfrist + Auto-Purge | Art. 5 (1)(e) | ✅ täglicher Vercel-Cron `/api/cron/retention-purge` löscht Leads/Bewerber älter als RETENTION_MONTHS (default 12) per Cascade-Erase |
+| Applicants-Consent 3-Feld-Schema (wie sales_leads) | Art. 7 (Nachweis) | ✅ Migration `20260527_applicants_consent_fields`: consent_given + consent_source + Backfill |
 
 ---
 
@@ -38,15 +40,16 @@ Priorisiert. Jeder Punkt ist ein abgrenzbares Software-Ticket:
    pflegt die URLs im Funnel-Editor → Design-Panel.
 3. ~~Recruiting-Consent server-seitig erzwingen~~ ✅ **erledigt** — `/api/apply`
    gibt 422 wenn `consent_given !== true` (beide Pipelines, Test-Mode ausgenommen).
-4. **Aufbewahrungsfristen / Auto-Purge** (Art. 5 (1)(e) Speicherbegrenzung):
-   - Cron-Job: Recordings/Transkripte/Leads älter als X Monate automatisch löschen
-     (X = im Verarbeitungsverzeichnis definierte Frist, z.B. 6 Monate nach
-     letztem Kontakt).
-   - `sales_lead_uploads.expires_at` (24h) wird gesetzt aber nicht durchgesetzt —
-     Cleanup-Trigger/Cron nachrüsten.
-5. **`applicants`-Consent-Schema angleichen** — Recruiting speichert nur
-   `consent_given_at` (Timestamp), Sales hat 3 Felder (given/source/timestamp).
-   Für konsistenten Nachweis: Recruiting auf gleiches Schema heben.
+4. ~~Aufbewahrungsfristen / Auto-Purge~~ ✅ **erledigt** — Vercel-Cron läuft
+   täglich um 03:00 UTC und löscht Leads/Bewerber älter als
+   `RETENTION_MONTHS` (Default 12) komplett (Cascade + Storage + Audit-Log).
+   Max 25 pro Lauf (Timeout-Schutz). Manuell auslösbar via
+   `POST /api/cron/retention-purge?secret=<CRON_SECRET>`.
+   Offen: `sales_lead_uploads.expires_at` (24h) — nicht im Cron, separater
+   Cleanup-Trigger empfohlen (Backlog).
+5. ~~`applicants`-Consent-Schema angleichen~~ ✅ **erledigt** — Migration
+   `20260527_applicants_consent_fields`: consent_given (bool) + consent_source
+   (text) + Backfill aus consent_given_at.
 6. **Self-Service für Betroffene (optional, V2)** — Link per E-Mail, über den ein
    Lead/Bewerber selbst Auskunft/Löschung anstößt. Aktuell operator-getriggert
    (erfüllt Art. 15/17 innerhalb der 1-Monats-Frist, aber manuell).

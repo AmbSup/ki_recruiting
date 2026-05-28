@@ -254,6 +254,10 @@ export async function POST(req: NextRequest) {
         phone: phone || null,
         cv_file_url: cv_url || null,
         cv_file_name: cv_file_name || null,
+        // 3-Feld-Consent (gespiegelt von sales_leads). consent_given wird oben
+        // server-seitig erzwungen (422 wenn false, außer test_mode).
+        consent_given: true,
+        consent_source: "funnel_checkbox",
         consent_given_at: new Date().toISOString(),
       })
       .select("id")

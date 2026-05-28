@@ -469,7 +469,9 @@ export type Database = {
       }
       applicants: {
         Row: {
+          consent_given: boolean
           consent_given_at: string | null
+          consent_source: string | null
           consent_version: string | null
           created_at: string
           cv_file_name: string | null
@@ -482,7 +484,9 @@ export type Database = {
           phone: string | null
         }
         Insert: {
+          consent_given?: boolean
           consent_given_at?: string | null
+          consent_source?: string | null
           consent_version?: string | null
           created_at?: string
           cv_file_name?: string | null
@@ -495,7 +499,9 @@ export type Database = {
           phone?: string | null
         }
         Update: {
+          consent_given?: boolean
           consent_given_at?: string | null
+          consent_source?: string | null
           consent_version?: string | null
           created_at?: string
           cv_file_name?: string | null
