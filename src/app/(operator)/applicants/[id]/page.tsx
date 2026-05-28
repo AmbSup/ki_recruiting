@@ -26,6 +26,9 @@ type ApplicationDetail = {
   source: string;
   utm_params: Record<string, string> | null;
   applied_at: string;
+  // updated_at wird beim Wechsel auf pipeline_stage='call_scheduled' gestempelt
+  // → benutzt für die Live-Anzeige "Call ausgelöst um HH:MM".
+  updated_at: string;
   job: {
     id: string;
     title: string;
@@ -164,6 +167,9 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
   const [uploadingCv, setUploadingCv] = useState(false);
   const [deletingCv, setDeletingCv] = useState(false);
   const [deletingCall, setDeletingCall] = useState<string | null>(null);
+  // Tick-Zähler für die Live-"vor X Min"-Anzeige während der Call noch in der
+  // Warteschlange ist. 1x/Sekunde re-render — billig genug.
+  const [, forceTick] = useState(0);
   // Funnel-Pages für Label-Resolution beim Display von funnel_responses.
   // Übersetzt rohe Item-`value`-Strings (z.B. "berufsausbildung") zu lesbaren
   // Item-Labels (z.B. "Berufsausbildung") über die aktuelle Funnel-Struktur.
@@ -256,6 +262,17 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [id]);
+
+  // Live-Counter für "vor X Min"-Anzeige während der Call in Warteschlange ist.
+  // 1× pro Sekunde ein leerer setState → React re-rendert → die Date.now()-
+  // basierte Differenz wird neu berechnet. Nur aktiv solange Warteschlangen-
+  // Zustand vorliegt, sonst wäre es verschwendete Renderpower.
+  const isWaitingForCall = app?.pipeline_stage === "call_scheduled" && (app?.voice_calls?.length ?? 0) === 0;
+  useEffect(() => {
+    if (!isWaitingForCall) return;
+    const iv = setInterval(() => forceTick((t) => t + 1), 1000);
+    return () => clearInterval(iv);
+  }, [isWaitingForCall]);
 
   async function updateStage(stage: string) {
     setStageSaving(true);
@@ -1118,27 +1135,48 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                 KI Gesprächs-Analyse
               </h3>
               {app.pipeline_stage === "call_scheduled" ? (
-                /* Call was triggered, waiting for n8n / Twilio */
-                <div className="flex flex-col items-center py-8 text-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
-                    <span className="material-symbols-outlined text-xl text-primary animate-pulse">phone_forwarded</span>
-                  </div>
-                  <div>
-                    <p className="font-label text-xs font-bold uppercase tracking-widest text-primary">
-                      Anruf in Warteschlange
-                    </p>
-                    <p className="font-body text-xs text-outline-variant mt-1">
-                      n8n prüft Geschäftszeiten — Anruf folgt in Kürze
-                    </p>
-                  </div>
-                  <button
-                    onClick={loadApp}
-                    className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors mt-1"
-                  >
-                    <span className="material-symbols-outlined text-xs">refresh</span>
-                    Aktualisieren
-                  </button>
-                </div>
+                /* Call was triggered, waiting for n8n / Twilio. updated_at
+                   wurde beim Wechsel zu call_scheduled gestempelt = Trigger-Zeitpunkt. */
+                (() => {
+                  const triggeredAt = new Date(app.updated_at);
+                  const triggeredHHMM = triggeredAt.toLocaleTimeString("de-AT", {
+                    hour: "2-digit", minute: "2-digit",
+                  });
+                  const elapsedSec = Math.max(0, Math.floor((Date.now() - triggeredAt.getTime()) / 1000));
+                  const elapsedLabel = elapsedSec < 60
+                    ? `vor ${elapsedSec} Sek`
+                    : elapsedSec < 3600
+                      ? `vor ${Math.floor(elapsedSec / 60)} Min ${elapsedSec % 60} Sek`
+                      : `vor ${Math.floor(elapsedSec / 3600)} Std ${Math.floor((elapsedSec % 3600) / 60)} Min`;
+                  return (
+                    <div className="flex flex-col items-center py-8 text-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-xl text-primary animate-pulse">phone_forwarded</span>
+                      </div>
+                      <div>
+                        <p className="font-label text-xs font-bold uppercase tracking-widest text-primary">
+                          Anruf in Warteschlange
+                        </p>
+                        <p className="font-body text-sm text-on-surface mt-2">
+                          Call ausgelöst um <span className="font-mono font-bold">{triggeredHHMM}</span>
+                        </p>
+                        <p className="font-label text-xs text-outline-variant mt-0.5 tabular-nums">
+                          {elapsedLabel}
+                        </p>
+                        <p className="font-label text-[10px] text-outline mt-2">
+                          n8n prüft Geschäftszeiten — Vapi dialt sobald n8n den Job aufnimmt
+                        </p>
+                      </div>
+                      <button
+                        onClick={loadApp}
+                        className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors mt-1"
+                      >
+                        <span className="material-symbols-outlined text-xs">refresh</span>
+                        Manuell aktualisieren
+                      </button>
+                    </div>
+                  );
+                })()
               ) : (
                 /* No call triggered at all */
                 <div className="flex flex-col items-center py-8 text-center gap-3">
