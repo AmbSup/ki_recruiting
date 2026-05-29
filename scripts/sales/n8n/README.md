@@ -35,7 +35,7 @@ The three active workflows reference these n8n credentials:
 
 ## App URL
 
-Die HTTP-Request-Nodes zeigen auf `https://ki-recruiting.vercel.app`. Bei Domain-Wechsel bzw. Branch-Deploys betroffen:
+Die HTTP-Request-Nodes zeigen auf `https://app.neuronic-automation.ai`. Bei Domain-Wechsel bzw. Branch-Deploys betroffen:
 - `vapi-sales-call-processing.json` → `POST /api/sales/call-analyse`
 - `meta-leadgen-matcher.json` → `POST /api/sales/trigger-call`
 

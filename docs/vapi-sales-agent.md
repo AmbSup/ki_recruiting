@@ -310,7 +310,7 @@ Dieser Report ist **nur Vorab-Hinweis**. Der endgültige Analyzer (Claude, `/api
 
 | Event | URL | Zweck |
 |---|---|---|
-| Assistant-Request (Inbound SIP) | `https://ki-recruiting.vercel.app/api/webhook/vapi` | Phone-Lookup in `sales_call_sessions` → liefert Assistant-ID + Template-Variablen dynamisch |
+| Assistant-Request (Inbound SIP) | `https://app.neuronic-automation.ai/api/webhook/vapi` | Phone-Lookup in `sales_call_sessions` → liefert Assistant-ID + Template-Variablen dynamisch |
 | Alle Tool-Aufrufe | `https://n8n.neuronic-automation.ai/webhook/vapi-sales-tools` | n8n routet per Tool-Name, antwortet synchron |
 | End-of-Call-Report | `https://n8n.neuronic-automation.ai/webhook/vapi-sales-end` | Triggert Transkript-Extraktion + `/api/sales/call-analyse` |
 

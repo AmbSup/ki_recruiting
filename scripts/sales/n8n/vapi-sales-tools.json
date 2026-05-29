@@ -78,7 +78,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://ki-recruiting.vercel.app/api/sales/calendar/book",
+        "url": "https://app.neuronic-automation.ai/api/sales/calendar/book",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [{ "name": "Content-Type", "value": "application/json" }]
@@ -170,7 +170,7 @@
       "position": [1248, 944],
       "parameters": {
         "method": "GET",
-        "url": "=https://ki-recruiting.vercel.app/api/sales/calendar/slots?program_id={{ $json.sales_program_id }}&date_from={{ ($json.tool_args && $json.tool_args.date_from) || '' }}&date_to={{ ($json.tool_args && $json.tool_args.date_to) || '' }}&limit=3",
+        "url": "=https://app.neuronic-automation.ai/api/sales/calendar/slots?program_id={{ $json.sales_program_id }}&date_from={{ ($json.tool_args && $json.tool_args.date_from) || '' }}&date_to={{ ($json.tool_args && $json.tool_args.date_to) || '' }}&limit=3",
         "options": {
           "timeout": 15000,
           "response": { "response": { "neverError": true } }
@@ -197,7 +197,7 @@
       "position": [1248, 1104],
       "parameters": {
         "method": "POST",
-        "url": "https://ki-recruiting.vercel.app/api/sales/calendar/send-link",
+        "url": "https://app.neuronic-automation.ai/api/sales/calendar/send-link",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [{ "name": "Content-Type", "value": "application/json" }]

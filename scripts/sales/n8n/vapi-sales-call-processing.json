@@ -50,7 +50,7 @@
       "position": [1200, 180],
       "parameters": {
         "method": "POST",
-        "url": "=https://ki-recruiting.vercel.app/api/sales/call-analyse",
+        "url": "=https://app.neuronic-automation.ai/api/sales/call-analyse",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [ { "name": "Content-Type", "value": "application/json" } ]

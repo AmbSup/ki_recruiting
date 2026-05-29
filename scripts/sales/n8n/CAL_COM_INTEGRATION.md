@@ -22,7 +22,7 @@ n8n ist bewusst dünn gehalten — Cal.com-API-Key bleibt in Vercel-Env.
 
 - Condition: `{{ $json.tool_name }} === "get_available_slots"`
 - HTTP Request (Method: GET) →
-  `https://ki-recruiting.vercel.app/api/sales/calendar/slots?program_id={{$json.sales_program_id}}&date_from={{$json.tool_args.date_from || ''}}&date_to={{$json.tool_args.date_to || ''}}&limit=3`
+  `https://app.neuronic-automation.ai/api/sales/calendar/slots?program_id={{$json.sales_program_id}}&date_from={{$json.tool_args.date_from || ''}}&date_to={{$json.tool_args.date_to || ''}}&limit=3`
 - Response → Code-Node, der die Response in Vapi-Envelope verpackt:
   ```js
   const slots = $json.slots ?? [];
@@ -38,7 +38,7 @@ n8n ist bewusst dünn gehalten — Cal.com-API-Key bleibt in Vercel-Env.
 **Neu:** ruft Next.js auf, bekommt strukturiertes Ergebnis zurück.
 
 - HTTP Request (Method: POST) →
-  `https://ki-recruiting.vercel.app/api/sales/calendar/book`
+  `https://app.neuronic-automation.ai/api/sales/calendar/book`
 - Body (JSON):
   ```json
   {
@@ -65,7 +65,7 @@ n8n ist bewusst dünn gehalten — Cal.com-API-Key bleibt in Vercel-Env.
 
 - Condition: `{{ $json.tool_name }} === "send_booking_link"`
 - HTTP Request (Method: POST) →
-  `https://ki-recruiting.vercel.app/api/sales/calendar/send-link`
+  `https://app.neuronic-automation.ai/api/sales/calendar/send-link`
 - Body:
   ```json
   { "sales_call_id": "{{$json.sales_call_id}}" }

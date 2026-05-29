@@ -278,7 +278,7 @@ Vapi serves both pipelines via **two SIP credentials** on the same Vapi account.
 | SIP Credential | Server URL | Assistant binding | Pipeline |
 |---|---|---|---|
 | `sip:aiprofis@sip.vapi.ai` | `https://n8n.neuronic-automation.ai/webhook/vapi-end-of-call` | static: Recruiting-Assistant | Recruiting (unchanged, end-of-call only) |
-| `sip:neuronic-sales-v2@sip.vapi.ai` | `https://ki-recruiting.vercel.app/api/webhook/vapi` | **leer** (dynamic via webhook) | Sales |
+| `sip:neuronic-sales-v2@sip.vapi.ai` | `https://app.neuronic-automation.ai/api/webhook/vapi` | **leer** (dynamic via webhook) | Sales |
 
 **Assistant-level Server URL** (per assistant) is set on the Sales-Assistant: `https://n8n.neuronic-automation.ai/webhook/vapi-sales-end` — receives `end-of-call-report`.
 

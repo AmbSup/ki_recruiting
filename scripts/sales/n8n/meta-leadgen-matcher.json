@@ -189,7 +189,7 @@
       "position": [2640, 300],
       "parameters": {
         "method": "POST",
-        "url": "=https://ki-recruiting.vercel.app/api/sales/trigger-call",
+        "url": "=https://app.neuronic-automation.ai/api/sales/trigger-call",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [ { "name": "Content-Type", "value": "application/json" } ]
