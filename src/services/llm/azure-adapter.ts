@@ -65,7 +65,12 @@ export class AzureOpenAILLMClient implements LLMClient {
       // Bei Azure ist `model` der Deployment-Name, nicht der OpenAI-Model-Name
       model: deployment,
       messages,
-      max_tokens: maxTokens,
+      // GPT-5+ (gpt-5.x) lehnt `max_tokens` ab und verlangt `max_completion_tokens`.
+      // GPT-4o akzeptiert beide. Daher senden wir `max_completion_tokens` —
+      // funktioniert für alle aktuellen Modelle. Falls in Zukunft ein Adapter
+      // für ältere Modelle (gpt-3.5) gebraucht wird, bitte fallback auf
+      // max_tokens nachziehen.
+      max_completion_tokens: maxTokens,
       ...(req.jsonMode ? { response_format: { type: "json_object" as const } } : {}),
     });
 
