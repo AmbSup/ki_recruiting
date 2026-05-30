@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { completeLLM } from "@/services/llm/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type TranscriptMessage = {
@@ -52,8 +52,6 @@ export async function analyzeSalesCall(options: {
   program: ProgramContext;
   vapi_end_report: VapiEndReport;
 }): Promise<SalesCallAnalysis> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-
   const leadName = options.lead.full_name
     || [options.lead.first_name, options.lead.last_name].filter(Boolean).join(" ")
     || "Lead";
@@ -122,14 +120,13 @@ Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
   ]
 }`;
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1500,
+  const text = await completeLLM({
+    tier: "large",
     system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
+    user: userPrompt,
+    maxTokens: 1500,
+    jsonMode: true,
   });
-
-  const text = message.content.find((b) => b.type === "text")?.text ?? "{}";
   return JSON.parse(text) as SalesCallAnalysis;
 }
 
@@ -267,7 +264,7 @@ export async function runSalesCallAnalysis(options: {
       next_action: result.next_action,
       next_action_at: result.next_action_at,
       key_quotes: result.key_quotes,
-      model_version: "claude-sonnet-4-6",
+      model_version: process.env.LLM_PROVIDER === "azure" ? "azure-gpt-4o" : "claude-sonnet-4-6",
       analyzed_at: new Date().toISOString(),
     }, { onConflict: "sales_call_id" })
     .select("id")

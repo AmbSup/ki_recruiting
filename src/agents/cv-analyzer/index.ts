@@ -1,8 +1,7 @@
-import Anthropic from "@anthropic-ai/sdk";
-import mammoth from "mammoth";
 import { createAdminClient } from "@/lib/supabase/admin";
-
-const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+import { completeLLM } from "@/services/llm/client";
+import { extractDocument } from "@/services/llm/document-extract";
+import type { LLMContentBlock } from "@/services/llm/types";
 
 // CVs liegen jetzt im privaten Bucket, exposed über /api/cvs/<path>-Proxy.
 // Server-side können wir den HTTP-Hop überspringen und direkt aus Storage laden.
@@ -65,8 +64,6 @@ export async function analyzeCv(options: {
   applicant_name: string;
   job: JobProfile;
 }): Promise<CvAnalysisResult> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-
   // Build the job profile context
   const jobContext = [
     `**Stelle:** ${options.job.title}`,
@@ -83,93 +80,78 @@ export async function analyzeCv(options: {
 Analysiere Bewerbungsunterlagen objektiv und strukturiert.
 Antworte IMMER als valides JSON ohne Markdown-Codeblöcke.`;
 
-  let cvContent: Anthropic.MessageParam["content"];
+  // Build provider-agnostic content blocks via document-extract.
+  // PDFs werden zu Plain-Text extrahiert (war früher Anthropic-Native-PDF),
+  // damit beide Provider (Anthropic + Azure OpenAI) dieselben Bytes sehen.
+  let cvContent: LLMContentBlock[];
+  const analysisFooter = `\n\nAnalysiere diesen Lebenslauf von ${options.applicant_name} für die folgende Stelle:\n\n${jobContext}\n\n${analysisInstructions()}`;
 
   if (options.cv_file_url) {
-    // Try to fetch and analyze the actual CV file
     try {
       const fetched = await fetchCvBytes(options.cv_file_url);
-      const contentType = fetched.contentType;
-      const buffer = fetched.buffer;
-      const base64 = Buffer.from(buffer).toString("base64");
+      const extracted = await extractDocument(
+        fetched.buffer,
+        fetched.contentType,
+        options.cv_file_url,
+      );
 
-      // Detect DOCX via Content-Type oder Filename-Endung. DOCX wird mit mammoth
-      // zu Plain-Text extrahiert und als Text-Content-Block an Claude geschickt
-      // (Anthropic SDK hat keinen nativen DOCX-DocumentBlock).
-      const isDocx =
-        contentType.includes(DOCX_MIME) ||
-        contentType.includes("officedocument.wordprocessingml") ||
-        /\.docx(\?|$)/i.test(options.cv_file_url);
-
-      if (isDocx) {
-        const result = await mammoth.extractRawText({ buffer: Buffer.from(buffer) });
-        const extractedText = (result.value ?? "").trim();
-        if (!extractedText) throw new Error("DOCX-Extraktion ergab leeren Text");
+      if (extracted.detected === "image") {
+        // Image: Vision-Pfad. Hänge Analyse-Instruktion als zusätzlichen
+        // Text-Block hinten an (extracted.blocks ist [image]).
         cvContent = [
-          {
-            type: "text",
-            text: `Lebenslauf-Inhalt (extrahiert aus DOCX):\n\n${extractedText}\n\n---\n\nAnalysiere diesen Lebenslauf von ${options.applicant_name} für die folgende Stelle:\n\n${jobContext}\n\n${analysisInstructions()}`,
-          },
-        ];
-      } else if (contentType.includes("pdf")) {
-        cvContent = [
-          {
-            type: "document",
-            source: { type: "base64", media_type: "application/pdf", data: base64 },
-          } as Anthropic.DocumentBlockParam,
-          {
-            type: "text",
-            text: `Analysiere diesen Lebenslauf von ${options.applicant_name} für die folgende Stelle:\n\n${jobContext}\n\n${analysisInstructions()}`,
-          },
-        ];
-      } else if (contentType.includes("image")) {
-        const mediaType = contentType.includes("png") ? "image/png" :
-                          contentType.includes("jpg") || contentType.includes("jpeg") ? "image/jpeg" : "image/png";
-        cvContent = [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType as "image/png" | "image/jpeg", data: base64 },
-          },
-          {
-            type: "text",
-            text: `Analysiere diesen Lebenslauf von ${options.applicant_name} für die folgende Stelle:\n\n${jobContext}\n\n${analysisInstructions()}`,
-          },
+          ...extracted.blocks,
+          { type: "text", text: analysisFooter.trimStart() },
         ];
       } else {
-        throw new Error("CV-Format nicht unterstützt — bitte als PDF oder DOCX hochladen.");
+        // Text-basiert (PDF-extracted oder DOCX). Wrappe den Inhalt in ein
+        // beschriebenes Format damit das Model klar weiß was zu tun ist.
+        const sourceLabel = extracted.detected === "pdf" ? "PDF" : "DOCX";
+        const baseText = extracted.blocks
+          .filter((b) => b.type === "text")
+          .map((b) => (b as { type: "text"; text: string }).text)
+          .join("\n");
+        cvContent = [
+          {
+            type: "text",
+            text: `Lebenslauf-Inhalt (extrahiert aus ${sourceLabel}):\n\n${baseText}\n\n---${analysisFooter}`,
+          },
+        ];
       }
     } catch (err) {
       console.error("[cv-analyzer] CV-fetch/extract failed:", err);
       // Fallback: analyze without CV file
-      cvContent = [{
-        type: "text",
-        text: `Bewerber: ${options.applicant_name}
+      cvContent = [
+        {
+          type: "text",
+          text: `Bewerber: ${options.applicant_name}
 Hinweis: CV konnte nicht geladen werden. Führe eine Basis-Analyse durch.
 
 Stelle:\n${jobContext}\n\n${analysisInstructions()}`,
-      }];
+        },
+      ];
     }
   } else {
     // No CV uploaded — analyze based on name/funnel responses only
-    cvContent = [{
-      type: "text",
-      text: `Bewerber: ${options.applicant_name}
+    cvContent = [
+      {
+        type: "text",
+        text: `Bewerber: ${options.applicant_name}
 Hinweis: Kein Lebenslauf vorhanden. Bewerte mit niedrigem Score und weise auf fehlende Unterlagen hin.
 
 Stelle:\n${jobContext}\n\n${analysisInstructions()}`,
-    }];
+      },
+    ];
   }
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1500,
+  const text = await completeLLM({
+    tier: "large",
     system: systemPrompt,
-    messages: [{ role: "user", content: cvContent }],
+    user: cvContent,
+    maxTokens: 1500,
+    jsonMode: true,
   });
 
-  const text = message.content.find((b) => b.type === "text")?.text ?? "{}";
   const result = JSON.parse(text) as CvAnalysisResult;
-
   return result;
 }
 

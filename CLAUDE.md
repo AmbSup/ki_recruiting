@@ -321,6 +321,24 @@ curl -X PUT -H "..." .../workflows/ID -d @workflow_put.json
 ### Pre-existing (Recruiting + general)
 `ANTHROPIC_API_KEY`, `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `N8N_BASE_URL`, `N8N_WEBHOOK_SECRET`, `VAPI_ASSISTANT_ID`, `META_ACCESS_TOKEN`, `META_AD_ACCOUNT_ID`, `META_PAGE_ID`, `META_PIXEL_ID`, `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_META_PIXEL_ID`, `NEXT_PUBLIC_META_AD_ACCOUNT_ID`, `NEXT_PUBLIC_FUNNEL_BASE_URL`, `INVOLVEME_WEBHOOK_SECRET`, `REPLICATE_API_TOKEN`
 
+### LLM-Provider-Switch (EU-Residency)
+
+Die 3 server-side Analyzer (CV, Recruiting-Call, Sales-Call) laufen über die Provider-agnostische Abstraktion in [`src/services/llm/`](ki-recruiting/src/services/llm/). Per Env-Var-Flip wird zwischen Anthropic Claude (US-Routing, Status Quo) und Azure OpenAI (EU-Region) umgeschaltet — ohne Code-Deploy.
+
+| Var | Required? | Purpose |
+|---|---|---|
+| `LLM_PROVIDER` | Optional (Default `anthropic`) | `"anthropic"` oder `"azure"`. Bestimmt welcher Adapter aus `services/llm/` verwendet wird. Rollback durch Vercel-Env-Flip + Redeploy. |
+| `ANTHROPIC_API_KEY` | Required wenn `LLM_PROVIDER=anthropic`, sonst Fallback | Anthropic Claude API-Key. Bleibt installiert auch nach Azure-Switch (Belt-and-suspenders). |
+| `AZURE_OPENAI_ENDPOINT` | Required wenn `LLM_PROVIDER=azure` | Azure-Resource-Endpoint (z.B. `https://<resource>.openai.azure.com/`). Wähle Sweden Central oder West Europe für EU-Residency. |
+| `AZURE_OPENAI_API_KEY` | Required wenn `LLM_PROVIDER=azure` | Azure-Resource-API-Key (aus Portal: Resource → Keys and Endpoint) |
+| `AZURE_OPENAI_API_VERSION` | Optional (Default `2024-08-01-preview`) | Azure OpenAI API-Version |
+| `AZURE_OPENAI_DEPLOYMENT_LARGE` | Required wenn `LLM_PROVIDER=azure` | Deployment-Name für `large`-Tier (CV-Analyzer + Call-Analyzer). z.B. `gpt-4o-eu` basierend auf `gpt-4o-2024-11-20`. |
+| `AZURE_OPENAI_DEPLOYMENT_SMALL` | Required wenn `LLM_PROVIDER=azure` | Deployment-Name für `small`-Tier (Haiku-Replacement). z.B. `gpt-4o-mini-eu`. |
+
+**Architektur:** Beide Adapter implementieren `LLMClient` aus `services/llm/types.ts`. Analyzer rufen `completeLLM({tier:'large', user, jsonMode: true})` und wissen nicht, welcher Provider antwortet. PDF-Handling via provider-agnostischem [`document-extract.ts`](ki-recruiting/src/services/llm/document-extract.ts) (PDF→text via `pdf-parse`, DOCX→text via `mammoth`, Image→base64). Compat-Shim in `services/claude/client.ts` re-exportiert die alten `generateText`/`generateTextHaiku`-Signaturen.
+
+**Out of Scope (Backlog):** Vapi Voice-LLM (Dashboard-Config), Image-Generator-Migration (`src/app/api/jobs/[id]/images/generate/route.ts` nutzt noch direkt Anthropic-Haiku, kein PII drin), volle EU-Stack-Migration (Vapi/Twilio/Vercel/Replicate Voice-Infra).
+
 ### Sales-new
 
 | Var | Required? | Purpose |

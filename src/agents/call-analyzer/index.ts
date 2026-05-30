@@ -1,4 +1,4 @@
-import Anthropic from "@anthropic-ai/sdk";
+import { completeLLM } from "@/services/llm/client";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -41,8 +41,6 @@ export async function analyzeCall(options: {
   summary: string | null;
   job: JobProfile;
 }): Promise<CallAnalysisResult> {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-
   const jobContext = [
     `**Stelle:** ${options.job.title}`,
     options.job.ideal_candidate && `**Idealprofil:** ${options.job.ideal_candidate}`,
@@ -88,14 +86,13 @@ Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
   ]
 }`;
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 1500,
+  const text = await completeLLM({
+    tier: "large",
     system: systemPrompt,
-    messages: [{ role: "user", content: userPrompt }],
+    user: userPrompt,
+    maxTokens: 1500,
+    jsonMode: true,
   });
-
-  const text = message.content.find((b) => b.type === "text")?.text ?? "{}";
   return JSON.parse(text) as CallAnalysisResult;
 }
 
@@ -212,7 +209,7 @@ export async function runCallAnalysis(options: {
       red_flags: result.red_flags,
       summary: result.summary,
       recommendation: result.recommendation,
-      model_version: "claude-sonnet-4-6",
+      model_version: process.env.LLM_PROVIDER === "azure" ? "azure-gpt-4o" : "claude-sonnet-4-6",
     });
     if (analysisErr) console.error("[call-analyzer] call_analyses insert error:", analysisErr);
 
