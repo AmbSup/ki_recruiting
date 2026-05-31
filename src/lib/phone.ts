@@ -10,6 +10,10 @@ export function normalizePhone(input: string | null | undefined, defaultCountry:
   // Alle Whitespaces, Bindestriche, Klammern, Schrägstriche entfernen
   let cleaned = raw.replace(/[\s\-()\/]/g, "");
 
+  // Nach dem Cleanup nur noch + und Ziffern erlauben — sonst null.
+  // Schützt gegen Müll wie "0676abc" der sonst zu "+43676abc" würde.
+  if (!/^[+\d]+$/.test(cleaned)) return null;
+
   // Führende 00 → +
   if (cleaned.startsWith("00")) {
     cleaned = "+" + cleaned.slice(2);
