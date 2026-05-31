@@ -106,9 +106,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Kein dokumentiertes Opt-In — Call blockiert" }, { status: 403 });
   }
 
-  // Status-Lock + Stale-Cleanup (unverändert)
-  const STALE_THRESHOLD_MS = 30_000;
-  const staleCutoff = new Date(Date.now() - STALE_THRESHOLD_MS).toISOString();
+  // Status-Lock + Stale-Cleanup pro Status mit eigenem Cutoff.
+  // Vorher nur `initiated` cleanen — `ringing`/`in_progress` blieben ewig
+  // hängen wenn Vapi/Twilio kein Ende-Signal lieferte. Resultat: Funnel-
+  // Resubmits blockierten mit 409 für Tage. Bug-Fix 2026-05-31.
+  const STALE_CUTOFFS_MS: Record<string, number> = {
+    initiated: 30_000,        // Vapi hat den /call-Request nie acknowledged
+    ringing: 120_000,         // Twilio rang nie durch ODER Vapi-Sync verloren (max ~60s normal)
+    in_progress: 30 * 60_000, // Call selbst lief länger als 30 Min → fast sicher hängt
+  };
+  const nowMs = Date.now();
 
   const { data: activeCalls } = await supabase
     .from("sales_calls")
@@ -116,11 +123,13 @@ export async function POST(req: NextRequest) {
     .eq("sales_lead_id", sales_lead_id)
     .in("status", ["initiated", "ringing", "in_progress"]);
 
-  const stuck: string[] = [];
+  const stuck: { id: string; status: string }[] = [];
   const trulyActive: { id: string; status: string }[] = [];
   for (const c of activeCalls ?? []) {
-    if (c.status === "initiated" && c.created_at < staleCutoff) {
-      stuck.push(c.id);
+    const cutoffMs = STALE_CUTOFFS_MS[c.status];
+    const ageMs = nowMs - new Date(c.created_at).getTime();
+    if (cutoffMs && ageMs > cutoffMs) {
+      stuck.push({ id: c.id, status: c.status });
     } else {
       trulyActive.push({ id: c.id, status: c.status });
     }
@@ -131,10 +140,10 @@ export async function POST(req: NextRequest) {
       .from("sales_calls")
       .update({
         status: "failed",
-        end_reason: "Auto-cleanup on retry (stuck in initiated > 30s)",
+        end_reason: `Auto-cleanup: stuck in ${stuck[0].status} beyond stale threshold`,
         ended_at: new Date().toISOString(),
       })
-      .in("id", stuck);
+      .in("id", stuck.map((s) => s.id));
   }
 
   if (trulyActive.length > 0) {
