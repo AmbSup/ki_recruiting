@@ -376,8 +376,13 @@ export async function POST(req: NextRequest) {
   // Vapi requires full model object in assistantOverrides (provider + model,
   // nicht nur messages). Defaults entsprechen der typischen Dashboard-Config;
   // pro Program override-bar via call_strategy.llm_provider / call_strategy.llm_model.
-  const llmProvider = (callStrategy.llm_provider as string | undefined) ?? "openai";
-  const llmModel = (callStrategy.llm_model as string | undefined) ?? "gpt-4o";
+  //
+  // EU-Residency-Default (seit 2026-06-01): azure-openai + gpt-5.4 routet zu
+  // unserer Foundry in Sweden Central. Vorher waren die Defaults openai/gpt-4o
+  // (US-Routing). Per-Program-Override via call_strategy bleibt vollständig
+  // wirksam für Sonderfälle (z.B. Sub-Tier-Modell aus Cost-Gründen).
+  const llmProvider = (callStrategy.llm_provider as string | undefined) ?? "azure-openai";
+  const llmModel = (callStrategy.llm_model as string | undefined) ?? "gpt-5.4";
 
   // Sprach-spezifische Transcriber/Voice-Overrides: der Vapi-Assistant ist im
   // Dashboard für Deutsch konfiguriert (Deepgram nova-2 de + deutsche TTS).
