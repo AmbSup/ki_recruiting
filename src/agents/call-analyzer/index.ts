@@ -143,10 +143,34 @@ export async function runCallAnalysis(options: {
   // nicht wenn der Upload fail't. Bucket recruiting-recordings + Column
   // voice_calls.recording_storage_path kommen aus Migration 20260602.
   // Pendant zum Sales-Mirror in sales-call-analyzer.ts.
-  let recordingStoragePath: string | null = null;
-  if (options.recording_url && options.vapi_call_id) {
+  //
+  // Race-Condition-Fallback: Vapi's End-of-Call-Webhook enthält manchmal noch
+  // KEIN recordingUrl (Upload nicht fertig). Wenn options.recording_url null
+  // ist aber wir vapi_call_id + VAPI_API_KEY haben, ziehen wir die URL direkt
+  // aus der Vapi-API nach. Persistiert dann auch im voice_calls.recording_url
+  // damit Recovery + Player später drauf zugreifen können.
+  let resolvedRecordingUrl: string | null = options.recording_url;
+  if (!resolvedRecordingUrl && options.vapi_call_id && process.env.VAPI_API_KEY?.trim()) {
     try {
-      const resp = await fetch(options.recording_url);
+      const r = await fetch(`https://api.vapi.ai/call/${options.vapi_call_id}`, {
+        headers: { Authorization: `Bearer ${process.env.VAPI_API_KEY.trim()}` },
+        cache: "no-store",
+      });
+      if (r.ok) {
+        const j = await r.json() as { recordingUrl?: string; artifact?: { recordingUrl?: string } };
+        resolvedRecordingUrl = j.recordingUrl ?? j.artifact?.recordingUrl ?? null;
+      } else {
+        console.error("[call-analyzer] Vapi-API recording lookup failed:", r.status);
+      }
+    } catch (e) {
+      console.error("[call-analyzer] Vapi-API recording lookup error:", e);
+    }
+  }
+
+  let recordingStoragePath: string | null = null;
+  if (resolvedRecordingUrl && options.vapi_call_id) {
+    try {
+      const resp = await fetch(resolvedRecordingUrl);
       if (resp.ok) {
         const buf = Buffer.from(await resp.arrayBuffer());
         const contentType = resp.headers.get("content-type") ?? "audio/wav";
@@ -181,7 +205,7 @@ export async function runCallAnalysis(options: {
       started_at: options.started_at,
       ended_at: options.ended_at,
       duration_seconds: durationSeconds,
-      recording_url: options.recording_url,
+      recording_url: resolvedRecordingUrl,
       recording_storage_path: recordingStoragePath ?? undefined,
       status: "completed",
     })
