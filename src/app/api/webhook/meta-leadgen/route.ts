@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Hand-Off an n8n-Matcher (fire-and-forget — Meta erwartet schnelle Antwort)
-  const n8nBase = process.env.N8N_BASE_URL;
+  const n8nBase = process.env.N8N_BASE_URL?.trim();
   if (n8nBase && inserted.length > 0) {
     void fetch(`${n8nBase}/webhook/meta-leadgen-matcher`, {
       method: "POST",

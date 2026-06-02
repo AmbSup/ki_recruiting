@@ -66,7 +66,10 @@ export async function POST(req: NextRequest) {
   });
 
   // Auto-trigger Vapi call via n8n (fire-and-forget)
-  const n8nBase = process.env.N8N_BASE_URL;
+  // .trim() schützt gegen ungewollte Whitespace/Newlines in der Vercel-
+  // Env-Var (User-Tippfehler beim Dashboard-Eintrag). Ohne das bricht der
+  // fetch silently wenn N8N_BASE_URL z.B. ein trailing "\n" hat.
+  const n8nBase = process.env.N8N_BASE_URL?.trim();
   if (n8nBase && applicant.phone) {
     const nameParts = applicant.full_name.trim().split(' ');
     const firstName = nameParts[0];

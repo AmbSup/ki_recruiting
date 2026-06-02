@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Keine Telefonnummer beim Bewerber hinterlegt' }, { status: 422 });
   }
 
-  const n8nBase = process.env.N8N_BASE_URL;
+  const n8nBase = process.env.N8N_BASE_URL?.trim();
   if (!n8nBase) {
     return NextResponse.json({ error: 'N8N_BASE_URL nicht konfiguriert' }, { status: 500 });
   }

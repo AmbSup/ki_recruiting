@@ -428,7 +428,7 @@ export async function POST(req: NextRequest) {
 
   // Hand off an n8n — der macht den Vapi-API-Call und updatet sales_calls.vapi_call_id
   // bzw. markiert failed bei Fehler. Wir behalten die n8n-Visibility/Retry bewusst.
-  const n8nBase = process.env.N8N_BASE_URL;
+  const n8nBase = process.env.N8N_BASE_URL?.trim();
   if (!n8nBase) {
     return NextResponse.json({ error: "N8N_BASE_URL nicht konfiguriert" }, { status: 500 });
   }

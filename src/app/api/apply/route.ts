@@ -619,8 +619,8 @@ async function notifyFunnelSubmit(payload: {
   phone: string;
   side: "sales" | "recruiting";
 }): Promise<void> {
-  const n8nBase = process.env.N8N_BASE_URL;
-  const secret = process.env.N8N_WEBHOOK_SECRET;
+  const n8nBase = process.env.N8N_BASE_URL?.trim();
+  const secret = process.env.N8N_WEBHOOK_SECRET?.trim();
   if (!n8nBase) {
     console.warn("[apply/notify] N8N_BASE_URL nicht gesetzt — skip notify");
     return;
