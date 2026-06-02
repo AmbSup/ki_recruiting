@@ -1437,10 +1437,20 @@ export default function ApplicantDetailPage({ params }: { params: Promise<{ id: 
                   {/* Recording */}
                   {vc.recording_url && (
                     <div className="border-t border-outline-variant/10 pt-4">
-                      <span className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-2">
-                        Aufnahme
-                      </span>
-                      <audio controls src={vc.recording_url} className="w-full h-8" />
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
+                          Aufnahme
+                        </span>
+                        <a
+                          href={`/api/calls/${vc.id}/recording?download=1`}
+                          className="flex items-center gap-1 font-label text-xs text-outline hover:text-primary transition-colors"
+                          title="Audio-Datei herunterladen"
+                        >
+                          <span className="material-symbols-outlined text-sm">download</span>
+                          Download
+                        </a>
+                      </div>
+                      <audio controls src={`/api/calls/${vc.id}/recording`} className="w-full h-8" />
                     </div>
                   )}
 
