@@ -138,6 +138,41 @@ export async function runCallAnalysis(options: {
         )
       : null;
 
+  // Recording nach Supabase Storage mirroren (Vapi-Storage hat plan-bound
+  // Retention 30-90 Tage). Fire-and-forget auf Fehler-Level — Analyse blockt
+  // nicht wenn der Upload fail't. Bucket recruiting-recordings + Column
+  // voice_calls.recording_storage_path kommen aus Migration 20260602.
+  // Pendant zum Sales-Mirror in sales-call-analyzer.ts.
+  let recordingStoragePath: string | null = null;
+  if (options.recording_url && options.vapi_call_id) {
+    try {
+      const resp = await fetch(options.recording_url);
+      if (resp.ok) {
+        const buf = Buffer.from(await resp.arrayBuffer());
+        const contentType = resp.headers.get("content-type") ?? "audio/wav";
+        const ext = contentType.includes("mpeg") ? "mp3"
+          : contentType.includes("ogg") ? "ogg"
+          : contentType.includes("mp4") ? "m4a"
+          : "wav";
+        // Pfad-Key = vapi_call_id (immer unique pro Vapi-Conversation, kein
+        // Vorab-DB-Roundtrip nötig).
+        const path = `${options.vapi_call_id}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("recruiting-recordings")
+          .upload(path, buf, { contentType, upsert: true });
+        if (upErr) {
+          console.error("[call-analyzer] storage upload error:", upErr);
+        } else {
+          recordingStoragePath = path;
+        }
+      } else {
+        console.error("[call-analyzer] recording fetch failed:", resp.status);
+      }
+    } catch (e) {
+      console.error("[call-analyzer] recording mirror error:", e);
+    }
+  }
+
   const { data: voiceCall, error: callErr } = await supabase
     .from("voice_calls")
     .insert({
@@ -147,6 +182,7 @@ export async function runCallAnalysis(options: {
       ended_at: options.ended_at,
       duration_seconds: durationSeconds,
       recording_url: options.recording_url,
+      recording_storage_path: recordingStoragePath ?? undefined,
       status: "completed",
     })
     .select("id")
