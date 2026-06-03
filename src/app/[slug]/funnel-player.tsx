@@ -809,6 +809,22 @@ function Screen({ children, color, textColor, branding }: {
 // MUSS auf Modul-Scope leben — wäre die Komponente innerhalb BlockRenderer
 // definiert, hätte sie bei jedem Re-Render eine neue Function-Identity und
 // React würde das <input> bei jedem Keystroke unmounten/remounten (Fokus-Verlust).
+// Browser-Autofill braucht name + autoComplete. Ohne die merkt sich der
+// Browser nicht was der User schon mal eingegeben hat (kein Tel/Email-
+// Vorschlag bei nächstem Besuch). Mapping pro fieldKey nach WHATWG-Spec.
+const AUTOCOMPLETE_MAP: Record<string, string> = {
+  name: "name",
+  first_name: "given-name",
+  last_name: "family-name",
+  email: "email",
+  phone: "tel",
+  city: "address-level2",
+  linkedin: "url",
+  portfolio: "url",
+  current_employer: "organization",
+  current_job: "organization-title",
+};
+
 function FieldRow({
   emoji, placeholder, fieldKey, type = "text", form, onFormChange,
 }: {
@@ -820,6 +836,8 @@ function FieldRow({
       <span className="text-lg flex-shrink-0">{emoji}</span>
       <input
         type={type}
+        name={fieldKey}
+        autoComplete={AUTOCOMPLETE_MAP[fieldKey] ?? "on"}
         value={form[fieldKey] ?? ""}
         onChange={(e) => onFormChange({ [fieldKey]: e.target.value })}
         placeholder={placeholder}
