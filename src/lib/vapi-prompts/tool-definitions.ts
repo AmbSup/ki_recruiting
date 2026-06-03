@@ -10,6 +10,10 @@
 
 const TOOLS_WEBHOOK_URL = "https://n8n.neuronic-automation.ai/webhook/vapi-sales-tools";
 
+// Server-side Sales-Tool-Endpoints (kein n8n-Roundtrip). Aktuell nur
+// Zeit-Tool — andere lightweight Tools können hier später ergänzt werden.
+const APP_TOOLS_BASE = "https://app.neuronic-automation.ai/api/sales/tools";
+
 type VapiTool = {
   type: "function";
   function: {
@@ -229,6 +233,18 @@ const sendOfferLink: VapiTool = {
   server: { url: TOOLS_WEBHOOK_URL },
 };
 
+const getCurrentTime: VapiTool = {
+  type: "function",
+  function: {
+    name: "get_current_time",
+    description:
+      "Gibt die aktuelle Uhrzeit und das Datum in Wien-Zeit (Europe/Vienna) zurück — z.B. um zu prüfen ob ein Lead noch in der gleichen Stunde verfügbar wäre oder um Termine relativ zu 'jetzt' zu nennen. Keine Argumente nötig.",
+    parameters: { type: "object", properties: {}, required: [] },
+  },
+  async: false,
+  server: { url: `${APP_TOOLS_BASE}/current-time` },
+};
+
 export const salesTools: VapiTool[] = [
   getProgram,
   getLeadContext,
@@ -240,4 +256,5 @@ export const salesTools: VapiTool[] = [
   qualifyLead,
   matchOffer,
   sendOfferLink,
+  getCurrentTime,
 ];
