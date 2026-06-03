@@ -222,7 +222,7 @@ const sendOfferLink: VapiTool = {
   function: {
     name: "send_offer_link",
     description:
-      "Sendet dem Lead den Detail-Link zum aktuell besprochenen Angebot per SMS UND WhatsApp. Aufrufen NACHDEM der Kunde explizit zugestimmt hat ('Ja, schick mal'). Keine Argumente nötig — Tool zieht das letzte gematchte Angebot aus dem Lead-Kontext.",
+      "Sendet dem Lead den Detail-Link zum aktuell besprochenen Angebot über den konfigurierten Notify-Channel (siehe Variable notify_channels im Prompt). Aufrufen NACHDEM der Kunde explizit zugestimmt hat ('Ja, schick mal'). Keine Argumente nötig — Tool zieht das letzte gematchte Angebot aus dem Lead-Kontext.",
     parameters: { type: "object", properties: {}, required: [] },
   },
   async: false,

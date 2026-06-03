@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
   const supabase = createAdminClient();
   const { data: leadRaw } = await supabase
     .from("sales_leads")
-    .select("phone, first_name, custom_fields, program:sales_programs(language)")
+    .select("phone, first_name, custom_fields, program:sales_programs(language, program_type)")
     .eq("id", sales_lead_id)
     .maybeSingle();
 
@@ -52,11 +52,12 @@ export async function POST(req: NextRequest) {
     phone: string;
     first_name: string | null;
     custom_fields: Record<string, unknown> | null;
-    program: { language: string | null } | { language: string | null }[] | null;
+    program: { language: string | null; program_type: string | null } | { language: string | null; program_type: string | null }[] | null;
   };
   const programObj = Array.isArray(lead.program) ? lead.program[0] : lead.program;
   const language = (programObj?.language ?? "de").toLowerCase();
   const isEn = language === "en";
+  const programType = programObj?.program_type ?? "generic";
 
   const customFields = (lead.custom_fields ?? {}) as Record<string, unknown>;
   const offerId = typeof customFields.matched_offer_id === "string"
@@ -82,12 +83,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Channel: SMS-only für alle Programs. WhatsApp ist temporär deaktiviert
-  // weil die SMS-capable Twilio-Nummer jetzt für alles reicht und WhatsApp-
-  // Template-Approval / Meta-Verifikation Overhead spart. Für Re-Enable von
-  // WhatsApp: hier wieder branchen auf isEn/TWILIO_WHATSAPP_CONTENT_SID_EN
-  // bzw. TWILIO_WHATSAPP_NUMBER + isEn-Check zurückbauen.
-  const channels: ("sms" | "whatsapp")[] = ["sms"];
+  // Channel per program_type. product_finder (Reise-Konfigurator) nutzt
+  // WhatsApp, alles andere bleibt SMS. Muss konsistent zu notify_channels
+  // im trigger-call sein, sonst sagt der Bot "WhatsApp" und der Lead
+  // bekommt SMS (oder umgekehrt).
+  // Voraussetzung WhatsApp: TWILIO_WHATSAPP_NUMBER + TWILIO_WHATSAPP_CONTENT_SID
+  // gesetzt. Wenn nicht, skippt sendWhatsApp graceful und der Link kommt
+  // nicht beim Lead an.
+  const channels: ("sms" | "whatsapp")[] = programType === "product_finder"
+    ? ["whatsapp"]
+    : ["sms"];
 
   try {
     const result = await sendOfferLink({

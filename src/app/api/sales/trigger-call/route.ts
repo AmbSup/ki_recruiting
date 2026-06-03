@@ -331,12 +331,13 @@ export async function POST(req: NextRequest) {
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
 
-    // Notify-Channels — V1 SMS-only für alle Programs. KI verspricht im Pitch
-    // SMS, send-link route liefert SMS. WhatsApp ist temporär deaktiviert
-    // (Template-Approval-Overhead). Für Re-Enable: hier wieder switchen.
-    notify_channels: "SMS",
-    notify_channels_short: "SMS",
-    has_whatsapp: "false",
+    // Notify-Channels — per program_type. product_finder (Reise/Auto-
+    // Konfiguratoren) nutzt WhatsApp (Send-Channel + Bot-Sprache). Alle
+    // anderen Programs bleiben SMS. Bei Channel-Wechsel: auch send-link
+    // route /api/sales/offers/send-link mit-anpassen.
+    notify_channels: programType === "product_finder" ? "WhatsApp" : "SMS",
+    notify_channels_short: programType === "product_finder" ? "WhatsApp" : "SMS",
+    has_whatsapp: programType === "product_finder" ? "true" : "false",
     language,
   };
 
