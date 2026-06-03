@@ -798,7 +798,7 @@ function Screen({ children, color, textColor, branding }: {
               </div>
             );
           })()}
-          <span className="text-[9px] text-gray-300">Powered by KI Recruiting</span>
+          <span className="text-[9px] text-gray-300">Powered by Neuronic</span>
         </div>
       </div>
     </div>
