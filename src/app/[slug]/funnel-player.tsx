@@ -1,7 +1,39 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type ReactNode } from "react";
 import { parseVideoUrl } from "@/lib/video-url-parser";
+
+// Markdown-light-Renderer für Consent-Texte: parst `[Label](https://url)` und
+// gibt React-Fragmente mit echten <a>-Tags zurück. Andere Markdown-Konstrukte
+// werden bewusst NICHT unterstützt (keine Injection-Surface). target=_blank +
+// rel=noopener für Sicherheit. Click-Propagation gestoppt damit der äußere
+// Consent-Toggle-Button NICHT mit-getriggert wird wenn der User auf den Link
+// klickt.
+function renderTextWithLinks(text: string): ReactNode {
+  const parts: ReactNode[] = [];
+  const regex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let key = 0;
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) parts.push(text.slice(lastIndex, match.index));
+    parts.push(
+      <a
+        key={`lnk-${key++}`}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="underline hover:opacity-80"
+      >
+        {match[1]}
+      </a>,
+    );
+    lastIndex = regex.lastIndex;
+  }
+  if (lastIndex < text.length) parts.push(text.slice(lastIndex));
+  return parts;
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1060,7 +1092,7 @@ function BlockRenderer({
             {consent && <span className="text-white text-xs font-black">✓</span>}
           </div>
           <span style={vtileTextStyle(c, "consent", { color: "#6B7280", align: "left", lineHeight: 1.5 })}>
-            {(c.consent_text as string) || consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden."}
+            {renderTextWithLinks((c.consent_text as string) || consentText || "Ich stimme der Datenschutzerklärung zu und erkläre mich einverstanden, dass meine Daten zur Bearbeitung meiner Bewerbung verwendet werden.")}
           </span>
         </button>
         {/* AI-Consent — zweite Checkbox, sichtbar nur wenn block.content.ai_consent_text gepflegt.
@@ -1078,7 +1110,7 @@ function BlockRenderer({
               {aiConsent && <span className="text-white text-xs font-black">✓</span>}
             </div>
             <span style={vtileTextStyle(c, "ai_consent", { color: "#6B7280", align: "left", lineHeight: 1.5 })}>
-              {aiConsentText}
+              {renderTextWithLinks(aiConsentText)}
             </span>
           </button>
         )}

@@ -382,6 +382,9 @@ export function FunnelModal({ open, onClose, onSuccess }: Props) {
               rows={purpose === "sales" ? 3 : 2}
               className={inputClass + " resize-none text-xs"}
             />
+            <p className="font-label text-xs text-outline mt-1.5">
+              Links per Markdown-Syntax: <code className="font-mono">[Datenschutzerklärung](https://deine-domain.at/datenschutz)</code>
+            </p>
             {purpose === "sales" && (
               <p className="font-label text-xs text-outline mt-1.5">
                 Pflicht: Der Text muss das Opt-In für den telefonischen Kontakt dokumentieren. Ohne validen Consent-Text lässt sich der Funnel nicht speichern.
