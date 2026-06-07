@@ -13,20 +13,43 @@ DECLARE
   v_funnel_id  uuid;
   v_existing_funnel uuid;
   v_existing_program uuid;
+  v_has_calls boolean;
 BEGIN
-  -- Idempotent cleanup
+  -- Idempotent cleanup. Special case for live programs: if sales_calls
+  -- already reference the existing program, we can NOT cascade-delete it.
+  -- In that case we keep program + funnel intact and only refresh the
+  -- sales_offers — that's the typical "update car details" re-run path.
   SELECT id INTO v_existing_funnel FROM funnels WHERE slug = 'car-special-offers';
   IF v_existing_funnel IS NOT NULL THEN
     SELECT sales_program_id INTO v_existing_program FROM funnels WHERE id = v_existing_funnel;
-    DELETE FROM funnel_pages WHERE funnel_id = v_existing_funnel;
-    DELETE FROM funnels WHERE id = v_existing_funnel;
+
     IF v_existing_program IS NOT NULL THEN
+      SELECT EXISTS (SELECT 1 FROM sales_calls WHERE sales_program_id = v_existing_program)
+        INTO v_has_calls;
+    ELSE
+      v_has_calls := false;
+    END IF;
+
+    IF v_has_calls THEN
+      -- Refresh-only path: keep program + funnel + their FKs intact.
       DELETE FROM sales_offers WHERE sales_program_id = v_existing_program;
-      DELETE FROM sales_programs WHERE id = v_existing_program;
+      v_program_id := v_existing_program;
+      v_funnel_id  := v_existing_funnel;
+      RAISE NOTICE 'Cars EN refresh: existing program % has calls, only refreshing offers', v_existing_program;
+    ELSE
+      -- Full reset path: no calls yet, safe to cascade-delete everything.
+      DELETE FROM funnel_pages WHERE funnel_id = v_existing_funnel;
+      DELETE FROM funnels WHERE id = v_existing_funnel;
+      IF v_existing_program IS NOT NULL THEN
+        DELETE FROM sales_offers WHERE sales_program_id = v_existing_program;
+        DELETE FROM sales_programs WHERE id = v_existing_program;
+      END IF;
     END IF;
   END IF;
 
   -- 1. Sales Program (English, language='en', monthly_with_purchase price-format)
+  -- Skipped on refresh-only path (program already exists with active calls).
+  IF v_program_id IS NULL THEN
   INSERT INTO sales_programs (
     company_id, name, language, program_type,
     product_pitch, value_proposition, target_persona,
@@ -71,6 +94,7 @@ BEGIN
       )
     )
   ) RETURNING id INTO v_program_id;
+  END IF;
 
   -- 2. Sales Offers — 8 cars covering main tag-combinations
   INSERT INTO sales_offers (
@@ -158,6 +182,8 @@ BEGIN
      true);
 
   -- 3. Funnel (English, language='en')
+  -- Skipped on refresh-only path (funnel already exists).
+  IF v_funnel_id IS NULL THEN
   INSERT INTO funnels (
     sales_program_id, language, name, slug,
     intro_headline, intro_subtext, consent_text, thank_you_text,
@@ -286,6 +312,7 @@ BEGIN
         )
       )
     ));
+  END IF;
 
   RAISE NOTICE 'Cars EN setup complete: program=% funnel=%', v_program_id, v_funnel_id;
 END $$;
