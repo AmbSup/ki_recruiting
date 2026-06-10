@@ -4,6 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { LeadModal } from "../../leads/lead-modal";
+import { OfferKnowledgeUpload } from "@/components/operator/offer-knowledge-upload";
 
 type CallStrategy = {
   hook_one_liner?: string;
@@ -27,6 +28,15 @@ type CallStrategy = {
   require_consent?: boolean;
   llm_provider?: string;
   [key: string]: unknown;
+};
+
+type OfferRow = {
+  id: string;
+  name: string;
+  active: boolean;
+  knowledge_storage_path: string | null;
+  knowledge_text: string | null;
+  knowledge_updated_at: string | null;
 };
 
 type PipelineStats = {
@@ -85,6 +95,8 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
   const [testCallModalOpen, setTestCallModalOpen] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [stats, setStats] = useState<PipelineStats | null>(null);
+  const [offers, setOffers] = useState<OfferRow[] | null>(null);
+  const [offersReloadKey, setOffersReloadKey] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
@@ -157,6 +169,20 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
       console.error("[programs/[id]] pipeline stats failed:", err);
     });
   }, [id]);
+
+  // Offers + Knowledge-Status laden. Eigener Effekt mit reloadKey, damit nach
+  // Upload/Delete der parent-State frisch ist und der Status korrekt rendert.
+  useEffect(() => {
+    const supabase = createClient();
+    supabase
+      .from("sales_offers")
+      .select("id, name, active, knowledge_storage_path, knowledge_text, knowledge_updated_at")
+      .eq("sales_program_id", id)
+      .order("name", { ascending: true })
+      .then(({ data }) => {
+        setOffers((data ?? []) as OfferRow[]);
+      });
+  }, [id, offersReloadKey]);
 
   function update<K extends keyof Program>(field: K, value: Program[K]) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -388,6 +414,46 @@ export default function ProgramEditPage({ params }: { params: Promise<{ id: stri
           </Card>
         </div>
       </div>
+
+      {/* Offers & Knowledge-PDFs — wird nur gezeigt, wenn das Program tatsächlich
+          sales_offers hat (z.B. product_finder Use-Case). Operator lädt pro
+          Offer ein PDF mit aktuellen Produkt- und Aktionsinfos hoch, das im
+          Vapi-Call als matched_offer_knowledge in den System-Prompt fließt. */}
+      {offers && offers.length > 0 && (
+        <div className="mb-6">
+          <Card label="Offers & Knowledge-PDFs" icon="description">
+            <p className="font-body text-xs text-outline mb-3 -mt-2">
+              Pro Offer kannst du ein PDF hochladen (Datenblatt, Aktions-Brief, Sommer-Specials).
+              Der KI-Anruf nutzt den Inhalt im Pitch und bei Detail-Fragen. Max 20 MB pro PDF.
+              Beste Ergebnisse mit text-basierten PDFs (keine reinen Scans).
+            </p>
+            <div className="space-y-3">
+              {offers.map((o) => (
+                <div key={o.id} className="border border-gray-100 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="font-semibold text-sm text-on-surface truncate">
+                      {o.name}
+                    </div>
+                    {!o.active && (
+                      <span className="font-label text-[10px] uppercase tracking-wider text-outline">
+                        inaktiv
+                      </span>
+                    )}
+                  </div>
+                  <OfferKnowledgeUpload
+                    offerId={o.id}
+                    offerName={o.name}
+                    initialHasKnowledge={!!o.knowledge_storage_path}
+                    initialCharCount={o.knowledge_text?.length ?? null}
+                    initialUpdatedAt={o.knowledge_updated_at}
+                    onChange={() => setOffersReloadKey((k) => k + 1)}
+                  />
+                </div>
+              ))}
+            </div>
+          </Card>
+        </div>
+      )}
 
       <div className="grid grid-cols-12 gap-6">
         <div className="col-span-12 lg:col-span-7 space-y-5">

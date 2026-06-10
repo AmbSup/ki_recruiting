@@ -15,6 +15,8 @@ export type MatchedOffer = {
   price_cents: number | null;
   purchase_price_cents: number | null;
   currency: string | null;
+  /** Volltext aus hochgeladenem Knowledge-PDF (cached aus sales_offers.knowledge_text). NULL = kein PDF hochgeladen. */
+  knowledge_text: string | null;
   score: number;
 };
 
@@ -62,7 +64,7 @@ export async function matchOfferForLead(opts: {
   const { data, error } = await opts.supabase
     .from("sales_offers")
     .select(
-      "id, name, summary, description, detail_url, image_url, tags, price_cents, purchase_price_cents, currency",
+      "id, name, summary, description, detail_url, image_url, tags, price_cents, purchase_price_cents, currency, knowledge_text",
     )
     .eq("sales_program_id", opts.sales_program_id)
     .eq("active", true)
@@ -77,7 +79,7 @@ export async function matchOfferForLead(opts: {
 
   const rows = (data ?? []) as Pick<
     OfferRow,
-    "id" | "name" | "summary" | "description" | "detail_url" | "image_url" | "tags" | "price_cents" | "purchase_price_cents" | "currency"
+    "id" | "name" | "summary" | "description" | "detail_url" | "image_url" | "tags" | "price_cents" | "purchase_price_cents" | "currency" | "knowledge_text"
   >[];
 
   if (rows.length === 0) {
@@ -101,6 +103,7 @@ export async function matchOfferForLead(opts: {
         detail_url: row.detail_url,
         image_url: row.image_url,
         tags: offerTags,
+        knowledge_text: row.knowledge_text,
         score,
       };
     }

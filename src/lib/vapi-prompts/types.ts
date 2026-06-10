@@ -88,6 +88,12 @@ export type PromptVariables = {
   matched_offer_price?: string;       // Formatiert "5.499 Euro" oder leer
   matched_offer_url?: string;
   has_match?: string; // "true" | "false"
+  // Pre-gerenderter Knowledge-Block aus dem Operator-uploaded PDF zum
+  // matched Offer (sales_offers.knowledge_text, gecapped bei 50k Zeichen).
+  // Wenn kein PDF hochgeladen ist → leerer String, der Prompt rendert
+  // dann einfach nichts an dieser Stelle. Pre-Rendering im trigger-call
+  // weil unsere Mustache-Light keine {{#if}}-Conditionals unterstützt.
+  offer_knowledge_block?: string;
 
   // Notification-Channels — abhängig von Env (TWILIO_WHATSAPP_NUMBER gesetzt?).
   // Damit der AI nicht "WhatsApp" verspricht solange Twilio-WhatsApp-Production

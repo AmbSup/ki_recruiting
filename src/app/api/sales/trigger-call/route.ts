@@ -331,6 +331,14 @@ export async function POST(req: NextRequest) {
     matched_offer_url: matchedOffer?.detail_url ?? "",
     has_match: matchedOffer ? "true" : "false",
 
+    // Offer-Knowledge-PDF: Operator hat im Program-Detail ein PDF zu DIESEM
+    // Offer hochgeladen → wir cachen den extrahierten Text in
+    // sales_offers.knowledge_text und rendern hier den kompletten Knowledge-
+    // Block pre-formatted (Header + Body). Unsere Mustache-Light unterstützt
+    // keine {{#if}}-Conditionals, daher passiert die Bedingung hier in JS:
+    // leerer String wenn kein PDF, sonst voller Markdown-Block.
+    offer_knowledge_block: buildOfferKnowledgeBlock(matchedOffer?.knowledge_text),
+
     // Notify-Channels — per program_type. product_finder (Reise/Auto-
     // Konfiguratoren) nutzt WhatsApp (Send-Channel + Bot-Sprache). Alle
     // anderen Programs bleiben SMS. Bei Channel-Wechsel: auch send-link
@@ -473,6 +481,27 @@ export async function POST(req: NextRequest) {
     vapi_assistant_id: assistantId,
     vapi_phone_number_id: phoneNumberId,
   });
+}
+
+// Rendert den Knowledge-Block aus dem operator-hochgeladenen PDF (cached in
+// sales_offers.knowledge_text). Leerer String wenn kein PDF — der Prompt-
+// Platzhalter wird dann durch nichts ersetzt. Pre-Rendering hier statt im
+// Prompt-Template, weil unsere Mustache-Light keine {{#if}}-Blöcke kann.
+function buildOfferKnowledgeBlock(knowledgeText: string | null | undefined): string {
+  if (!knowledgeText || !knowledgeText.trim()) return "";
+  return `\n\n## Extra Knowledge (operator-uploaded spec sheet / current promotions)
+The Operator has uploaded a PDF with the current product details and any
+running promotions for THIS offer. Treat this as your most up-to-date source
+of truth — it overrides anything in the short description when they conflict.
+
+Same BREVITY rule applies: when the lead asks something covered by this
+knowledge, pick the ONE or TWO facts they asked about (max ~25 spoken words),
+do not read the document out. Cite specifically what they ask, never dump.
+
+---
+${knowledgeText.trim()}
+---
+`;
 }
 
 // Rendert den matched_offer_price-String den die KI im Pitch verwendet.

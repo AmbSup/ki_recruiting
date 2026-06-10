@@ -31,6 +31,7 @@ The lead {{first_name}} just completed our {{program_name}} configurator. Our ma
 
 - **Detail URL:** {{matched_offer_url}} (NEVER read this out loud — only send via the send_offer_link tool)
 - **Match found:** {{has_match}}
+{{offer_knowledge_block}}
 
 ## How to use this data
 

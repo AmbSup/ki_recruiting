@@ -1848,6 +1848,9 @@ export type Database = {
           detail_url: string
           id: string
           image_url: string | null
+          knowledge_storage_path: string | null
+          knowledge_text: string | null
+          knowledge_updated_at: string | null
           metadata: Json | null
           name: string
           price_cents: number | null
@@ -1865,6 +1868,9 @@ export type Database = {
           detail_url: string
           id?: string
           image_url?: string | null
+          knowledge_storage_path?: string | null
+          knowledge_text?: string | null
+          knowledge_updated_at?: string | null
           metadata?: Json | null
           name: string
           price_cents?: number | null
@@ -1882,6 +1888,9 @@ export type Database = {
           detail_url?: string
           id?: string
           image_url?: string | null
+          knowledge_storage_path?: string | null
+          knowledge_text?: string | null
+          knowledge_updated_at?: string | null
           metadata?: Json | null
           name?: string
           price_cents?: number | null
