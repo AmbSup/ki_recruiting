@@ -90,8 +90,12 @@ async function loadBundles(): Promise<Bundle[]> {
     }
   }
 
+  // Funnels die auf der Showcase-Page NICHT auftauchen sollen
+  // (z.B. veraltete oder nicht-funktionierende Test-Funnels).
+  const EXCLUDED_FROM_SHOWCASE = new Set(["filialleiter-innsbruck"]);
+
   const bundles: Bundle[] = data
-    .filter((f) => f.slug && !f.slug.startsWith("ext-")) // dropp Test-Funnels
+    .filter((f) => f.slug && !f.slug.startsWith("ext-") && !EXCLUDED_FROM_SHOWCASE.has(f.slug))
     .map((f) => {
       const row = f as unknown as FunnelRow;
       const offerImg = row.sales_program_id ? offerImages.get(row.sales_program_id) : null;
