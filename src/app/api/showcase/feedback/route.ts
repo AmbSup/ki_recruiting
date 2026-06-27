@@ -146,5 +146,47 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `DB-Insert fehlgeschlagen: ${insertErr.message}` }, { status: 500 });
   }
 
+  // Fire-and-forget Email-Notification via n8n. n8n-Workflow
+  // "Showcase Feedback Notify" hängt am Webhook /webhook/showcase-feedback-notify
+  // und sendet eine Email an martinamon@chello.at via SMTP. Block den
+  // Response NICHT — Upload ist erfolgreich, Email-Failure soll's nicht killen.
+  notifyN8nEmail({ id, bundleSlug, durationSec, sizeBytes: file.size }).catch((e) => {
+    console.error("[showcase/feedback] n8n notify failed:", e);
+  });
+
   return NextResponse.json({ success: true, id });
+}
+
+async function notifyN8nEmail(opts: {
+  id: string;
+  bundleSlug: string;
+  durationSec: number | null;
+  sizeBytes: number;
+}): Promise<void> {
+  const base = process.env.N8N_BASE_URL?.trim();
+  const secret = process.env.N8N_WEBHOOK_SECRET;
+  if (!base || !secret) {
+    console.warn("[showcase/feedback] N8N_BASE_URL or N8N_WEBHOOK_SECRET missing — skipping email notify");
+    return;
+  }
+  const url = `${base.replace(/\/$/, "")}/webhook/showcase-feedback-notify`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Webhook-Secret": secret,
+    },
+    body: JSON.stringify({
+      feedback_id: opts.id,
+      bundle_slug: opts.bundleSlug,
+      duration_seconds: opts.durationSec,
+      size_bytes: opts.sizeBytes,
+      operator_link: "https://app.neuronic-automation.ai/showcase-feedback",
+      audio_link: `https://app.neuronic-automation.ai/api/showcase/feedback/${opts.id}/audio`,
+      created_at_iso: new Date().toISOString(),
+    }),
+  });
+  if (!res.ok) {
+    console.error("[showcase/feedback] n8n notify status:", res.status);
+  }
 }
