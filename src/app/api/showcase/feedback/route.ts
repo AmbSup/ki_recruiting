@@ -72,7 +72,10 @@ export async function POST(req: NextRequest) {
   if (!bundleSlug) {
     return NextResponse.json({ error: "Feld 'bundle_slug' fehlt" }, { status: 400 });
   }
-  if (!ALLOWED_MIME.has(file.type)) {
+  // Browser schickt oft Codec-Suffix mit (z.B. "audio/webm;codecs=opus") —
+  // wir validieren nur den Base-MIME.
+  const baseMime = file.type.split(";")[0].trim().toLowerCase();
+  if (!ALLOWED_MIME.has(baseMime)) {
     return NextResponse.json({ error: `Audio-Format nicht erlaubt: ${file.type}` }, { status: 400 });
   }
   if (file.size > MAX_SIZE) {
@@ -115,14 +118,15 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Upload
+  // Upload — Supabase-Bucket validiert MIME strikt (kein Codec-Suffix),
+  // wir senden daher den baseMime statt file.type.
   const id = crypto.randomUUID();
-  const path = `${id}.${extOf(file.type)}`;
+  const path = `${id}.${extOf(baseMime)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
-    .upload(path, buffer, { contentType: file.type, upsert: false });
+    .upload(path, buffer, { contentType: baseMime, upsert: false });
   if (uploadErr) {
     return NextResponse.json({ error: `Upload fehlgeschlagen: ${uploadErr.message}` }, { status: 500 });
   }

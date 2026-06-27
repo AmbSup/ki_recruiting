@@ -22,8 +22,35 @@ const montserrat = Montserrat({ variable: "--font-montserrat", subsets: ["latin"
 const bebas = Bebas_Neue({ variable: "--font-bebas", subsets: ["latin"], weight: "400" });
 
 export const metadata: Metadata = {
-  title: "KI Recruiting Platform",
-  description: "Operator Dashboard – KI Recruiting Automation",
+  metadataBase: new URL("https://app.neuronic-automation.ai"),
+  title: {
+    default: "AI Funnel Expert",
+    template: "%s · AI Funnel Expert",
+  },
+  description: "AI-Funnels mit KI-Anruf für Sales und Recruiting — von Neuronic Automation",
+  applicationName: "AI Funnel Expert",
+  authors: [{ name: "Neuronic Automation", url: "https://neuronic-automation.ai" }],
+  openGraph: {
+    type: "website",
+    siteName: "AI Funnel Expert",
+    title: "AI Funnel Expert",
+    description: "AI-Funnels mit KI-Anruf für Sales und Recruiting — von Neuronic Automation",
+    url: "https://app.neuronic-automation.ai",
+    images: [
+      {
+        url: "/branding/neuronic-logo.png",
+        width: 1200,
+        height: 1200,
+        alt: "Neuronic Automation",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary",
+    title: "AI Funnel Expert",
+    description: "AI-Funnels mit KI-Anruf für Sales und Recruiting",
+    images: ["/branding/neuronic-logo.png"],
+  },
 };
 
 export default function RootLayout({
