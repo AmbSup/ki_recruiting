@@ -21,6 +21,8 @@ type Row = {
 export default function ShowcaseFeedbackPage() {
   const [rows, setRows] = useState<Row[] | null>(null);
   const [filter, setFilter] = useState<string>("");
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -31,6 +33,43 @@ export default function ShowcaseFeedbackPage() {
       .limit(200)
       .then(({ data }) => setRows((data ?? []) as Row[]));
   }, []);
+
+  async function handleDelete(r: Row) {
+    if (!confirm(`Feedback zu "${r.bundle_slug}" wirklich löschen?`)) return;
+    setDeletingId(r.id);
+    try {
+      const resp = await fetch(`/api/showcase/feedback/${r.id}`, { method: "DELETE" });
+      if (!resp.ok) {
+        const json = (await resp.json().catch(() => ({}))) as { error?: string };
+        alert(json.error ?? `Löschen fehlgeschlagen (${resp.status})`);
+        return;
+      }
+      setRows((prev) => prev?.filter((x) => x.id !== r.id) ?? null);
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
+  async function handleCopy(r: Row) {
+    const audioUrl = `${window.location.origin}/api/showcase/feedback/${r.id}/audio`;
+    const text = [
+      `Showcase-Feedback`,
+      `Bundle: ${r.bundle_slug}`,
+      `Eingegangen: ${new Date(r.created_at).toLocaleString("de-AT")}`,
+      r.duration_seconds != null ? `Dauer: ${r.duration_seconds} Sek` : null,
+      r.size_bytes != null ? `Größe: ${(r.size_bytes / 1024).toFixed(1)} KB` : null,
+      `Audio: ${audioUrl}`,
+    ]
+      .filter(Boolean)
+      .join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(r.id);
+      window.setTimeout(() => setCopiedId((id) => (id === r.id ? null : id)), 1800);
+    } catch {
+      alert("Konnte nicht in die Zwischenablage kopieren — bitte manuell markieren.");
+    }
+  }
 
   if (rows === null) {
     return (
@@ -106,13 +145,40 @@ export default function ShowcaseFeedbackPage() {
                     {r.size_bytes != null && ` · ${(r.size_bytes / 1024).toFixed(1)} KB`}
                   </p>
                 </div>
-                <a
-                  href={`/api/showcase/feedback/${r.id}/audio`}
-                  download
-                  className="text-xs font-medium text-gray-600 hover:text-primary"
-                >
-                  Download
-                </a>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    onClick={() => handleCopy(r)}
+                    className={`flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border transition ${
+                      copiedId === r.id
+                        ? "border-emerald-300 bg-emerald-50 text-emerald-700"
+                        : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                    }`}
+                    title="Text-Zusammenfassung in Zwischenablage"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">
+                      {copiedId === r.id ? "check" : "content_copy"}
+                    </span>
+                    {copiedId === r.id ? "Kopiert" : "Kopieren"}
+                  </button>
+                  <a
+                    href={`/api/showcase/feedback/${r.id}/audio`}
+                    download
+                    className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50"
+                    title="Audio-Datei herunterladen"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">download</span>
+                    Download
+                  </a>
+                  <button
+                    onClick={() => handleDelete(r)}
+                    disabled={deletingId === r.id}
+                    className="flex items-center gap-1 text-xs font-medium px-2.5 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    title="Feedback löschen"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">delete</span>
+                    {deletingId === r.id ? "..." : "Löschen"}
+                  </button>
+                </div>
               </div>
               <audio src={`/api/showcase/feedback/${r.id}/audio`} controls className="w-full" />
               {r.user_agent && (
