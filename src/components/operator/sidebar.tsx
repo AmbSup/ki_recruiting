@@ -17,6 +17,7 @@ const navItems = [
   { href: "/sales/calendar", icon: "event",        label: "Kalender" },
   { href: "/campaigns",    icon: "campaign",       label: "Kampagnen" },
   { href: "/calls",        icon: "call",           label: "Calls" },
+  { href: "/showcase-feedback", icon: "graphic_eq", label: "Feedback" },
   { href: "/invoices",     icon: "receipt_long",   label: "Abrechnung" },
 ];
 
