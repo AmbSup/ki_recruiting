@@ -16,6 +16,8 @@ type Row = {
   size_bytes: number | null;
   user_agent: string | null;
   created_at: string;
+  transcript: string | null;
+  transcript_at: string | null;
 };
 
 export default function ShowcaseFeedbackPage() {
@@ -23,6 +25,7 @@ export default function ShowcaseFeedbackPage() {
   const [filter, setFilter] = useState<string>("");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [transcribingId, setTranscribingId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -58,7 +61,8 @@ export default function ShowcaseFeedbackPage() {
       `Eingegangen: ${new Date(r.created_at).toLocaleString("de-AT")}`,
       r.duration_seconds != null ? `Dauer: ${r.duration_seconds} Sek` : null,
       r.size_bytes != null ? `Größe: ${(r.size_bytes / 1024).toFixed(1)} KB` : null,
-      `Audio: ${audioUrl}`,
+      r.transcript ? `\nTranskript:\n${r.transcript}` : null,
+      `\nAudio: ${audioUrl}`,
     ]
       .filter(Boolean)
       .join("\n");
@@ -68,6 +72,34 @@ export default function ShowcaseFeedbackPage() {
       window.setTimeout(() => setCopiedId((id) => (id === r.id ? null : id)), 1800);
     } catch {
       alert("Konnte nicht in die Zwischenablage kopieren — bitte manuell markieren.");
+    }
+  }
+
+  async function handleTranscribe(r: Row) {
+    setTranscribingId(r.id);
+    try {
+      const resp = await fetch(`/api/showcase/feedback/${r.id}/transcribe`, {
+        method: "POST",
+      });
+      const json = (await resp.json().catch(() => ({}))) as {
+        transcript?: string;
+        transcript_at?: string;
+        error?: string;
+      };
+      if (!resp.ok || !json.transcript) {
+        alert(json.error ?? `Transkription fehlgeschlagen (${resp.status})`);
+        return;
+      }
+      // Optimistic-Update der Row in der Liste
+      setRows((prev) =>
+        prev?.map((x) =>
+          x.id === r.id
+            ? { ...x, transcript: json.transcript!, transcript_at: json.transcript_at ?? new Date().toISOString() }
+            : x,
+        ) ?? null,
+      );
+    } finally {
+      setTranscribingId(null);
     }
   }
 
@@ -181,6 +213,37 @@ export default function ShowcaseFeedbackPage() {
                 </div>
               </div>
               <audio src={`/api/showcase/feedback/${r.id}/audio`} controls className="w-full" />
+
+              {/* Transkript-Bereich: entweder gerendertes Transkript ODER Transkribieren-Button */}
+              {r.transcript ? (
+                <div className="mt-3 rounded-xl bg-slate-50 border border-slate-200 p-3">
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500">
+                      Transkript
+                    </span>
+                    {r.transcript_at && (
+                      <span className="text-[10px] text-outline">
+                        {new Date(r.transcript_at).toLocaleString("de-AT")}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-wrap">
+                    {r.transcript}
+                  </p>
+                </div>
+              ) : (
+                <button
+                  onClick={() => handleTranscribe(r)}
+                  disabled={transcribingId === r.id}
+                  className="mt-3 flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary-container/20 disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[14px]">
+                    {transcribingId === r.id ? "progress_activity" : "translate"}
+                  </span>
+                  {transcribingId === r.id ? "Whisper läuft…" : "Transkribieren"}
+                </button>
+              )}
+
               {r.user_agent && (
                 <details className="mt-2">
                   <summary className="text-[10px] text-outline cursor-pointer">User-Agent</summary>

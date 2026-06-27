@@ -334,6 +334,7 @@ Die 3 server-side Analyzer (CV, Recruiting-Call, Sales-Call) laufen über die Pr
 | `AZURE_OPENAI_API_VERSION` | Optional (Default `2024-08-01-preview`) | Azure OpenAI API-Version |
 | `AZURE_OPENAI_DEPLOYMENT_LARGE` | Required wenn `LLM_PROVIDER=azure` | Deployment-Name für `large`-Tier (CV-Analyzer + Call-Analyzer). z.B. `gpt-4o-eu` basierend auf `gpt-4o-2024-11-20`. |
 | `AZURE_OPENAI_DEPLOYMENT_SMALL` | Required wenn `LLM_PROVIDER=azure` | Deployment-Name für `small`-Tier (Haiku-Replacement). z.B. `gpt-4o-mini-eu`. |
+| `AZURE_OPENAI_DEPLOYMENT_WHISPER` | Optional — nur für Showcase-Feedback-Transkription | Whisper-Deployment in der gleichen Azure-Resource. Im Azure-OpenAI-Studio ein Whisper-Modell deployen (z.B. `whisper-1`), Deployment-Name hier eintragen. Genutzt von `src/services/stt/whisper.ts`. Wenn nicht gesetzt → "Transkribieren"-Button auf /showcase-feedback wirft klare Fehlermeldung. |
 
 **Architektur:** Beide Adapter implementieren `LLMClient` aus `services/llm/types.ts`. Analyzer rufen `completeLLM({tier:'large', user, jsonMode: true})` und wissen nicht, welcher Provider antwortet. PDF-Handling via provider-agnostischem [`document-extract.ts`](ki-recruiting/src/services/llm/document-extract.ts) (PDF→text via `pdf-parse`, DOCX→text via `mammoth`, Image→base64). Compat-Shim in `services/claude/client.ts` re-exportiert die alten `generateText`/`generateTextHaiku`-Signaturen.
 
