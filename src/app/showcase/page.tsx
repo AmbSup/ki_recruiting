@@ -94,13 +94,26 @@ async function loadBundles(): Promise<Bundle[]> {
   // (z.B. veraltete oder nicht-funktionierende Test-Funnels).
   const EXCLUDED_FROM_SHOWCASE = new Set(["filialleiter-innsbruck"]);
 
+  // Per-Slug Hero-Image-Overrides. Wird VOR der Auto-Pull-Kaskade angewandt
+  // (offer-image > block-image > profile-header). Wenn die im Funnel
+  // gespeicherten Bilder optisch unpassend sind (z.B. Logo statt Hero),
+  // hier ein besseres Bild pinnen. Unsplash-Stock-Bilder sind OK weil's
+  // Showcase ist, keine Production-Funnel-Inhalte.
+  const HERO_OVERRIDES: Record<string, string> = {
+    "photovoltaik-spezial-angebot":
+      "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1200",
+    "b2b-closer":
+      "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200",
+  };
+
   const bundles: Bundle[] = data
     .filter((f) => f.slug && !f.slug.startsWith("ext-") && !EXCLUDED_FROM_SHOWCASE.has(f.slug))
     .map((f) => {
       const row = f as unknown as FunnelRow;
+      const override = HERO_OVERRIDES[row.slug];
       const offerImg = row.sales_program_id ? offerImages.get(row.sales_program_id) : null;
 
-      let hero: string | null = offerImg ?? null;
+      let hero: string | null = override ?? offerImg ?? null;
       if (!hero) {
         // Suche auf Page 1
         const pages = (row.funnel_pages ?? []) as { blocks: unknown; page_order?: number }[];
