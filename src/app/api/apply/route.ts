@@ -553,7 +553,12 @@ async function handleSalesSubmission(args: {
     return NextResponse.json({ error: "Sales-Lead konnte nicht gespeichert werden" }, { status: 500 });
   }
 
-  if (program.auto_dial && !test_mode) {
+  // Auto-Dial läuft AUCH im test_mode — Sinn des test_mode ist ja gerade
+  // die Call-Pipeline gegen den eigenen Anschluss zu testen ohne dass
+  // die (sales_program_id, phone)-Unique-Constraint oder ein alter
+  // "not_interested"-Status im Weg stehen (siehe phoneToUse-Suffix +
+  // existing=null oben). Nur die Program-Config kann Dialing abstellen.
+  if (program.auto_dial) {
     void triggerSalesCall(origin, created.id);
   }
 

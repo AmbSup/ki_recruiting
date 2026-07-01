@@ -266,7 +266,7 @@ const I18N: Record<string, Record<string, string>> = {
     submit_failed_prefix: "Senden fehlgeschlagen",
     submit_retry: "Bitte erneut versuchen.",
     network_failed: "Verbindung zum Server fehlgeschlagen. Bitte Internet prüfen und erneut versuchen.",
-    test_mode: 'TEST-MODUS aktiv — Submissions landen mit source="test" und werden nicht angerufen',
+    test_mode: 'TEST-MODUS aktiv — jeder Submit erzeugt einen frischen Lead und wird angerufen (unabhängig von altem Status)',
   },
   en: {
     submit_default: "Submit →",
@@ -282,7 +282,7 @@ const I18N: Record<string, Record<string, string>> = {
     submit_failed_prefix: "Submission failed",
     submit_retry: "Please try again.",
     network_failed: "Connection to server failed. Please check your internet and try again.",
-    test_mode: 'TEST MODE active — submissions tagged with source="test" and will not be called',
+    test_mode: 'TEST MODE active — each submit creates a fresh lead and triggers the call (regardless of prior status)',
   },
 };
 function t(lang: string | null | undefined, key: string): string {
@@ -475,7 +475,10 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   const [autoAdvance, setAutoAdvance] = useState<NodeJS.Timeout | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // ?test=1 in URL → bypass dedupe in /api/apply, mark source=test, skip auto-dial.
+  // ?test=1 in URL → bypass dedupe in /api/apply (frischer Lead-Row bei jedem
+  // Submit, unabhängig von terminal-Status wie "not_interested"), mark
+  // source=test. Auto-Dial läuft weiter durch — Sinn des Test-Modes ist ja
+  // gerade die Call-Pipeline gegen den eigenen Anschluss zu testen.
   // Erkannt einmal beim Mount; bleibt für die Session aktiv.
   const [testMode, setTestMode] = useState(false);
   useEffect(() => {
