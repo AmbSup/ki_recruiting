@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Manrope, Newsreader, Syne, Inter, Playfair_Display, Montserrat, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 
@@ -64,7 +65,20 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Leadsy / Instantly Website-Visitor-Tag. Trackt Besucher-Sessions
+            und identifiziert Company-Level-Leads (US-Traffic-only laut Anbieter,
+            EU-Sessions werden aggregiert aber nicht identifiziert). Async +
+            afterInteractive damit's die First-Contentful-Paint nicht bremst. */}
+        <Script
+          id="vtag-ai-js"
+          src="https://r2.leadsy.ai/tag.js"
+          strategy="afterInteractive"
+          data-pid="1viSQxvKRdJXwowVK"
+          data-version="062024"
+        />
+        {children}
+      </body>
     </html>
   );
 }
