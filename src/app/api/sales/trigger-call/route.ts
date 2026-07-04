@@ -417,9 +417,16 @@ export async function POST(req: NextRequest) {
     ? { provider: voiceOverrideRaw.provider, voiceId: voiceOverrideRaw.voiceId }
     : undefined;
 
+  // Test-Mode-Suffix vom Phone entfernen bevor an Vapi. In apply/route.ts
+  // hängen wir `-test-<random>` an die Nummer damit die (sales_program_id, phone)-
+  // Unique-Constraint gebrochen wird und jeder Test-Submit einen frischen Lead
+  // gibt. Vapi wiederum verlangt strikte E.164 im customer.number-Feld —
+  // ansonsten `Vapi API error: Bad request - please check your parameters`.
+  const vapiCustomerNumber = (lead.phone ?? "").replace(/-test-[a-z0-9]+$/i, "");
+
   const vapiPayload = {
     phoneNumberId,
-    customer: { number: lead.phone },
+    customer: { number: vapiCustomerNumber },
     assistantId,
     assistantOverrides: {
       model: {
