@@ -2,10 +2,18 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import type { Database } from '@/types/database'
 
+// Prefixes deren top-level Route ODER Sub-Routen Auth verlangen.
 const PROTECTED_UI_PREFIXES = [
   '/dashboard', '/companies', '/jobs', '/funnels', '/applicants',
-  '/campaigns', '/calls', '/invoices', '/users', '/settings', '/sales',
+  '/campaigns', '/calls', '/invoices', '/users', '/settings',
+  '/sales-dashboard', '/showcase-feedback',
 ];
+
+// Prefixes bei denen NUR die Sub-Routen Auth verlangen. Top-Level ist public
+// (typisch weil dort eine Marketing-Landing lebt, die Sub-Routen aber Operator-
+// only sind). Aktuell: `/sales` — top-level ist die Marketing-Sales-Landing,
+// aber /sales/leads, /sales/programs, /sales/calls sind Operator-only.
+const PROTECTED_SUBPATHS_ONLY = ['/sales'];
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
@@ -32,7 +40,9 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   const pathname = request.nextUrl.pathname;
-  const isProtected = PROTECTED_UI_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'));
+  const isProtected =
+    PROTECTED_UI_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/')) ||
+    PROTECTED_SUBPATHS_ONLY.some((p) => pathname.startsWith(p + '/'));
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone();
