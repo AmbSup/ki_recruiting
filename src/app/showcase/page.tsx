@@ -54,17 +54,18 @@ function extractHeroFromBlocks(blocks: unknown): string | null {
   return null;
 }
 
-async function loadBundles(): Promise<Bundle[]> {
+export async function loadBundles(lang: "de" | "en" = "de"): Promise<Bundle[]> {
   const supabase = createAdminClient();
 
   const { data, error } = await supabase
     .from("funnels")
     .select(`
-      id, slug, name, intro_headline, intro_subtext, branding,
+      id, slug, name, intro_headline, intro_subtext, branding, language,
       sales_program_id, job_id,
       funnel_pages!inner(blocks, page_order)
     `)
     .eq("status", "active")
+    .eq("language", lang)
     .order("created_at", { ascending: false });
 
   if (error || !data) {
@@ -141,28 +142,60 @@ async function loadBundles(): Promise<Bundle[]> {
   return bundles;
 }
 
-export default async function ShowcasePage() {
-  const bundles = await loadBundles();
+const COPY = {
+  de: {
+    eyebrow: "Neuronic Automation Showcase",
+    headline: "Teste unsere KI-Funnel-Bundles",
+    sub:
+      "Jeder Funnel beendet mit einem echten KI-Anruf. Klick auf einen Bundle zum Testen — und lass uns danach kurz wissen wie's war. Aufnahmebutton unter jeder Karte.",
+    empty: "Keine aktiven Bundles gefunden.",
+    lang_switch: "Switch to English →",
+    lang_switch_href: "/en/showcase",
+  },
+  en: {
+    eyebrow: "Neuronic Automation Showcase",
+    headline: "Try our AI funnel bundles",
+    sub:
+      "Every funnel ends with a real AI call. Click a bundle to try it — and let us know how it felt. Recording button below each card.",
+    empty: "No active bundles found.",
+    lang_switch: "Zur deutschen Version →",
+    lang_switch_href: "/showcase",
+  },
+} as const;
+
+export async function ShowcasePageInner({ lang }: { lang: "de" | "en" }) {
+  const bundles = await loadBundles(lang);
+  const c = COPY[lang];
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <div className="max-w-6xl mx-auto px-6 pt-16 pb-24">
-        <header className="text-center mb-14">
+        <header className="text-center mb-14 relative">
+          <a
+            href={c.lang_switch_href}
+            className="hidden md:inline-flex absolute top-0 right-0 items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 hover:border-slate-300 hover:text-slate-900"
+          >
+            {c.lang_switch}
+          </a>
           <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
-            Neuronic Automation Showcase
+            {c.eyebrow}
           </p>
           <h1 className="font-headline text-5xl md:text-6xl italic leading-tight text-slate-900 mb-5">
-            Teste unsere KI-Funnel-Bundles
+            {c.headline}
           </h1>
           <p className="font-body text-base text-slate-600 max-w-2xl mx-auto">
-            Jeder Funnel beendet mit einem echten KI-Anruf. Klick auf einen Bundle
-            zum Testen — und lass uns danach kurz wissen wie's war.
-            Aufnahmebutton unter jeder Karte.
+            {c.sub}
           </p>
+          <a
+            href={c.lang_switch_href}
+            className="md:hidden inline-flex mt-4 items-center rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600"
+          >
+            {c.lang_switch}
+          </a>
         </header>
 
         {bundles.length === 0 ? (
-          <p className="text-center text-slate-500">Keine aktiven Bundles gefunden.</p>
+          <p className="text-center text-slate-500">{c.empty}</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {bundles.map((b) => (
@@ -177,4 +210,8 @@ export default async function ShowcasePage() {
       </div>
     </main>
   );
+}
+
+export default async function ShowcasePage() {
+  return <ShowcasePageInner lang="de" />;
 }
