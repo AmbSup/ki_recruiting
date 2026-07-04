@@ -424,6 +424,27 @@ export async function POST(req: NextRequest) {
   // ansonsten `Vapi API error: Bad request - please check your parameters`.
   const vapiCustomerNumber = (lead.phone ?? "").replace(/-test-[a-z0-9]+$/i, "");
 
+  // Vapi soll auto-hangup wenn der Bot eine Verabschiedungsphrase spricht.
+  // Ohne das hängt der Call in Silence bis Vapi's silence_timeout greift
+  // (aktuell ~30s), was für den Prospect wie ein Bug wirkt. Phrases bewusst
+  // DE + EN gemischt weil ein einzelner Assistant beide Sprachen sprechen
+  // kann (Language wird pro Program konfiguriert, aber Fallbacks sind nice).
+  const endCallPhrases = [
+    "Auf Wiederhören",
+    "Auf Wiederhoeren",
+    "Einen schönen Tag noch",
+    "Einen schoenen Tag noch",
+    "Schönen Tag noch",
+    "Schoenen Tag noch",
+    "Tschüss",
+    "Tschuess",
+    "Bis dann",
+    "Goodbye",
+    "Bye",
+    "Have a great day",
+    "Talk soon",
+  ];
+
   const vapiPayload = {
     phoneNumberId,
     customer: { number: vapiCustomerNumber },
@@ -439,6 +460,7 @@ export async function POST(req: NextRequest) {
       ...(voiceOverride ? { voice: voiceOverride } : {}),
       firstMessage,
       variableValues: vars,
+      endCallPhrases,
     },
   };
 
