@@ -105,6 +105,15 @@ export async function loadBundles(lang: "de" | "en" = "de"): Promise<Bundle[]> {
       "https://images.unsplash.com/photo-1509391366360-2e959784a276?w=1200",
     "b2b-closer":
       "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=1200",
+    // Marketing-Dogfood-Funnels: KI-Anruf-Vibe (Headset / Handy / Interview)
+    "demo-sales":
+      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1200",
+    "demo-sales-en":
+      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=1200",
+    "demo-recruiting":
+      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200",
+    "demo-recruiting-en":
+      "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=1200",
   };
 
   const bundles: Bundle[] = data
