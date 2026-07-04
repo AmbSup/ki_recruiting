@@ -1,0 +1,62 @@
+import { redirect } from "next/navigation";
+import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
+import { MarketingNav } from "../_components/marketing-nav";
+import { Hero } from "../_components/hero";
+import { SplitFocus } from "../_components/split-focus";
+import { HowItWorks } from "../_components/how-it-works";
+import { DogfoodCTA } from "../_components/dogfood-cta";
+import { ShowcaseTeaser } from "../_components/showcase-teaser";
+import { CTAFooter } from "../_components/cta-footer";
+import { MarketingFooter } from "../_components/marketing-footer";
+import { StickyCTABar } from "../_components/sticky-cta-bar";
+
+export const metadata: Metadata = {
+  title: "AI Funnel Expert — The AI Call in 30 Seconds",
+  description:
+    "AI funnels for Sales and Recruiting. Your lead or candidate gets called back within 30 seconds. Fully automated. 24/7.",
+  alternates: {
+    canonical: "https://app.neuronic-automation.ai/en",
+    languages: {
+      de: "https://app.neuronic-automation.ai/",
+      en: "https://app.neuronic-automation.ai/en",
+      "x-default": "https://app.neuronic-automation.ai/",
+    },
+  },
+};
+
+export default async function EnHomePage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) redirect("/dashboard");
+
+  const lang = "en" as const;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+      <MarketingNav lang={lang} />
+      <main>
+        <Hero
+          lang={lang}
+          eyebrowKey="home.eyebrow"
+          headlineKey="home.headline"
+          headlineAccentKey="home.headline_accent"
+          subKey="home.sub"
+          primaryCtaKey="home.primary_cta"
+          primaryHref="#dogfood"
+          secondaryCtaKey="home.secondary_cta"
+          secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
+        />
+        <SplitFocus lang={lang} />
+        <ShowcaseTeaser lang={lang} />
+        <HowItWorks lang={lang} sectionKey="home.how_it_works" />
+        <div id="dogfood">
+          <DogfoodCTA lang={lang} variant="home" />
+        </div>
+        <CTAFooter lang={lang} sectionKey="home.final_cta" />
+      </main>
+      <MarketingFooter lang={lang} />
+      <StickyCTABar lang={lang} variant="home" />
+    </div>
+  );
+}
