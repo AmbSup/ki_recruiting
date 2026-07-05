@@ -1,20 +1,25 @@
 import { dict, type Lang } from "../_lib/dict";
 import { t } from "../_lib/t";
 
+type RateStep = { label: string; rate: string };
+
 type Tier = {
   key: string;
   name: string;
   tagline: string;
   setup: string;
-  monthly: string;
+  base_monthly: string;
+  entry_rate: string;
+  rate_tiers: RateStep[];
+  example: string;
   highlight: boolean;
   bullets: string[];
 };
 
-// Drei-Karten-Preis-Layout. Highlighted Tier (Pro) hebt sich per Border-Accent
-// und "Empfohlen"-Chip ab. Bewusst kein Grid mit Feature-Vergleich — die
-// Bullets pro Tier sind eigenständig lesbar, Feature-Matrix wäre bei 3 Tiers
-// mehr Rausch als Nutzen.
+// Drei-Karten-Preis-Layout mit Setup + Base + Per-Minute-Staffel.
+// Highlighted Tier (Pro) hebt sich per Border-Accent und "Empfohlen"-Chip ab.
+// Preis-Zone hat 3 Zeilen: Setup einmalig, Base/Mo, Einstiegs-Minutenpreis.
+// Darunter kleine Rate-Staffel-Tabelle + Beispielrechnung, dann Features.
 export function PricingTable({
   lang,
   accentColor = "#1A3A6E",
@@ -39,11 +44,7 @@ export function PricingTable({
                   ? "border-2 shadow-lg"
                   : "border border-slate-200 shadow-sm hover:shadow-md")
               }
-              style={
-                isHighlighted
-                  ? { borderColor: accentColor }
-                  : undefined
-              }
+              style={isHighlighted ? { borderColor: accentColor } : undefined}
             >
               {isHighlighted && (
                 <span
@@ -54,7 +55,7 @@ export function PricingTable({
                 </span>
               )}
 
-              <div className="mb-6">
+              <div className="mb-5">
                 <h3 className="font-headline text-2xl italic text-slate-900 mb-2">
                   {tier.name}
                 </h3>
@@ -63,24 +64,86 @@ export function PricingTable({
                 </p>
               </div>
 
-              <div className="mb-6 pb-6 border-b border-slate-100">
-                <div className="flex items-baseline gap-2 mb-1">
-                  <span className="font-headline text-4xl italic text-slate-900">
-                    {tier.monthly}
+              <div className="mb-5 pb-5 border-b border-slate-100 space-y-2.5">
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-body text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                    {t(lang, "pricing.setup_label")}
                   </span>
-                  <span className="font-body text-sm text-slate-500">
-                    / {t(lang, "pricing.monthly_label")}
+                  <span className="text-right">
+                    <span className="font-headline text-xl italic text-slate-900">
+                      {tier.setup}
+                    </span>
+                    <span className="font-body text-[10px] text-slate-400 ml-1">
+                      {t(lang, "pricing.setup_note")}
+                    </span>
                   </span>
                 </div>
-                <p className="font-body text-xs text-slate-500">
-                  <span className="font-semibold text-slate-700">
-                    {tier.setup}
-                  </span>{" "}
-                  {t(lang, "pricing.setup_label")} ({t(lang, "pricing.setup_note")})
-                </p>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-body text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                    {t(lang, "pricing.base_label")}
+                  </span>
+                  <span className="text-right">
+                    <span className="font-headline text-xl italic text-slate-900">
+                      {tier.base_monthly}
+                    </span>
+                    <span className="font-body text-[10px] text-slate-400 ml-1">
+                      /{" "}
+                      {t(lang, "pricing.base_note")
+                        .replace(/^pro /, "")
+                        .replace(/^per /, "")}
+                    </span>
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-body text-xs uppercase tracking-widest text-slate-500 font-semibold">
+                    {t(lang, "pricing.per_min_label")}
+                  </span>
+                  <span className="text-right">
+                    <span className="font-body text-[10px] text-slate-400 mr-1">
+                      {t(lang, "pricing.per_min_from")}
+                    </span>
+                    <span
+                      className="font-headline text-xl italic"
+                      style={{ color: accentColor }}
+                    >
+                      {tier.entry_rate}
+                    </span>
+                  </span>
+                </div>
               </div>
 
-              <ul className="space-y-2.5 mb-8 flex-grow">
+              {/* Rate-Staffel: kleine Tabelle mit Volume-Breaks */}
+              <div className="mb-4">
+                <ul className="space-y-1 text-[11px]">
+                  {tier.rate_tiers.map((step, idx) => (
+                    <li
+                      key={idx}
+                      className="flex items-center justify-between text-slate-600 font-body"
+                    >
+                      <span>{step.label}</span>
+                      <span className="font-semibold text-slate-700">
+                        {step.rate}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Beispielrechnung */}
+              <div
+                className="mb-6 rounded-lg px-3 py-2.5 text-[11px] leading-snug"
+                style={{ backgroundColor: `${accentColor}10` }}
+              >
+                <span
+                  className="font-semibold uppercase tracking-widest text-[9px] mr-1"
+                  style={{ color: accentColor }}
+                >
+                  {t(lang, "pricing.example_prefix")}
+                </span>
+                <span className="font-body text-slate-700">{tier.example}</span>
+              </div>
+
+              <ul className="space-y-2 mb-8 flex-grow">
                 {tier.bullets.map((b) => (
                   <li key={b} className="flex items-start gap-2">
                     <svg
@@ -125,14 +188,7 @@ export function PricingTable({
         })}
       </div>
 
-      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500">
-        <span>
-          <span className="font-bold uppercase tracking-widest text-[10px] mr-2">
-            {t(lang, "pricing.overage_label")}
-          </span>
-          {t(lang, "pricing.overage_value")}
-        </span>
-        <span className="text-slate-400">·</span>
+      <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-slate-500 text-center">
         <span>{t(lang, "pricing.billing_note")}</span>
       </div>
     </section>
