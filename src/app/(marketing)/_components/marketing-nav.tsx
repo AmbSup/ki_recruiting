@@ -9,6 +9,7 @@ import { t, type Lang } from "../_lib/t";
 export function MarketingNav({ lang }: { lang: Lang }) {
   const salesHref = lang === "de" ? "/sales" : "/en/sales";
   const recruitingHref = lang === "de" ? "/recruiting" : "/en/recruiting";
+  const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const homeHref = lang === "de" ? "/" : "/en";
 
   return (
@@ -39,6 +40,12 @@ export function MarketingNav({ lang }: { lang: Lang }) {
             className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
           >
             {t(lang, "nav.recruiting")}
+          </Link>
+          <Link
+            href={pricingHref}
+            className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+          >
+            {t(lang, "nav.pricing")}
           </Link>
           <Link
             href="/showcase"

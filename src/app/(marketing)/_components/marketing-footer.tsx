@@ -7,6 +7,7 @@ import { t, type Lang } from "../_lib/t";
 export function MarketingFooter({ lang }: { lang: Lang }) {
   const salesHref = lang === "de" ? "/sales" : "/en/sales";
   const recruitingHref = lang === "de" ? "/recruiting" : "/en/recruiting";
+  const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const email = t(lang, "footer.contact.email");
 
   return (
@@ -42,6 +43,11 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
               <li>
                 <Link href={recruitingHref} className="text-slate-600 hover:text-slate-900">
                   {t(lang, "footer.links.recruiting")}
+                </Link>
+              </li>
+              <li>
+                <Link href={pricingHref} className="text-slate-600 hover:text-slate-900">
+                  {t(lang, "footer.links.pricing")}
                 </Link>
               </li>
               <li>
