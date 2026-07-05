@@ -24,6 +24,7 @@ type Lead = {
 };
 
 const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; icon: string }> = {
+  discovered:       { label: "Discovery",      icon: "explore",       bg: "bg-surface-container",       text: "text-outline" },
   new:              { label: "Neu",             icon: "inbox",         bg: "bg-surface-container-high",  text: "text-outline" },
   calling:          { label: "Im Call",         icon: "phone_in_talk", bg: "bg-primary-container/40",    text: "text-primary" },
   contacted:        { label: "Kontaktiert",     icon: "call_log",      bg: "bg-tertiary-container/40",   text: "text-tertiary" },
@@ -34,10 +35,11 @@ const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; i
 };
 
 const SOURCE_CONFIG: Record<string, { label: string; icon: string }> = {
-  meta_ads:   { label: "Meta",   icon: "ads_click" },
-  csv_import: { label: "CSV",    icon: "upload_file" },
-  funnel:     { label: "Funnel", icon: "filter_alt" },
-  manual:     { label: "Manual", icon: "person_add" },
+  meta_ads:    { label: "Meta",       icon: "ads_click" },
+  csv_import:  { label: "CSV",        icon: "upload_file" },
+  funnel:      { label: "Funnel",     icon: "filter_alt" },
+  manual:      { label: "Manual",     icon: "person_add" },
+  apify_gmaps: { label: "GMaps-Scr.", icon: "location_on" },
 };
 
 export default function SalesLeadsPage() {
@@ -92,6 +94,13 @@ export default function SalesLeadsPage() {
           </p>
         </div>
         <div className="flex gap-3">
+          <Link
+            href="/sales/leads/scrape"
+            className="flex items-center gap-2 border border-outline-variant/30 text-on-surface-variant px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
+          >
+            <span className="material-symbols-outlined text-sm">location_on</span>
+            GMaps-Scraper
+          </Link>
           <Link
             href="/sales/leads/import"
             className="flex items-center gap-2 border border-outline-variant/30 text-on-surface-variant px-4 py-2.5 rounded-xl font-label text-xs font-bold uppercase tracking-widest hover:bg-surface-container transition-colors"
