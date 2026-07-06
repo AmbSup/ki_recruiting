@@ -14,6 +14,7 @@ export const dict: Record<Lang, Dict> = {
     nav: {
       sales: "Für Vertrieb",
       recruiting: "Fürs Recruiting",
+      handwerk: "Fürs Handwerk",
       pricing: "Preise",
       showcase: "Live-Funnels",
       login: "Login",
@@ -293,6 +294,172 @@ export const dict: Record<Lang, Dict> = {
         cta: "30-Min-Demo buchen →",
       },
     },
+    handwerk: {
+      eyebrow: "Softwarelösungen fürs Handwerk",
+      headline: "Das Handwerk läuft.",
+      headline_accent: "Der Rest darum kostet Zeit.",
+      sub:
+        "Angebote, Materialbestellungen, Baustellenberichte, Recruiting, Mahnwesen — die Arbeit rundum das Handwerk zieht Betrieben Zeit, Geld und Nerven. KI-Automation für die Prozesse, die dich nicht weiterbringen. Voice + Claude + Supabase.",
+      primary_cta: "30-Min-Demo buchen",
+      secondary_cta: "Live-Beispiele sehen",
+      problems: {
+        eyebrow: "Was Handwerker am meisten kostet",
+        headline: "Die 10 ungelösten Zeitfresser",
+        items: [
+          "Kundenanfragen die nicht beantwortet werden",
+          "Angebotserstellung aus Fotos, Sprachmemos und Notizen",
+          "Materialbestellung ohne Systembruch",
+          "Liefertermine überwachen, Verzögerungen erkennen",
+          "Personal-Recruiting und Bewerber-Screening",
+          "Baustellenplanung und Monteur-Disposition",
+          "Nachtragsverwaltung und Freigaben",
+          "Rechnungserstellung aus Rapporten",
+          "Mahnwesen ohne Cashflow-Löcher",
+          "Zentrale Kommunikation über Telefon, WhatsApp und E-Mail",
+        ],
+      },
+      solutions: {
+        eyebrow: "21 KI-Bausteine",
+        headline: "Für jedes Problem ein sofort einsetzbarer Baustein",
+        sub:
+          "Nicht als Suite verkauft — sondern einzeln implementiert. Du wählst was zuerst Schmerz macht, wir bauen es in 3-14 Tagen live.",
+        items: [
+          {
+            problem: "Kundenanfragen unbeantwortet",
+            solution:
+              "KI übernimmt Anrufe die du nicht abnimmst, sammelt Projekt-Infos vom Kunden und schlägt automatisch Termine vor. Kein Lead geht mehr verloren, Reaktionszeit sinkt von Tagen auf Minuten.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Rückrufmanagement",
+            solution:
+              "Vapi ruft neue Interessenten binnen weniger Minuten nach der Anfrage zurück, qualifiziert Budget + Kaufbereitschaft und legt Aufgaben oder Termine an.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Angebotserstellung",
+            solution:
+              "Mitarbeiter sprechen die Baustellenbesichtigung als Sprachmemo — Claude schreibt Angebotsentwurf inklusive Leistungsbeschreibung. Sachbearbeiter prüft nur noch die finale Version.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Angebotsnachverfolgung",
+            solution:
+              "n8n überwacht Fristen nach Angebotsversand. Vapi ruft nach ein paar Tagen an, fragt nach Entscheidung und offenen Punkten. Antworten landen sauber in der Datenbank.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Materialbestellung",
+            solution:
+              "Monteure melden Bedarf per Sprache oder WhatsApp. Claude extrahiert Artikel, Mengen und Prioritäten, n8n erstellt Bestellungen beim Lieferanten. Alles dokumentiert in Supabase.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Lieferterminüberwachung",
+            solution:
+              "Bestellungen werden automatisch überwacht, n8n prüft Status und erkennt Verzögerungen. Projektleiter + Monteure werden bei Problemen sofort informiert.",
+            stack: ["n8n", "Supabase"],
+          },
+          {
+            problem: "Lagerverwaltung",
+            solution:
+              "Materialentnahmen per Sprache melden — Claude erkennt Artikel + Menge, aktualisiert Bestand. Nachbestellung startet automatisch bei Unterschreitung des Mindestbestandes.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Baustellenplanung",
+            solution:
+              "Claude analysiert Kapazitäten, Qualifikationen und Ressourcen. n8n erstellt Tages- und Wochenpläne. Änderungen werden per SMS, WhatsApp oder Anruf kommuniziert.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Monteur-Disposition",
+            solution:
+              "Bei kurzfristigem Ausfall schlägt das System qualifizierten Ersatz vor (Qualifikation, Entfernung, Verfügbarkeit). Vapi ruft an und bestätigt Termine.",
+            stack: ["Vapi", "Claude", "n8n"],
+          },
+          {
+            problem: "Baustellenberichte",
+            solution:
+              "Monteur spricht Tagesbericht ins Handy. Claude baut daraus einen strukturierten Rapport mit Arbeitszeit, Material und Problemen. Zero Tippen, alles in Supabase.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Nachtragsmanagement",
+            solution:
+              "Zusatzarbeiten während der Baustelle werden automatisch erkannt. Claude erstellt Nachtragsvorschlag inklusive Beschreibung + Aufwandsschätzung. Kundenfreigabe wird revisionssicher dokumentiert.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Bewerber-Screening",
+            solution:
+              "Vapi ruft Bewerber sofort nach Bewerbungseingang an, stellt Recruiter-Fragen und bewertet Antworten. Kandidatenprofile landen in Supabase. Spart bis zu 90 % Screening-Aufwand.",
+            stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Mitarbeiter-Onboarding",
+            solution:
+              "Neue Mitarbeiter werden per Telefon-Assistent eingewiesen — Prozesse, Werkzeuge, Sicherheit. n8n steuert Onboarding-Schritte, Fortschritt wird dokumentiert.",
+            stack: ["Vapi", "Claude", "n8n"],
+          },
+          {
+            problem: "Terminvereinbarung",
+            solution:
+              "Kunden buchen 24/7 telefonisch. Vapi prüft freie Kapazitäten, schlägt passende Termine vor und synchronisiert mit ERP + Kalender.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Rechnungsstellung",
+            solution:
+              "Rapportberichte, Material und Arbeitszeiten fließen zu Rechnungsentwurf zusammen. Claude erstellt PDF, n8n versendet automatisch. Alle Rechnungen zentral in Supabase.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Mahnwesen",
+            solution:
+              "Offene Rechnungen werden überwacht, Zahlungsüberschreitungen erkannt, Mahnprozesse gestartet. Vapi erinnert Kunden telefonisch freundlich an offene Rechnungen.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Kundenservice",
+            solution:
+              "Servicehotline nimmt Standardfragen und Störungsmeldungen entgegen. Claude analysiert Anliegen und priorisiert Fälle. n8n erstellt Tickets in Supabase.",
+            stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Qualitätsmanagement",
+            solution:
+              "Nach Projektabschluss ruft KI Kunden für Feedback an. Ergebnisse werden strukturiert erfasst. Claude erkennt wiederkehrende Probleme und Verbesserungspotenziale.",
+            stack: ["Vapi", "Claude", "Supabase"],
+          },
+          {
+            problem: "Projektstatus-Kommunikation",
+            solution:
+              "Kunden erhalten automatische Updates zu Baustart, Lieferung, Fertigstellung. Claude formuliert Statusmeldungen, n8n versendet per E-Mail, SMS oder Anruf.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Geschäftsführung-Cockpit",
+            solution:
+              "Alle Daten aus Leads, Projekten, Personal, Rechnungen zentral in Supabase. Claude erstellt Management-Reports und Prognosen. Tägliche oder wöchentliche Reports automatisch.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Zentrale Kommunikation",
+            solution:
+              "Telefon, WhatsApp und E-Mail landen in einem gemeinsamen Kanal. Claude erkennt Sender, Absicht und Priorität. Automatische Weiterleitung an zuständige Person.",
+            stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+        ],
+      },
+      final_cta: {
+        eyebrow: "Wo möchtest du anfangen?",
+        headline: "Zeig mir 3 deiner größten Zeitfresser in 30 Minuten",
+        sub:
+          "Wir schauen gemeinsam welche 1-2 Bausteine bei dir zuerst weh tun. Ich baue dir einen Piloten in 5-10 Tagen — du zahlst nur wenn er funktioniert.",
+        cta: "Demo buchen →",
+      },
+    },
     pricing: {
       eyebrow: "Preise",
       headline: "Setup + Base-Fee + Minuten. Zahl was du sprichst.",
@@ -438,6 +605,7 @@ export const dict: Record<Lang, Dict> = {
       links: {
         sales: "Für Vertrieb",
         recruiting: "Fürs Recruiting",
+        handwerk: "Fürs Handwerk",
         pricing: "Preise",
         demo: "Demo buchen",
         showcase: "Alle Live-Funnels ansehen",

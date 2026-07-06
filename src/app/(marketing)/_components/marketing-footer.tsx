@@ -45,6 +45,13 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
                   {t(lang, "footer.links.recruiting")}
                 </Link>
               </li>
+              {lang === "de" && (
+                <li>
+                  <Link href="/handwerk" className="text-slate-600 hover:text-slate-900">
+                    {t(lang, "footer.links.handwerk")}
+                  </Link>
+                </li>
+              )}
               <li>
                 <Link href={pricingHref} className="text-slate-600 hover:text-slate-900">
                   {t(lang, "footer.links.pricing")}
