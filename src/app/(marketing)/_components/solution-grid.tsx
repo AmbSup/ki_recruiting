@@ -7,7 +7,7 @@ type Solution = {
   stack: string[];
 };
 
-// 3-Spalten-Grid für Handwerk-Lösungen. Jede Card zeigt:
+// 3-Spalten-Grid für KMU-Lösungen. Jede Card zeigt:
 //  - Problem-Titel (fett)
 //  - Kurze Lösung (2-3 Sätze)
 //  - Tech-Stack-Badges (Vapi / Claude / n8n / Supabase)
@@ -19,7 +19,7 @@ export function SolutionGrid({
   lang: Lang;
   accentColor?: string;
 }) {
-  const section = (dict[lang] as { handwerk?: { solutions?: { items?: Solution[] } } })?.handwerk
+  const section = (dict[lang] as { kmu?: { solutions?: { items?: Solution[] } } })?.kmu
     ?.solutions;
   const items = (section?.items ?? []) as Solution[];
 
@@ -27,13 +27,13 @@ export function SolutionGrid({
     <section className="mx-auto max-w-6xl px-6 py-16">
       <div className="text-center mb-10">
         <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
-          {t(lang, "handwerk.solutions.eyebrow")}
+          {t(lang, "kmu.solutions.eyebrow")}
         </p>
         <h2 className="font-headline text-3xl sm:text-4xl italic text-slate-900 mb-3 max-w-2xl mx-auto leading-tight">
-          {t(lang, "handwerk.solutions.headline")}
+          {t(lang, "kmu.solutions.headline")}
         </h2>
         <p className="font-body text-slate-600 max-w-2xl mx-auto text-sm">
-          {t(lang, "handwerk.solutions.sub")}
+          {t(lang, "kmu.solutions.sub")}
         </p>
       </div>
 

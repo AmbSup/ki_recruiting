@@ -6,18 +6,18 @@ import { SolutionGrid } from "../_components/solution-grid";
 import { CTAFooter } from "../_components/cta-footer";
 import { MarketingFooter } from "../_components/marketing-footer";
 
-const ACCENT = "#B45309"; // amber-700 — passt zu Handwerk (Werkzeug/Erdton)
+const ACCENT = "#B45309"; // amber-700 — warmer Erdton für KMU-Positioning
 
 export const metadata: Metadata = {
-  title: "Softwarelösungen fürs Handwerk: KI übernimmt die Bürokratie",
+  title: "Softwarelösungen für KMUs: KI übernimmt die Bürokratie",
   description:
-    "21 KI-Bausteine für Handwerksbetriebe: Anfragen, Angebote, Materialbestellung, Baustellenberichte, Rechnungen, Mahnwesen. Voice + Claude + Supabase.",
+    "21 KI-Bausteine für KMUs: Anfragen, Angebote, Materialbestellung, Baustellenberichte, Rechnungen, Mahnwesen. Voice + Claude + Supabase.",
   alternates: {
-    canonical: "https://app.neuronic-automation.ai/handwerk",
+    canonical: "https://app.neuronic-automation.ai/kmu",
   },
 };
 
-export default function HandwerkPage() {
+export default function KmuPage() {
   const lang = "de" as const;
 
   return (
@@ -26,19 +26,19 @@ export default function HandwerkPage() {
       <main>
         <Hero
           lang={lang}
-          eyebrowKey="handwerk.eyebrow"
-          headlineKey="handwerk.headline"
-          headlineAccentKey="handwerk.headline_accent"
-          subKey="handwerk.sub"
-          primaryCtaKey="handwerk.primary_cta"
+          eyebrowKey="kmu.eyebrow"
+          headlineKey="kmu.headline"
+          headlineAccentKey="kmu.headline_accent"
+          subKey="kmu.sub"
+          primaryCtaKey="kmu.primary_cta"
           primaryHref="https://cal.com/martin-amon-l2hybo/30min"
-          secondaryCtaKey="handwerk.secondary_cta"
+          secondaryCtaKey="kmu.secondary_cta"
           secondaryHref="/showcase"
           accentColor={ACCENT}
         />
         <ProblemTiles lang={lang} />
         <SolutionGrid lang={lang} accentColor={ACCENT} />
-        <CTAFooter lang={lang} sectionKey="handwerk.final_cta" accentColor={ACCENT} />
+        <CTAFooter lang={lang} sectionKey="kmu.final_cta" accentColor={ACCENT} />
       </main>
       <MarketingFooter lang={lang} />
     </div>

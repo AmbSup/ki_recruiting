@@ -14,7 +14,7 @@ export const dict: Record<Lang, Dict> = {
     nav: {
       sales: "Für Vertrieb",
       recruiting: "Fürs Recruiting",
-      handwerk: "Fürs Handwerk",
+      kmu: "Für KMUs",
       pricing: "Preise",
       showcase: "Live-Funnels",
       login: "Login",
@@ -294,16 +294,16 @@ export const dict: Record<Lang, Dict> = {
         cta: "30-Min-Demo buchen →",
       },
     },
-    handwerk: {
-      eyebrow: "Softwarelösungen fürs Handwerk",
-      headline: "Das Handwerk läuft.",
+    kmu: {
+      eyebrow: "Softwarelösungen für KMUs",
+      headline: "Dein Betrieb läuft.",
       headline_accent: "Der Rest darum kostet Zeit.",
       sub:
-        "Angebote, Materialbestellungen, Baustellenberichte, Recruiting, Mahnwesen — die Arbeit rundum das Handwerk zieht Betrieben Zeit, Geld und Nerven. KI-Automation für die Prozesse, die dich nicht weiterbringen. Voice + Claude + Supabase.",
+        "Angebote, Materialbestellungen, Baustellenberichte, Recruiting, Mahnwesen — die Arbeit rundum zieht KMUs Zeit, Geld und Nerven. KI-Automation für die Prozesse, die dich nicht weiterbringen. Voice + Claude + Supabase.",
       primary_cta: "30-Min-Demo buchen",
       secondary_cta: "Live-Beispiele sehen",
       problems: {
-        eyebrow: "Was Handwerker am meisten kostet",
+        eyebrow: "Was KMUs am meisten kostet",
         headline: "Die 10 ungelösten Zeitfresser",
         items: [
           "Kundenanfragen die nicht beantwortet werden",
@@ -605,7 +605,7 @@ export const dict: Record<Lang, Dict> = {
       links: {
         sales: "Für Vertrieb",
         recruiting: "Fürs Recruiting",
-        handwerk: "Fürs Handwerk",
+        kmu: "Für KMUs",
         pricing: "Preise",
         demo: "Demo buchen",
         showcase: "Alle Live-Funnels ansehen",
