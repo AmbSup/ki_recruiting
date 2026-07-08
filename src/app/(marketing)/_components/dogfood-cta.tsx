@@ -2,7 +2,7 @@ import Link from "next/link";
 import { t, type Lang } from "../_lib/t";
 import { dogfoodUrl } from "../_lib/dogfood";
 
-type Variant = "home" | "sales" | "recruiting";
+type Variant = "home" | "sales" | "recruiting" | "kmu";
 
 // Die zentrale "Erlebe es selbst"-Sektion. Home-Variante bietet BEIDE Demo-
 // Funnels an. Sales/Recruiting-Variante zeigt nur den einen passenden.

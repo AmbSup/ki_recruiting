@@ -11,10 +11,16 @@ export const DOGFOOD_FUNNELS = {
     de: "demo-recruiting",
     en: "demo-recruiting-en",
   },
+  // KMU-Demo bewusst DE-only — Positioning-Sub-Vertical (Handwerk/KMU) wird
+  // aktuell nicht auf EN verkauft. EN-Fallback zeigt auf sales-en.
+  kmu: {
+    de: "demo-kmu",
+    en: "demo-sales-en",
+  },
 } as const;
 
 export function dogfoodUrl(
-  vertical: "sales" | "recruiting",
+  vertical: "sales" | "recruiting" | "kmu",
   lang: "de" | "en",
 ): string {
   const slug = DOGFOOD_FUNNELS[vertical][lang];

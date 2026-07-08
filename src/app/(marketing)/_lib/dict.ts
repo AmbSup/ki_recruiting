@@ -300,8 +300,15 @@ export const dict: Record<Lang, Dict> = {
       headline_accent: "Der Rest darum kostet Zeit.",
       sub:
         "Angebote, Materialbestellungen, Baustellenberichte, Recruiting, Mahnwesen — die Arbeit rundum zieht KMUs Zeit, Geld und Nerven. KI-Automation für die Prozesse, die dich nicht weiterbringen. Voice + Claude + Supabase.",
+      dogfood: {
+        eyebrow: "Erlebe unseren KI-Agent",
+        headline: "Fülle 3 Fragen aus — dein Handy klingelt in 30 Sekunden",
+        sub:
+          "Unsere KI ruft dich an, fragt nach deinem größten Zeitfresser und matcht den passenden KI-Baustein. So erleben deine Kunden oder Bewerber unseren Voice-Agent am eigenen Ohr. Auflegen jederzeit möglich.",
+        cta: "KMU-Demo starten →",
+      },
       primary_cta: "30-Min-Demo buchen",
-      secondary_cta: "Live-Beispiele sehen",
+      secondary_cta: "KI-Anruf live testen",
       problems: {
         eyebrow: "Was KMUs am meisten kostet",
         headline: "Die 10 ungelösten Zeitfresser",
