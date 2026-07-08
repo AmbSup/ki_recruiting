@@ -308,7 +308,7 @@ export const dict: Record<Lang, Dict> = {
         cta: "KMU-Demo starten →",
       },
       primary_cta: "30-Min-Demo buchen",
-      secondary_cta: "KI-Anruf live testen",
+      secondary_cta: "Live-Beispiele sehen",
       problems: {
         eyebrow: "Was KMUs am meisten kostet",
         headline: "Die 10 ungelösten Zeitfresser",

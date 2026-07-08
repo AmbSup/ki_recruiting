@@ -3,7 +3,6 @@ import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
 import { ProblemTiles } from "../_components/problem-tiles";
 import { SolutionGrid } from "../_components/solution-grid";
-import { DogfoodCTA } from "../_components/dogfood-cta";
 import { CTAFooter } from "../_components/cta-footer";
 import { MarketingFooter } from "../_components/marketing-footer";
 
@@ -34,12 +33,11 @@ export default function KmuPage() {
           primaryCtaKey="kmu.primary_cta"
           primaryHref="https://cal.com/martin-amon-l2hybo/30min"
           secondaryCtaKey="kmu.secondary_cta"
-          secondaryHref="/demo-kmu?test=1"
+          secondaryHref="/showcase"
           accentColor={ACCENT}
         />
         <ProblemTiles lang={lang} />
         <SolutionGrid lang={lang} accentColor={ACCENT} />
-        <DogfoodCTA lang={lang} variant="kmu" accentColor={ACCENT} />
         <CTAFooter lang={lang} sectionKey="kmu.final_cta" accentColor={ACCENT} />
       </main>
       <MarketingFooter lang={lang} />
