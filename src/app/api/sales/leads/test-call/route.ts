@@ -66,7 +66,11 @@ export async function POST(req: NextRequest) {
     .eq("phone", phone)
     .maybeSingle();
 
-  const TERMINAL = new Set(["contacted", "meeting_booked", "not_interested", "do_not_call"]);
+  // Nur "harte" Terminal-Status blocken einen Test-Anruf. `contacted` wird
+  // vom Analyzer nach jedem Call gesetzt (auch nach Twilio-Fails ohne echten
+  // Kontakt) — würde Retest sinnlos blockieren. `meeting_booked` und die
+  // Opt-Outs bleiben geschützt, weil dort echter Kunden-Kontext existiert.
+  const TERMINAL = new Set(["meeting_booked", "not_interested", "do_not_call"]);
 
   let leadId: string;
   let isNewLead = false;
