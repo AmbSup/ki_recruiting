@@ -64,6 +64,18 @@ export default function BulkCallsPage() {
   const pausedRef = useRef(false);   // Engine-Loop liest pausedRef.current
   const runIdRef = useRef(0);        // Stop-Button invalidiert Loop via Inkrement
 
+  // ─── Test-Anruf-State ────────────────────────────────────────────────────
+  const [testPhone, setTestPhone] = useState("");
+  const [testFirstName, setTestFirstName] = useState("");
+  const [testCompanyName, setTestCompanyName] = useState("");
+  const [testCalling, setTestCalling] = useState(false);
+  const [testResult, setTestResult] = useState<{
+    sales_call_id: string | null;
+    lead_id: string;
+    is_new_lead: boolean;
+  } | null>(null);
+  const [testError, setTestError] = useState<string | null>(null);
+
   useEffect(() => { pausedRef.current = paused; }, [paused]);
 
   // ─── Programs laden ──────────────────────────────────────────────────────
@@ -198,6 +210,43 @@ export default function BulkCallsPage() {
       setRunning(false);
     }
   }, [concurrency, leads, running, triggerOne]);
+
+  // ─── Test-Anruf: einzelner Call an eine beliebige Nummer ──────────────────
+  const startTestCall = useCallback(async () => {
+    if (!programId) { setTestError("Bitte Program auswählen"); return; }
+    if (!testPhone.trim()) { setTestError("Telefonnummer fehlt"); return; }
+
+    setTestCalling(true);
+    setTestError(null);
+    setTestResult(null);
+
+    try {
+      const res = await fetch("/api/sales/leads/test-call", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sales_program_id: programId,
+          phone: testPhone.trim(),
+          first_name: testFirstName.trim() || null,
+          company_name: testCompanyName.trim() || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setTestError(data.message ?? data.error ?? `HTTP ${res.status}`);
+      } else {
+        setTestResult({
+          sales_call_id: data.sales_call_id ?? null,
+          lead_id: data.lead_id,
+          is_new_lead: Boolean(data.is_new_lead),
+        });
+      }
+    } catch (e) {
+      setTestError(e instanceof Error ? e.message : "Network error");
+    } finally {
+      setTestCalling(false);
+    }
+  }, [programId, testPhone, testFirstName, testCompanyName]);
 
   function pauseBulk() { setPaused(true); }
   function resumeBulk() { setPaused(false); }
@@ -389,6 +438,111 @@ export default function BulkCallsPage() {
           <span className="material-symbols-outlined text-sm">{importing ? "progress_activity" : "upload"}</span>
           {importing ? "Importiere…" : "1. Liste importieren"}
         </button>
+      </div>
+
+      {/* Test-Anruf: einzelner Call an eigene Nummer (Agent-QA vor Bulk-Run) */}
+      <div className="bg-surface-container-lowest rounded-2xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] mt-6">
+        <div className="flex items-start gap-3 mb-5">
+          <span className="material-symbols-outlined text-primary">phone_in_talk</span>
+          <div className="flex-1">
+            <h3 className="font-headline text-xl italic text-on-surface leading-none mb-1">
+              Einzel-Anruf testen
+            </h3>
+            <p className="font-body text-sm text-on-surface-variant">
+              Ruf dich selbst mit dem gewählten Agent an, bevor du die ganze Liste feuerst.
+              Prüft Prompt, Voice, First-Message-Vars live an deinem Ohr.
+              Benötigt trotzdem Program-Auswahl oben ↑.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
+              Telefon * (E.164)
+            </label>
+            <input
+              type="tel"
+              value={testPhone}
+              onChange={(e) => setTestPhone(e.target.value)}
+              placeholder="+436701234567"
+              className={inputClass}
+              disabled={testCalling}
+            />
+          </div>
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
+              Vorname
+            </label>
+            <input
+              type="text"
+              value={testFirstName}
+              onChange={(e) => setTestFirstName(e.target.value)}
+              placeholder="Martin"
+              className={inputClass}
+              disabled={testCalling}
+            />
+          </div>
+          <div>
+            <label className="font-label text-xs font-bold uppercase tracking-widest text-outline block mb-1.5">
+              Firma
+            </label>
+            <input
+              type="text"
+              value={testCompanyName}
+              onChange={(e) => setTestCompanyName(e.target.value)}
+              placeholder="Neuronic"
+              className={inputClass}
+              disabled={testCalling}
+            />
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={startTestCall}
+            disabled={testCalling || !programId || !testPhone.trim()}
+            className="flex items-center gap-2 bg-primary text-on-primary rounded-xl px-5 py-2.5 font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors disabled:opacity-50"
+          >
+            <span className="material-symbols-outlined text-sm">
+              {testCalling ? "progress_activity" : "call"}
+            </span>
+            {testCalling ? "Startet…" : "Test-Anruf starten"}
+          </button>
+          <p className="font-label text-[11px] text-outline">
+            Test-Anruf setzt Consent automatisch. Vorhandene Terminal-Leads
+            (Termin/DNC) werden blockiert.
+          </p>
+        </div>
+
+        {testError && (
+          <div className="mt-4 flex items-start gap-2 bg-error-container/20 border border-error-container/40 rounded-xl px-4 py-3">
+            <span className="material-symbols-outlined text-error text-sm mt-0.5" style={{ fontVariationSettings: "'FILL' 1" }}>error</span>
+            <span className="font-body text-sm text-error">{testError}</span>
+          </div>
+        )}
+
+        {testResult && (
+          <div className="mt-4 flex items-center gap-3 bg-primary-container/30 border border-primary-container/40 rounded-xl px-4 py-3">
+            <span className="material-symbols-outlined text-primary" style={{ fontVariationSettings: "'FILL' 1" }}>ring_volume</span>
+            <div className="flex-1">
+              <div className="font-label text-xs font-bold text-on-surface">
+                Anruf ausgelöst — dein Handy klingelt gleich
+              </div>
+              <div className="font-body text-xs text-on-surface-variant mt-0.5">
+                {testResult.is_new_lead ? "Neuer Test-Lead" : "Bestehender Lead wiederverwendet"}
+                {testResult.sales_call_id && (
+                  <>
+                    {" · "}
+                    <Link href={`/sales/calls/${testResult.sales_call_id}`} className="text-primary hover:underline">
+                      Call-Detail öffnen →
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Import-Result-Stats */}
