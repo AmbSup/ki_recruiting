@@ -5,6 +5,10 @@ import { requireWriter } from "@/lib/auth/guards";
 
 export const maxDuration = 60;
 
+// Interne Operator-Testnummer: darf im expliziten Test-Call-Flow beliebig oft
+// angerufen werden. Bulk-Calls und alle Kundennummern bleiben geschuetzt.
+const ALWAYS_ALLOWED_TEST_PHONES = new Set(["+4367763165057"]);
+
 /**
  * POST /api/sales/leads/test-call
  *
@@ -71,12 +75,13 @@ export async function POST(req: NextRequest) {
   // Kontakt) — würde Retest sinnlos blockieren. `meeting_booked` und die
   // Opt-Outs bleiben geschützt, weil dort echter Kunden-Kontext existiert.
   const TERMINAL = new Set(["meeting_booked", "not_interested", "do_not_call"]);
+  const alwaysAllowTestCall = ALWAYS_ALLOWED_TEST_PHONES.has(phone);
 
   let leadId: string;
   let isNewLead = false;
 
   if (existing) {
-    if (TERMINAL.has(existing.status)) {
+    if (TERMINAL.has(existing.status) && !alwaysAllowTestCall) {
       return NextResponse.json(
         {
           error: "terminal_status",
@@ -133,7 +138,7 @@ export async function POST(req: NextRequest) {
           .eq("phone", phone)
           .maybeSingle();
         if (raceRow) {
-          if (TERMINAL.has(raceRow.status)) {
+          if (TERMINAL.has(raceRow.status) && !alwaysAllowTestCall) {
             return NextResponse.json(
               {
                 error: "terminal_status",
