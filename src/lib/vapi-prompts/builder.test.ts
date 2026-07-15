@@ -11,6 +11,7 @@ import type { PromptVariables } from "./types";
 function makeVars(overrides: Partial<PromptVariables> = {}): Partial<PromptVariables> {
   return {
     first_name: "Thomas",
+    lead_greeting: "Hallo Thomas",
     last_name: "Huber",
     full_name: "Thomas Huber",
     program_name: "Fullstack Entwickler React",

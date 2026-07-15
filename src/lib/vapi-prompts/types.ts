@@ -18,6 +18,7 @@ export type UseCaseTemplate = {
 export type PromptVariables = {
   // Lead
   first_name: string;
+  lead_greeting: string;          // "Hallo Martin" oder ohne Namen "Guten Tag"
   last_name: string;
   full_name: string;
   email: string;

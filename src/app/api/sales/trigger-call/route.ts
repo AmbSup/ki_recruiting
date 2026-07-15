@@ -261,8 +261,10 @@ export async function POST(req: NextRequest) {
     .map((o) => `- "${o.objection}" → ${o.response}`)
     .join("\n");
 
+  const firstName = lead.first_name?.trim() ?? "";
   const vars = {
-    first_name: lead.first_name ?? "",
+    first_name: firstName,
+    lead_greeting: firstName ? `Hallo ${firstName}` : (isEn ? "Hello" : "Guten Tag"),
     last_name: lead.last_name ?? "",
     full_name: lead.full_name ?? "",
     email: lead.email ?? "",
