@@ -1,5 +1,6 @@
 import { completeLLM } from "@/services/llm/client";
 import { createAdminClient } from "@/lib/supabase/admin";
+import type { Json } from "@/types/database";
 
 export type TranscriptMessage = {
   role: "user" | "assistant" | string;
@@ -147,6 +148,8 @@ export async function runSalesCallAnalysis(options: {
   started_at?: string | null;
   ended_at?: string | null;
   end_reason?: string | null;
+  vapi_cost_usd?: number | null;
+  vapi_cost_breakdown?: Json | null;
   vapi_end_report?: VapiEndReport;
 }): Promise<{ sales_call_analysis_id: string } | null> {
   const supabase = createAdminClient();
@@ -231,6 +234,8 @@ export async function runSalesCallAnalysis(options: {
       recording_url: options.recording_url ?? undefined,
       recording_storage_path: recordingStoragePath ?? undefined,
       end_reason: options.end_reason ?? undefined,
+      vapi_cost_usd: options.vapi_cost_usd ?? undefined,
+      vapi_cost_breakdown: options.vapi_cost_breakdown ?? undefined,
       ...(transcriptJson ? { transcript: transcriptJson } : {}),
     })
     .eq("id", options.sales_call_id);

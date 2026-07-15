@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runSalesCallAnalysis, TranscriptMessage } from "@/agents/sales-call-analyzer";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyN8nSecret } from "@/lib/auth/guards";
+import type { Json } from "@/types/database";
 
 export const maxDuration = 60;
 
@@ -18,6 +19,8 @@ export async function POST(req: NextRequest) {
     started_at?: string | null;
     ended_at?: string | null;
     end_reason?: string | null;
+    vapi_cost_usd?: number | null;
+    vapi_cost_breakdown?: Json | null;
     vapi_end_report?: Record<string, unknown> | null;
   };
 
@@ -82,6 +85,32 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Normalfall: n8n reicht die Kosten aus dem End-of-Call-Report durch.
+  // Fallback: Call einmal direkt bei Vapi laden, falls ein alter Workflow die
+  // Felder noch nicht weitergibt. Vapi weist Call.cost offiziell in USD aus.
+  let vapiCostUsd = typeof body.vapi_cost_usd === "number" ? body.vapi_cost_usd : null;
+  let vapiCostBreakdown = body.vapi_cost_breakdown ?? null;
+  const vapiApiKey = process.env.VAPI_API_KEY?.trim();
+  if (vapiCostUsd === null && body.vapi_call_id && vapiApiKey) {
+    try {
+      const response = await fetch(`https://api.vapi.ai/call/${body.vapi_call_id}`, {
+        headers: { Authorization: `Bearer ${vapiApiKey}` },
+      });
+      if (response.ok) {
+        const call = await response.json() as {
+          cost?: number;
+          costBreakdown?: Json;
+        };
+        vapiCostUsd = typeof call.cost === "number" ? call.cost : null;
+        vapiCostBreakdown = call.costBreakdown ?? null;
+      } else {
+        console.error("[sales/call-analyse] Vapi cost fetch failed:", response.status);
+      }
+    } catch (error) {
+      console.error("[sales/call-analyse] Vapi cost fetch error:", error);
+    }
+  }
+
   const result = await runSalesCallAnalysis({
     sales_call_id: salesCallId,
     transcript_messages: body.transcript_messages ?? [],
@@ -90,6 +119,8 @@ export async function POST(req: NextRequest) {
     started_at: body.started_at ?? null,
     ended_at: body.ended_at ?? null,
     end_reason: body.end_reason ?? null,
+    vapi_cost_usd: vapiCostUsd,
+    vapi_cost_breakdown: vapiCostBreakdown,
     vapi_end_report: body.vapi_end_report as never,
   });
 

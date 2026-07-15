@@ -1564,6 +1564,8 @@ export type Database = {
           transcript: Json | null
           twilio_call_sid: string | null
           vapi_call_id: string | null
+          vapi_cost_breakdown: Json | null
+          vapi_cost_usd: number | null
           vapi_metadata: Json
         }
         Insert: {
@@ -1581,6 +1583,8 @@ export type Database = {
           transcript?: Json | null
           twilio_call_sid?: string | null
           vapi_call_id?: string | null
+          vapi_cost_breakdown?: Json | null
+          vapi_cost_usd?: number | null
           vapi_metadata?: Json
         }
         Update: {
@@ -1598,6 +1602,8 @@ export type Database = {
           transcript?: Json | null
           twilio_call_sid?: string | null
           vapi_call_id?: string | null
+          vapi_cost_breakdown?: Json | null
+          vapi_cost_usd?: number | null
           vapi_metadata?: Json
         }
         Relationships: [

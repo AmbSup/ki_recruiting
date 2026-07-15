@@ -14,6 +14,7 @@ type Call = {
   duration_seconds: number | null;
   end_reason: string | null;
   recording_url: string | null;
+  vapi_cost_usd: number | null;
   created_at: string;
   sales_lead: { full_name: string | null; first_name: string | null; last_name: string | null; phone: string; company_name: string | null };
   sales_program: { id: string; name: string };
@@ -48,7 +49,7 @@ export default function SalesCallsPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("sales_calls")
-      .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, created_at, sales_lead:sales_leads(full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, workshop_accepted, interest_level, call_rating, sentiment, next_action)")
+      .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, vapi_cost_usd, created_at, sales_lead:sales_leads(full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, workshop_accepted, interest_level, call_rating, sentiment, next_action)")
       .order("created_at", { ascending: false });
     setCalls((data ?? []) as unknown as Call[]);
     const { data: progs } = await supabase.from("sales_programs").select("id, name").order("name");
@@ -139,6 +140,7 @@ export default function SalesCallsPage() {
                 <Th>Dauer</Th>
                 <Th>Meeting</Th>
                 <Th>Workshop</Th>
+                <Th>Vapi-Kosten</Th>
                 <Th>Rating</Th>
                 <Th>Start</Th>
                 <Th> </Th>
@@ -175,6 +177,11 @@ export default function SalesCallsPage() {
                       )}
                     </Td>
                     <Td><WorkshopResult call={c} /></Td>
+                    <Td>
+                      <span className="font-label text-xs font-mono text-on-surface">
+                        {formatUsd(c.vapi_cost_usd)}
+                      </span>
+                    </Td>
                     <Td>
                       {c.analysis?.call_rating ? (
                         <span className="font-label text-xs font-bold">{c.analysis.call_rating}/10</span>
@@ -224,7 +231,7 @@ function WorkshopResult({ call }: { call: Call }) {
 
   if (accepted === null) return <span className="font-label text-xs text-outline">â€“</span>;
   return accepted ? (
-    <span className="inline-flex items-center gap-1 font-label text-xs font-bold text-primary">
+    <span className="inline-flex items-center gap-1 font-label text-xs font-bold text-emerald-700">
       <span className="material-symbols-outlined text-sm">check_circle</span>Ja
     </span>
   ) : (
@@ -255,6 +262,16 @@ function formatDuration(s: number | null) {
 function formatShort(iso: string) {
   const d = new Date(iso);
   return d.toLocaleDateString("de-AT", { day: "2-digit", month: "2-digit" }) + " · " + d.toLocaleTimeString("de-AT", { hour: "2-digit", minute: "2-digit" });
+}
+
+function formatUsd(value: number | null) {
+  if (value === null) return "â€“";
+  return new Intl.NumberFormat("de-DE", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 3,
+    maximumFractionDigits: 4,
+  }).format(value);
 }
 
 const selectClass = "bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-2 font-label text-xs font-bold uppercase tracking-widest text-on-surface focus:outline-none focus:border-primary transition-colors";
