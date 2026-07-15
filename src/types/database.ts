@@ -1441,6 +1441,7 @@ export type Database = {
           key_quotes: Json
           meeting_booked: boolean
           meeting_datetime: string | null
+          workshop_accepted: boolean | null
           model_version: string | null
           next_action: string | null
           next_action_at: string | null
@@ -1460,6 +1461,7 @@ export type Database = {
           key_quotes?: Json
           meeting_booked?: boolean
           meeting_datetime?: string | null
+          workshop_accepted?: boolean | null
           model_version?: string | null
           next_action?: string | null
           next_action_at?: string | null
@@ -1479,6 +1481,7 @@ export type Database = {
           key_quotes?: Json
           meeting_booked?: boolean
           meeting_datetime?: string | null
+          workshop_accepted?: boolean | null
           model_version?: string | null
           next_action?: string | null
           next_action_at?: string | null

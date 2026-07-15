@@ -8,6 +8,7 @@ export type TranscriptMessage = {
 
 export type SalesCallAnalysis = {
   meeting_booked: boolean;
+  workshop_accepted: boolean | null;
   meeting_datetime: string | null; // ISO
   interest_level: "high" | "medium" | "low" | "none";
   call_rating: number; // 1..10
@@ -105,6 +106,7 @@ ${transcriptFormatted}
 Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
 {
   "meeting_booked": <boolean — wurde ein konkreter Termin vereinbart?>,
+  "workshop_accepted": <true wenn der Lead dem Workshop oder dem persoenlichen Rueckruf ausdruecklich zugestimmt hat; false bei ausdruecklicher Ablehnung; null wenn nicht gefragt oder unklar>,
   "meeting_datetime": "<ISO-Timestamp in der ZUKUNFT (nach ${todayIso}) oder null>",
   "interest_level": "<high|medium|low|none>",
   "call_rating": <Zahl 1-10, Gesamtqualität des Calls>,
@@ -254,6 +256,7 @@ export async function runSalesCallAnalysis(options: {
     .upsert({
       sales_call_id: options.sales_call_id,
       meeting_booked: result.meeting_booked,
+      workshop_accepted: result.workshop_accepted ?? null,
       meeting_datetime: result.meeting_datetime,
       interest_level: result.interest_level,
       call_rating: result.call_rating,

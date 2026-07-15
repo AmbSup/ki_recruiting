@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from("sales_calls")
-    .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, created_at, sales_lead:sales_leads(id, full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, interest_level, call_rating, sentiment, next_action)")
+    .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, created_at, sales_lead:sales_leads(id, full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, workshop_accepted, interest_level, call_rating, sentiment, next_action)")
     .order("created_at", { ascending: false });
 
   if (programId) query = query.eq("sales_program_id", programId);

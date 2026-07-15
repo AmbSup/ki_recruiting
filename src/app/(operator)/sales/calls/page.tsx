@@ -19,6 +19,7 @@ type Call = {
   sales_program: { id: string; name: string };
   analysis: {
     meeting_booked: boolean | null;
+    workshop_accepted: boolean | null;
     interest_level: string | null;
     call_rating: number | null;
     sentiment: string | null;
@@ -47,7 +48,7 @@ export default function SalesCallsPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("sales_calls")
-      .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, created_at, sales_lead:sales_leads(full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, interest_level, call_rating, sentiment, next_action)")
+      .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, created_at, sales_lead:sales_leads(full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, workshop_accepted, interest_level, call_rating, sentiment, next_action)")
       .order("created_at", { ascending: false });
     setCalls((data ?? []) as unknown as Call[]);
     const { data: progs } = await supabase.from("sales_programs").select("id, name").order("name");
@@ -137,6 +138,7 @@ export default function SalesCallsPage() {
                 <Th>Status</Th>
                 <Th>Dauer</Th>
                 <Th>Meeting</Th>
+                <Th>Workshop</Th>
                 <Th>Rating</Th>
                 <Th>Start</Th>
                 <Th> </Th>
@@ -172,6 +174,7 @@ export default function SalesCallsPage() {
                         <span className="font-label text-xs text-outline">–</span>
                       )}
                     </Td>
+                    <Td><WorkshopResult call={c} /></Td>
                     <Td>
                       {c.analysis?.call_rating ? (
                         <span className="font-label text-xs font-bold">{c.analysis.call_rating}/10</span>
@@ -205,6 +208,30 @@ function Th({ children }: { children: React.ReactNode }) {
 }
 function Td({ children }: { children: React.ReactNode }) {
   return <td className="px-4 py-3">{children}</td>;
+}
+
+function WorkshopResult({ call }: { call: Call }) {
+  if (!call.sales_program?.name.toLowerCase().includes("workshop")) {
+    return <span className="font-label text-xs text-outline">â€“</span>;
+  }
+
+  // Neue Analysen liefern das explizite Feld. Fuer historische Workshop-Calls
+  // nur eindeutige alte Signale ableiten; alles andere bleibt unbekannt.
+  const accepted = call.analysis?.workshop_accepted
+    ?? (call.analysis?.next_action === "call_back" ? true
+      : call.analysis?.next_action === "dead_lead" || call.analysis?.interest_level === "none" ? false
+      : null);
+
+  if (accepted === null) return <span className="font-label text-xs text-outline">â€“</span>;
+  return accepted ? (
+    <span className="inline-flex items-center gap-1 font-label text-xs font-bold text-primary">
+      <span className="material-symbols-outlined text-sm">check_circle</span>Ja
+    </span>
+  ) : (
+    <span className="inline-flex items-center gap-1 font-label text-xs font-bold text-error">
+      <span className="material-symbols-outlined text-sm">cancel</span>Nein
+    </span>
+  );
 }
 
 function MiniStat({ label, value, icon }: { label: string; value: string; icon: string }) {
