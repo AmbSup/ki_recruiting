@@ -26,6 +26,8 @@ type LeadRow = {
   first_name: string | null;
   last_name: string | null;
   company_name: string | null;
+  research_status: string | null;
+  selected: boolean;
   // Bulk-Run-State pro Lead. Initial 'queued'; via Batch-Engine 'in_flight';
   // via Polling der sales_calls → 'ringing', 'in_progress', 'completed',
   // 'failed'. Edge-Case: 'error' = trigger-call returnte 4xx/5xx (z.B. 409
@@ -141,14 +143,28 @@ export default function BulkCallsPage() {
       const supabase = createClient();
       const { data: leadRows } = await supabase
         .from("sales_leads")
-        .select("id, phone, full_name, first_name, last_name, company_name")
+        .select("id, phone, full_name, first_name, last_name, company_name, custom_fields")
         .in("id", data.lead_ids);
       if (leadRows) {
         setLeads(
           (leadRows as Array<{
             id: string; phone: string; full_name: string | null;
             first_name: string | null; last_name: string | null; company_name: string | null;
-          }>).map((l) => ({ ...l, status: "queued" as const })),
+            custom_fields: Record<string, unknown> | null;
+          }>).map((l) => ({
+            id: l.id,
+            phone: l.phone,
+            full_name: l.full_name,
+            first_name: l.first_name,
+            last_name: l.last_name,
+            company_name: l.company_name,
+            research_status:
+              typeof l.custom_fields?.research_status === "string"
+                ? l.custom_fields.research_status
+                : null,
+            selected: true,
+            status: "queued" as const,
+          })),
         );
       }
     }
@@ -182,7 +198,9 @@ export default function BulkCallsPage() {
 
     // Nur den nächsten 10er-Block aus der langen CSV entnehmen. Der Rest
     // bleibt unverändert in der Warteschlange, bis der Operator fortsetzt.
-    const allQueued = leads.filter((l) => l.status === "queued").map((l) => l.id);
+    const allQueued = leads
+      .filter((l) => l.status === "queued" && l.selected)
+      .map((l) => l.id);
     const queue: string[] = allQueued.slice(0, CALLS_PER_BLOCK);
     const hasNextBlock = allQueued.length > CALLS_PER_BLOCK;
     if (queue.length === 0) {
@@ -276,6 +294,20 @@ export default function BulkCallsPage() {
     // Queue-Stop: alle 'queued' bleiben queued, können später wieder via Start gestartet werden
   }
 
+  function setLeadSelected(leadId: string, selected: boolean) {
+    setLeads((prev) => prev.map((lead) =>
+      lead.id === leadId && lead.status === "queued"
+        ? { ...lead, selected }
+        : lead,
+    ));
+  }
+
+  function setAllQueuedSelected(selected: boolean) {
+    setLeads((prev) => prev.map((lead) =>
+      lead.status === "queued" ? { ...lead, selected } : lead,
+    ));
+  }
+
   // ─── Polling: sales_calls nach Status pro lead_id ────────────────────────
   useEffect(() => {
     if (leads.length === 0) return;
@@ -312,13 +344,16 @@ export default function BulkCallsPage() {
   const counters = leads.reduce(
     (acc, l) => {
       acc.total++;
-      if (l.status === "queued") acc.queued++;
+      if (l.status === "queued") {
+        acc.queued++;
+        if (l.selected) acc.selected++;
+      }
       else if (l.status === "in_flight" || l.status === "ringing" || l.status === "in_progress") acc.inFlight++;
       else if (l.status === "completed") acc.completed++;
       else if (l.status === "failed" || l.status === "error") acc.failed++;
       return acc;
     },
-    { total: 0, queued: 0, inFlight: 0, completed: 0, failed: 0 },
+    { total: 0, queued: 0, selected: 0, inFlight: 0, completed: 0, failed: 0 },
   );
 
   function downloadTemplate() {
@@ -597,20 +632,22 @@ export default function BulkCallsPage() {
             <div>
               <h3 className="font-headline text-2xl italic text-on-surface mb-1">Anrufe</h3>
               <p className="font-label text-xs text-outline">
-                Total {counters.total} · Wartet {counters.queued} · Läuft {counters.inFlight} · Fertig {counters.completed} · Fehler {counters.failed}
+                Total {counters.total} · Markiert {counters.selected} · Wartet {counters.queued} · Läuft {counters.inFlight} · Fertig {counters.completed} · Fehler {counters.failed}
               </p>
               <p className="font-label text-[11px] text-outline mt-1">
                 10er-Blöcke · bisher gestartet: {blocksStarted}
               </p>
             </div>
             <div className="flex items-center gap-2">
-              {!running && counters.queued > 0 && (
+              {!running && counters.selected > 0 && (
                 <button
                   onClick={startBulk}
                   className="flex items-center gap-2 bg-primary text-on-primary rounded-xl px-5 py-2.5 font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors"
                 >
                   <span className="material-symbols-outlined text-sm">play_arrow</span>
-                  {blocksStarted === 0 ? "2. Erste 10 Calls starten" : `Nächste ${Math.min(CALLS_PER_BLOCK, counters.queued)} Calls starten`}
+                  {blocksStarted === 0
+                    ? `2. Erste ${Math.min(CALLS_PER_BLOCK, counters.selected)} markierte Calls starten`
+                    : `Nächste ${Math.min(CALLS_PER_BLOCK, counters.selected)} markierte Calls starten`}
                 </button>
               )}
               {running && !paused && (
@@ -643,7 +680,7 @@ export default function BulkCallsPage() {
             </div>
           </div>
 
-          {awaitingNextBlock && counters.queued > 0 && !running && (
+          {awaitingNextBlock && counters.selected > 0 && !running && (
             <div className="mb-5 flex items-center gap-3 rounded-xl border border-tertiary-container/50 bg-tertiary-container/20 px-4 py-3">
               <span className="material-symbols-outlined text-tertiary">pause_circle</span>
               <div className="flex-1">
@@ -651,19 +688,45 @@ export default function BulkCallsPage() {
                   10er-Block gestartet – automatisch pausiert
                 </div>
                 <div className="font-body text-xs text-on-surface-variant">
-                  Noch {counters.queued} Kontakte warten. Starte den nächsten Block erst, wenn du bereit bist.
+                  Noch {counters.selected} markierte Kontakte warten. Starte den nächsten Block erst, wenn du bereit bist.
                 </div>
               </div>
             </div>
           )}
 
+          <div className="mb-4 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setAllQueuedSelected(true)}
+              disabled={running || counters.queued === 0}
+              className="rounded-lg border border-outline-variant/30 px-3 py-1.5 font-label text-xs font-bold text-on-surface hover:bg-surface-container-low disabled:opacity-40"
+            >
+              Alle Wartenden markieren
+            </button>
+            <button
+              type="button"
+              onClick={() => setAllQueuedSelected(false)}
+              disabled={running || counters.queued === 0}
+              className="rounded-lg border border-outline-variant/30 px-3 py-1.5 font-label text-xs font-bold text-on-surface hover:bg-surface-container-low disabled:opacity-40"
+            >
+              Keine markieren
+            </button>
+            <span className="font-label text-xs text-outline">
+              Nur markierte Kontakte werden angerufen.
+            </span>
+          </div>
+
           <div className="overflow-x-auto -mx-6 px-6">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-outline-variant/20 text-outline">
+                  <th className="w-10 py-2 text-left">
+                    <span className="sr-only">Anrufen</span>
+                  </th>
                   <th className="text-left font-label text-xs font-bold uppercase tracking-widest py-2">Name</th>
                   <th className="text-left font-label text-xs font-bold uppercase tracking-widest py-2">Telefon</th>
                   <th className="text-left font-label text-xs font-bold uppercase tracking-widest py-2">Firma</th>
+                  <th className="text-left font-label text-xs font-bold uppercase tracking-widest py-2">Recherche</th>
                   <th className="text-left font-label text-xs font-bold uppercase tracking-widest py-2">Status</th>
                   <th className="text-left font-label text-xs font-bold uppercase tracking-widest py-2">Call</th>
                 </tr>
@@ -672,10 +735,28 @@ export default function BulkCallsPage() {
                 {leads.map((l) => {
                   const name = l.full_name || [l.first_name, l.last_name].filter(Boolean).join(" ") || "—";
                   return (
-                    <tr key={l.id} className="border-b border-outline-variant/10 hover:bg-surface-container-low/40">
+                    <tr
+                      key={l.id}
+                      className={`border-b border-outline-variant/10 hover:bg-surface-container-low/40 ${
+                        l.status === "queued" && l.selected ? "bg-primary-container/10" : ""
+                      }`}
+                    >
+                      <td className="py-2.5">
+                        <input
+                          type="checkbox"
+                          checked={l.selected}
+                          onChange={(event) => setLeadSelected(l.id, event.target.checked)}
+                          disabled={running || l.status !== "queued"}
+                          aria-label={`${name} für Anruf markieren`}
+                          className="accent-primary disabled:opacity-40"
+                        />
+                      </td>
                       <td className="py-2.5 font-body text-on-surface">{name}</td>
                       <td className="py-2.5 font-mono text-xs text-on-surface-variant">{l.phone}</td>
                       <td className="py-2.5 font-body text-xs text-on-surface-variant">{l.company_name || "—"}</td>
+                      <td className="py-2.5">
+                        <ResearchBadge value={l.research_status} />
+                      </td>
                       <td className="py-2.5">
                         <StatusBadge status={l.status} errorMsg={l.error_msg ?? null} />
                       </td>
@@ -721,6 +802,28 @@ function StatusBadge({ status, errorMsg }: { status: LeadRow["status"]; errorMsg
   return (
     <span className={`inline-flex items-center px-2.5 py-1 rounded-full font-label text-xs font-bold ${cls}`} title={errorMsg ?? undefined}>
       {label}
+    </span>
+  );
+}
+
+function ResearchBadge({ value }: { value: string | null }) {
+  if (!value) {
+    return <span className="font-label text-xs text-outline">—</span>;
+  }
+  const normalized = value.toLowerCase();
+  const researched = normalized === "recherchiert";
+  const noPersonName = normalized.includes("kein eindeutiger personenname");
+  const cls = researched
+    ? "bg-emerald-50 text-emerald-700"
+    : noPersonName
+      ? "bg-amber-50 text-amber-700"
+      : "bg-surface-container-high text-on-surface-variant";
+  return (
+    <span
+      className={`inline-flex max-w-[260px] items-center rounded-full px-2.5 py-1 font-label text-xs font-bold ${cls}`}
+      title={value}
+    >
+      <span className="truncate">{value}</span>
     </span>
   );
 }
