@@ -107,7 +107,7 @@ ${transcriptFormatted}
 Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
 {
   "meeting_booked": <boolean — wurde ein konkreter Termin vereinbart?>,
-  "workshop_accepted": <true wenn der Lead dem Workshop oder dem persoenlichen Rueckruf ausdruecklich zugestimmt hat; false bei ausdruecklicher Ablehnung; null wenn nicht gefragt oder unklar>,
+  "workshop_accepted": <true NUR wenn der Agent die konkrete Workshop-/Berater-Rueckruf-Frage gestellt hat UND der Lead danach ausdruecklich zugestimmt hat; false NUR wenn diese konkrete Frage gestellt und danach ausdruecklich abgelehnt wurde; null wenn nur Consent zu KI/Aufzeichnung gegeben wurde, die Workshop-Frage nicht gestellt wurde, keine Lead-Antwort vorhanden ist, der Call vorher abbrach oder die Antwort unklar ist>,
   "meeting_datetime": "<ISO-Timestamp in der ZUKUNFT (nach ${todayIso}) oder null>",
   "interest_level": "<high|medium|low|none>",
   "call_rating": <Zahl 1-10, Gesamtqualität des Calls>,
@@ -130,7 +130,24 @@ Antworte mit folgendem JSON (kein Markdown, nur reines JSON):
     maxTokens: 1500,
     jsonMode: true,
   });
-  return JSON.parse(text) as SalesCallAnalysis;
+  const result = JSON.parse(text) as SalesCallAnalysis;
+
+  // Deterministische Schutzschicht gegen die häufigste Verwechslung:
+  // Das Consent-"Ja" am Call-Anfang ist niemals eine Workshop-Zusage.
+  // Ohne konkrete Workshop-/Rückruf-Frage im Agent-Transkript bleibt das Feld null.
+  const agentText = options.transcript_messages
+    .filter((message) => message.role === "assistant" || message.role === "bot")
+    .map((message) => message.text)
+    .join(" ");
+  const workshopOfferWasAsked =
+    /\bworkshop\b/i.test(agentText)
+    || /\b(berater|martin)\b.{0,100}\b(rückruf|zurückruf|meldet sich|anruf)\b/i.test(agentText)
+    || /\b(rückruf|zurückruf|anruf)\b.{0,100}\b(berater|martin)\b/i.test(agentText);
+  if (!workshopOfferWasAsked) {
+    result.workshop_accepted = null;
+  }
+
+  return result;
 }
 
 // Pipeline status, basierend auf Analyse-Ergebnis

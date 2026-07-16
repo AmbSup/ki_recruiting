@@ -222,12 +222,10 @@ function WorkshopResult({ call }: { call: Call }) {
     return <span className="font-label text-xs text-outline">â€“</span>;
   }
 
-  // Neue Analysen liefern das explizite Feld. Fuer historische Workshop-Calls
-  // nur eindeutige alte Signale ableiten; alles andere bleibt unbekannt.
-  const accepted = call.analysis?.workshop_accepted
-    ?? (call.analysis?.next_action === "call_back" ? true
-      : call.analysis?.next_action === "dead_lead" || call.analysis?.interest_level === "none" ? false
-      : null);
+  // Ausschließlich die explizite Workshop-Auswertung anzeigen. Allgemeine
+  // Analysefelder wie next_action=call_back dürfen nicht als Zusage gelten:
+  // Ein Rückruf kann auch technisch oder wegen eines abgebrochenen Calls nötig sein.
+  const accepted = call.analysis?.workshop_accepted ?? null;
 
   if (accepted === null) return <span className="font-label text-xs text-outline">â€“</span>;
   return accepted ? (
