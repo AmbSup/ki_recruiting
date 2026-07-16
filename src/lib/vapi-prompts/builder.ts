@@ -213,6 +213,11 @@ export function buildFirstMessage(
   const disclosure = isEn
     ? "Just so you know upfront: I'm an AI assistant, and this call is being recorded, processed and reviewed."
     : "Ich möchte Ihnen gleich sagen: Ich bin ein KI-Assistent, und dieses Gespräch wird aufgezeichnet, verarbeitet und ausgewertet.";
+  // Programmspezifische First Messages dürfen Disclosure + Aufzeichnung
+  // bereits enthalten. Dann nicht erneut anhängen.
+  const openerIncludesDisclosure = isEn
+    ? /\bAI assistant\b/i.test(opener) && /\brecord(?:ed|ing)\b/i.test(opener)
+    : /\bKI-Assistent(?:en)?\b/i.test(opener) && /\baufgezeichnet\b/i.test(opener);
 
   const consentEnabled = vars.require_consent !== false;
   const consentQuestion = consentEnabled
@@ -221,7 +226,7 @@ export function buildFirstMessage(
         : " Sind Sie damit einverstanden, dass wir das Gespräch führen? Drücken Sie einfach die Eins auf Ihrer Tastatur oder sagen Sie einfach Ja. Wenn nicht, legen Sie einfach auf — kein Problem.")
     : "";
 
-  return `${opener} ${disclosure}${consentQuestion}`;
+  return `${opener}${openerIncludesDisclosure ? "" : ` ${disclosure}`}${consentQuestion}`;
 }
 
 export { templatesByTypeAndLang };

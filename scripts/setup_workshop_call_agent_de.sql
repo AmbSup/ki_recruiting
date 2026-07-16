@@ -32,8 +32,20 @@ BEGIN
     'Dein Ton: warm, unaufdringlich, professionell.',
     E'Dein Sprechtempo: bewusst ruhig und etwa zehn Prozent langsamer als in einem normalen Verkaufsgespräch. Setze kurze natürliche Pausen zwischen Gedanken, ohne schleppend oder künstlich zu wirken.\n\nDein Ton: warm, unaufdringlich, professionell.'
   );
+  v_sys_prompt := replace(v_sys_prompt, 'individuelle KI-Apps', 'individuelle Software-Lösungen');
+  v_sys_prompt := replace(v_sys_prompt, 'KI-App-Berater', 'Berater für KI- und Software-Lösungen');
+  v_sys_prompt := replace(
+    v_sys_prompt,
+    'Bei explizitem „Ja / passt / kein Problem": weiter zu Phase 2.',
+    'Bei explizitem „Ja / passt / kein Problem": Beginne SOFORT und ohne jede Zwischenfrage mit dem ersten Satz aus Phase 2: „Es gibt derzeit neue Möglichkeiten …". Sage davor weder „Gib mir einen Moment" noch „Darf ich zum Punkt kommen?" noch eine ähnliche Überleitung.'
+  );
+  v_sys_prompt := replace(
+    v_sys_prompt,
+    '**NIEMALS sagen** „Darf ich gleich zum Punkt kommen?" — das wirkt kalt und Push-y. Der Prospect ist bereits am Telefon, du bist DIREKT im Anliegen.',
+    '**NIEMALS sagen** „Darf ich gleich zum Punkt kommen?", „Darf ich zum Punkt kommen?" oder „Gib mir einen Moment." Nach dem Consent-Ja beginnst du direkt mit „Es gibt derzeit neue Möglichkeiten …".'
+  );
 
-  v_first_msg := '{{lead_greeting}}, hier spricht Andrea von Neuronic Automation. Wir helfen Unternehmen dabei, Arbeitsabläufe mit KI zu automatisieren und individuelle KI-Apps zu entwickeln. Ich bräuchte kurz eine Minute Ihrer Zeit — wir nutzen für diesen kurzen drei-Minuten-Anruf einen KI-Assistenten und dieses Gespräch wird aufgezeichnet. Ist das in Ordnung für Sie? Dann sagen Sie bitte JA.';
+  v_first_msg := '{{lead_greeting}}, hier spricht Andrea von Neuronic Automation. Wir helfen Unternehmen dabei, Arbeitsabläufe mit KI zu automatisieren und individuelle Software-Lösungen zu entwickeln. Ich bräuchte kurz eine Minute Ihrer Zeit — wir nutzen für diesen kurzen drei-Minuten-Anruf einen KI-Assistenten und dieses Gespräch wird aufgezeichnet. Ist das in Ordnung für Sie? Dann sagen Sie bitte JA.';
 
   IF v_existing_program IS NULL THEN
     INSERT INTO sales_programs (
@@ -47,7 +59,7 @@ BEGIN
       'Neuronic Workshop-Call (DE)',
       'de',
       'generic',
-      'Neuronic Automation hilft Unternehmen dabei, Arbeitsabläufe mit KI zu automatisieren und individuelle KI-Apps zu entwickeln — bewährte Bausteine (Anfragen-Annahme, Angebote aus Sprachmemos, Bewerber-Screening, Rechnungsstellung, Mahnwesen) plus individuelle Lösungen mit den neuesten KI-Tools.',
+      'Neuronic Automation hilft Unternehmen dabei, Arbeitsabläufe mit KI zu automatisieren und individuelle Software-Lösungen zu entwickeln — bewährte Bausteine (Anfragen-Annahme, Angebote aus Sprachmemos, Bewerber-Screening, Rechnungsstellung, Mahnwesen) plus individuelle Lösungen mit den neuesten KI-Tools.',
       'Individuelle KI-Lösungen sind heute deutlich schneller und günstiger realisierbar als noch vor einem Jahr. Unternehmen können Daten intelligenter nutzen, Abläufe vereinfachen und Software miteinander verbinden. Der unverbindliche 60-Minuten-Workshop klärt: wo lohnt sich KI im konkreten Betrieb.',
       'Betriebsinhaber, Geschäftsführer, Prozessverantwortliche in KMUs (5-100 Mitarbeiter) mit spürbaren Zeitfressern in Angeboten, Materialbestellung, Baustellenberichten, Recruiting oder Verwaltung.',
       'active',
@@ -70,6 +82,7 @@ BEGIN
   ELSE
     -- Refresh: Prompt aktualisieren, andere Config bleibt
     UPDATE sales_programs SET
+      product_pitch = 'Neuronic Automation hilft Unternehmen dabei, Arbeitsabläufe mit KI zu automatisieren und individuelle Software-Lösungen zu entwickeln — bewährte Bausteine (Anfragen-Annahme, Angebote aus Sprachmemos, Bewerber-Screening, Rechnungsstellung, Mahnwesen) plus individuelle Lösungen mit den neuesten KI-Tools.',
       system_prompt_override = v_sys_prompt,
       first_message_override = v_first_msg,
       status = 'active'

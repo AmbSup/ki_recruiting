@@ -93,6 +93,17 @@ describe("buildFirstMessage — Override-Pfad", () => {
     expect(msg).toContain("KI-Assistent");
   });
 
+  it("hängt eine bereits enthaltene Disclosure nicht doppelt an", () => {
+    const msg = buildFirstMessage("generic", makeVars({
+      first_message_override:
+        "Hallo {{first_name}}, ich bin ein KI-Assistent und dieses Gespräch wird aufgezeichnet.",
+      require_consent: false,
+    }));
+    expect(msg.match(/KI-Assistent/g)).toHaveLength(1);
+    expect(msg.match(/aufgezeichnet/g)).toHaveLength(1);
+    expect(msg).not.toContain("Ich möchte Ihnen gleich sagen");
+  });
+
   it("leerer Override (nur Whitespace) fällt zurück auf Template", () => {
     const msg = buildFirstMessage("generic", makeVars({
       first_message_override: "   ",
