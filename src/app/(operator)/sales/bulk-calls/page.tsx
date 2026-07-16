@@ -42,6 +42,7 @@ const CSV_TEMPLATE = `phone,first_name,last_name,email,company_name,role,notes
 
 const FINAL_STATUSES = new Set(["completed", "failed", "error"]);
 const POLL_INTERVAL_MS = 5000;
+const CALLS_PER_BLOCK = 10;
 
 export default function BulkCallsPage() {
   // ─── Setup-State ─────────────────────────────────────────────────────────
@@ -61,6 +62,8 @@ export default function BulkCallsPage() {
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [running, setRunning] = useState(false);
   const [paused, setPaused] = useState(false);
+  const [awaitingNextBlock, setAwaitingNextBlock] = useState(false);
+  const [blocksStarted, setBlocksStarted] = useState(0);
   const pausedRef = useRef(false);   // Engine-Loop liest pausedRef.current
   const runIdRef = useRef(0);        // Stop-Button invalidiert Loop via Inkrement
 
@@ -97,6 +100,8 @@ export default function BulkCallsPage() {
     setImportResult(null);
     setError(null);
     setLeads([]);
+    setAwaitingNextBlock(false);
+    setBlocksStarted(0);
     if (!f) { setPreview([]); return; }
     const text = await f.text();
     const lines = text.split(/\r?\n/).slice(0, 6);
@@ -113,6 +118,8 @@ export default function BulkCallsPage() {
     setError(null);
     setImportResult(null);
     setLeads([]);
+    setAwaitingNextBlock(false);
+    setBlocksStarted(0);
 
     const fd = new FormData();
     fd.append("file", file);
@@ -164,16 +171,25 @@ export default function BulkCallsPage() {
     }
   }, []);
 
-  // ─── Batch-Engine: hält max `concurrency` parallele Calls am Laufen ──────
+  // ─── Batch-Engine: startet genau einen Block mit max. 10 Leads ──────────
   const startBulk = useCallback(async () => {
     if (running) return;
     setRunning(true);
     setPaused(false);
+    setAwaitingNextBlock(false);
     pausedRef.current = false;
     const myRunId = ++runIdRef.current;
 
-    // Queue: alle leads die noch nicht 'completed/failed/error' sind
-    const queue: string[] = leads.filter((l) => l.status === "queued").map((l) => l.id);
+    // Nur den nächsten 10er-Block aus der langen CSV entnehmen. Der Rest
+    // bleibt unverändert in der Warteschlange, bis der Operator fortsetzt.
+    const allQueued = leads.filter((l) => l.status === "queued").map((l) => l.id);
+    const queue: string[] = allQueued.slice(0, CALLS_PER_BLOCK);
+    const hasNextBlock = allQueued.length > CALLS_PER_BLOCK;
+    if (queue.length === 0) {
+      setRunning(false);
+      return;
+    }
+    setBlocksStarted((count) => count + 1);
     let inFlight = 0;
 
     // Hilfs-Funktion: einen Lead pro Slot pushen
@@ -208,6 +224,8 @@ export default function BulkCallsPage() {
 
     if (runIdRef.current === myRunId) {
       setRunning(false);
+      setPaused(false);
+      setAwaitingNextBlock(hasNextBlock);
     }
   }, [concurrency, leads, running, triggerOne]);
 
@@ -254,6 +272,7 @@ export default function BulkCallsPage() {
     runIdRef.current++;   // alle laufenden Loops invalidieren
     setRunning(false);
     setPaused(false);
+    setAwaitingNextBlock(false);
     // Queue-Stop: alle 'queued' bleiben queued, können später wieder via Start gestartet werden
   }
 
@@ -405,7 +424,8 @@ export default function BulkCallsPage() {
             disabled={running}
           />
           <p className="font-label text-[10px] text-outline mt-1">
-            Empfohlen: 5. Höher = schneller, aber Vapi/Twilio-Rate-Limits beachten.
+            Pro Block werden maximal {CALLS_PER_BLOCK} Calls gestartet. Danach pausiert die Liste automatisch.
+            Parallelität bestimmt nur, wie viele davon gleichzeitig starten.
           </p>
         </div>
 
@@ -579,6 +599,9 @@ export default function BulkCallsPage() {
               <p className="font-label text-xs text-outline">
                 Total {counters.total} · Wartet {counters.queued} · Läuft {counters.inFlight} · Fertig {counters.completed} · Fehler {counters.failed}
               </p>
+              <p className="font-label text-[11px] text-outline mt-1">
+                10er-Blöcke · bisher gestartet: {blocksStarted}
+              </p>
             </div>
             <div className="flex items-center gap-2">
               {!running && counters.queued > 0 && (
@@ -587,7 +610,7 @@ export default function BulkCallsPage() {
                   className="flex items-center gap-2 bg-primary text-on-primary rounded-xl px-5 py-2.5 font-label text-xs font-bold uppercase tracking-widest hover:bg-primary-dim transition-colors"
                 >
                   <span className="material-symbols-outlined text-sm">play_arrow</span>
-                  2. Calls starten
+                  {blocksStarted === 0 ? "2. Erste 10 Calls starten" : `Nächste ${Math.min(CALLS_PER_BLOCK, counters.queued)} Calls starten`}
                 </button>
               )}
               {running && !paused && (
@@ -619,6 +642,20 @@ export default function BulkCallsPage() {
               )}
             </div>
           </div>
+
+          {awaitingNextBlock && counters.queued > 0 && !running && (
+            <div className="mb-5 flex items-center gap-3 rounded-xl border border-tertiary-container/50 bg-tertiary-container/20 px-4 py-3">
+              <span className="material-symbols-outlined text-tertiary">pause_circle</span>
+              <div className="flex-1">
+                <div className="font-label text-xs font-bold text-on-surface">
+                  10er-Block gestartet – automatisch pausiert
+                </div>
+                <div className="font-body text-xs text-on-surface-variant">
+                  Noch {counters.queued} Kontakte warten. Starte den nächsten Block erst, wenn du bereit bist.
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="overflow-x-auto -mx-6 px-6">
             <table className="w-full text-sm">
