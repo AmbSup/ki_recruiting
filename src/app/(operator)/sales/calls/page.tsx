@@ -15,6 +15,10 @@ type Call = {
   end_reason: string | null;
   recording_url: string | null;
   vapi_cost_usd: number | null;
+  transcript: {
+    segments?: Array<{ speaker?: string; role?: string; text?: string }>;
+    full_text?: string;
+  } | null;
   created_at: string;
   sales_lead: { full_name: string | null; first_name: string | null; last_name: string | null; phone: string; company_name: string | null };
   sales_program: { id: string; name: string };
@@ -49,7 +53,7 @@ export default function SalesCallsPage() {
     const supabase = createClient();
     const { data } = await supabase
       .from("sales_calls")
-      .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, vapi_cost_usd, created_at, sales_lead:sales_leads(full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, workshop_accepted, interest_level, call_rating, sentiment, next_action)")
+      .select("id, sales_lead_id, sales_program_id, status, started_at, ended_at, duration_seconds, end_reason, recording_url, vapi_cost_usd, transcript, created_at, sales_lead:sales_leads(full_name, first_name, last_name, phone, company_name), sales_program:sales_programs(id, name), analysis:sales_call_analyses(meeting_booked, workshop_accepted, interest_level, call_rating, sentiment, next_action)")
       .order("created_at", { ascending: false });
     setCalls((data ?? []) as unknown as Call[]);
     const { data: progs } = await supabase.from("sales_programs").select("id, name").order("name");
@@ -227,6 +231,14 @@ function WorkshopResult({ call }: { call: Call }) {
   // Ein Rückruf kann auch technisch oder wegen eines abgebrochenen Calls nötig sein.
   const accepted = call.analysis?.workshop_accepted ?? null;
 
+  if (accepted === null && wasNotReached(call)) {
+    return (
+      <span className="inline-flex items-center gap-1 font-label text-xs font-bold text-amber-700">
+        <span className="material-symbols-outlined text-sm">phone_missed</span>
+        Nicht erreicht
+      </span>
+    );
+  }
   if (accepted === null) return <span className="font-label text-xs text-outline">â€“</span>;
   return accepted ? (
     <span className="inline-flex items-center gap-1 font-label text-xs font-bold text-emerald-700">
@@ -237,6 +249,22 @@ function WorkshopResult({ call }: { call: Call }) {
       <span className="material-symbols-outlined text-sm">cancel</span>Nein
     </span>
   );
+}
+
+function wasNotReached(call: Call): boolean {
+  if (call.status === "no_answer" || call.status === "failed") return true;
+  if (call.status !== "completed") return false;
+  if (!call.transcript) return false;
+
+  const segments = call.transcript?.segments ?? [];
+  const hasCustomerSpeech = segments.length > 0
+    ? segments.some((segment) => {
+        const speaker = (segment.speaker ?? segment.role ?? "").toLowerCase();
+        const text = segment.text?.trim() ?? "";
+        return text.length > 0 && ["user", "lead", "customer", "human"].includes(speaker);
+      })
+    : /(?:^|\n)\s*(?:user|lead|customer|human)\s*:/im.test(call.transcript.full_text ?? "");
+  return !hasCustomerSpeech;
 }
 
 function MiniStat({ label, value, icon }: { label: string; value: string; icon: string }) {
