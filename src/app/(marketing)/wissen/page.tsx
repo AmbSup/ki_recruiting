@@ -34,8 +34,6 @@ export default function WissenPage() {
           subKey="wissen.sub"
           primaryCtaKey="wissen.primary_cta"
           primaryHref="https://cal.com/martin-amon-l2hybo/30min"
-          secondaryCtaKey="wissen.secondary_cta"
-          secondaryHref="/showcase"
           accentColor={ACCENT}
         />
         <PainList lang={lang} sectionKey="wissen.pain" accentColor={ACCENT} />
