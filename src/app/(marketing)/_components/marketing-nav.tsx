@@ -10,6 +10,7 @@ export function MarketingNav({ lang }: { lang: Lang }) {
   const salesHref = lang === "de" ? "/sales" : "/en/sales";
   const recruitingHref = lang === "de" ? "/recruiting" : "/en/recruiting";
   const kmuHref = "/kmu"; // DE-only, EN-Version ist Backlog
+  const wissenHref = "/wissen"; // DE-only, EN-Version ist Backlog
   const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const homeHref = lang === "de" ? "/" : "/en";
 
@@ -48,6 +49,14 @@ export function MarketingNav({ lang }: { lang: Lang }) {
               className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
             >
               {t(lang, "nav.kmu")}
+            </Link>
+          )}
+          {lang === "de" && (
+            <Link
+              href={wissenHref}
+              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+            >
+              {t(lang, "nav.wissen")}
             </Link>
           )}
           <Link

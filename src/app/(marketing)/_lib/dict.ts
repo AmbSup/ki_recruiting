@@ -15,6 +15,7 @@ export const dict: Record<Lang, Dict> = {
       sales: "Für Vertrieb",
       recruiting: "Fürs Recruiting",
       kmu: "Für KMUs",
+      wissen: "Wissensmanagement",
       pricing: "Preise",
       showcase: "Live-Funnels",
       login: "Login",
@@ -467,6 +468,100 @@ export const dict: Record<Lang, Dict> = {
         cta: "Demo buchen →",
       },
     },
+    wissen: {
+      eyebrow: "KI-Wissensmanagement",
+      headline: "Finde, was du suchst —",
+      headline_accent: "auch wenn du nicht mehr weißt, wie es heißt.",
+      sub:
+        "Profile, Verträge, Angebote, Protokolle, E-Mails — irgendwo liegt die Antwort schon in deinen Daten. Unser KI-Wissensmanagement mit RAG und GraphRAG versteht Bedeutung und Zusammenhänge, nicht nur Stichwörter, und liefert dir die richtige Antwort in Sekunden.",
+      primary_cta: "30-Min-Demo buchen",
+      secondary_cta: "Live-Beispiele sehen",
+      pain: {
+        eyebrow: "Was dich heute Zeit kostet",
+        headline: "Stichwortsuche findet nicht, was du meinst",
+        items: [
+          {
+            title: "Volltextsuche versteht keine Sprache",
+            body:
+              "Du suchst 'erfahrene Pflegekraft mit Nachtschicht-Erfahrung' und bekommst 40 Treffer für 'Pflege' — sortiert nach Upload-Datum, nicht nach Relevanz.",
+          },
+          {
+            title: "Wissen liegt verstreut in 10 Systemen",
+            body:
+              "CVs im ATS, Verträge im Drive, Protokolle in E-Mails, Notizen in Slack. Niemand hat den Überblick, wo die Antwort wirklich steckt.",
+          },
+          {
+            title: "Zusammenhänge gehen verloren",
+            body:
+              "Welches Profil passt zu welchem Mandat aus der Vergangenheit? Welcher Kunde hängt mit welchem Projekt zusammen? Klassische Suche kennt nur Wörter, keine Beziehungen.",
+          },
+        ],
+      },
+      metric: {
+        label: "Zeit bis zur richtigen Antwort",
+        value: "Sekunden",
+        after: "statt Stunden",
+        note:
+          "Statt CVs, Dokumente und E-Mails einzeln zu durchsuchen, stellst du eine Frage in normaler Sprache — die KI kennt Kontext und Beziehungen zwischen all deinen Daten.",
+      },
+      benefits: {
+        eyebrow: "Der Unterschied",
+        headline: "Was sich für dich ändert",
+        sub: "Kein Umlernen für dein Team — du fragst, die KI antwortet.",
+        items: [
+          {
+            title: "Versteht Bedeutung, nicht nur Wörter",
+            body:
+              "Sucht nach Sinn und Kontext statt nach exakten Keyword-Treffern. 'Erfahrene Pflegekraft' findet auch Profile mit '10 Jahre Krankenhaus, Nachtdienst' im Lebenslauf.",
+          },
+          {
+            title: "Erkennt Zusammenhänge über Dokumente hinweg",
+            body:
+              "Verknüpft Personen, Projekte, Firmen und Themen automatisch — auch wenn sie nie im selben Dokument nebeneinander stehen.",
+          },
+          {
+            title: "Bleibt immer aktuell",
+            body:
+              "Jedes neue Dokument, jedes neue Profil wird sofort eingeordnet. Keine manuelle Pflege, keine veralteten Ordnerstrukturen.",
+          },
+          {
+            title: "Antwortet, statt nur zu verlinken",
+            body:
+              "Du bekommst eine konkrete Antwort mit Quellenangabe — nicht eine Liste von 50 Treffern, die du selbst durchsuchen musst.",
+          },
+        ],
+      },
+      icp: {
+        eyebrow: "Für wen wir bauen",
+        headline: "Wer heute in Profilen und Dokumenten ertrinkt",
+        industries: [
+          {
+            name: "HR-Berater & Personalvermittler",
+            pain:
+              "Findet in Sekunden das passende Kandidatenprofil aus tausenden CVs — auch wenn die Anforderung nirgends wörtlich vorkommt.",
+          },
+          {
+            name: "Interim-Agenturen",
+            pain:
+              "Matcht Mandate mit den richtigen Interim-Managern aus dem gesamten Netzwerk — inklusive Branchenerfahrung aus früheren Projekten.",
+          },
+          {
+            name: "KMU & Mittelstand",
+            pain:
+              "Findet Verträge, Angebote und Rapporte sofort wieder — ganz ohne dass noch jemand weiß, wie die Datei damals benannt wurde.",
+          },
+        ],
+        size: "Ab 5 Mitarbeitenden mit wachsendem Dokumenten-Chaos",
+        stack: "Google Drive, SharePoint, E-Mail, ATS, CRM — wo dein Wissen heute auch liegt",
+      },
+      final_cta: {
+        eyebrow: "Nächster Schritt",
+        headline: "Zeig mir deine unauffindbaren Dokumente",
+        sub:
+          "Bring 2-3 Beispiele mit, die heute schwer zu finden sind. Wir zeigen dir live, wie schnell die Antwort mit KI-Wissensmanagement da ist.",
+        cta: "30-Min-Demo buchen →",
+      },
+    },
     pricing: {
       eyebrow: "Preise",
       headline: "Setup + Base-Fee + Minuten. Zahl was du sprichst.",
@@ -613,6 +708,7 @@ export const dict: Record<Lang, Dict> = {
         sales: "Für Vertrieb",
         recruiting: "Fürs Recruiting",
         kmu: "Für KMUs",
+        wissen: "KI-Wissensmanagement",
         pricing: "Preise",
         demo: "Demo buchen",
         showcase: "Alle Live-Funnels ansehen",
