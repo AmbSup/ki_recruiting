@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
 import { PainList } from "../_components/pain-list";
@@ -36,6 +37,9 @@ export default function WissenPage() {
           primaryHref="https://cal.com/martin-amon-l2hybo/30min"
           accentColor={ACCENT}
         />
+        <p className="mx-auto max-w-3xl px-6 pb-16 text-center font-headline text-2xl sm:text-3xl italic text-slate-900 leading-snug">
+          {t(lang, "wissen.universal_claim")}
+        </p>
         <PainList lang={lang} sectionKey="wissen.pain" accentColor={ACCENT} />
         <MetricCard
           lang={lang}
