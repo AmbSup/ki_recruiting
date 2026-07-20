@@ -59,6 +59,14 @@ export function MarketingNav({ lang }: { lang: Lang }) {
               {t(lang, "nav.wissen")}
             </Link>
           )}
+          {lang === "de" && (
+            <Link
+              href="/blog"
+              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+            >
+              {t(lang, "nav.blog")}
+            </Link>
+          )}
           <Link
             href={pricingHref}
             className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"

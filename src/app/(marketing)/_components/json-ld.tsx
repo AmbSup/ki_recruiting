@@ -1,4 +1,5 @@
 import { dict, type Lang } from "../_lib/dict";
+import type { BlogPost } from "../_lib/blog-posts";
 
 const BASE_URL = "https://app.neuronic-automation.ai";
 
@@ -24,6 +25,33 @@ export function OrganizationJsonLd() {
         publisher: { "@id": `${BASE_URL}/#organization` },
       },
     ],
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(json) }}
+    />
+  );
+}
+
+// BlogPosting-Schema pro Artikel. author/publisher zeigen auf dieselbe
+// Organization-@id wie OrganizationJsonLd — kein zweiter Entity-Eintrag.
+export function ArticleJsonLd({ post }: { post: BlogPost }) {
+  const url = `${BASE_URL}/blog/${post.slug}`;
+  const json = {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "@id": `${url}#article`,
+    mainEntityOfPage: url,
+    headline: post.title,
+    description: post.metaDescription,
+    datePublished: post.publishedAt,
+    dateModified: post.publishedAt,
+    inLanguage: "de-DE",
+    author: { "@id": `${BASE_URL}/#organization` },
+    publisher: { "@id": `${BASE_URL}/#organization` },
+    keywords: post.keywords.join(", "),
   };
 
   return (

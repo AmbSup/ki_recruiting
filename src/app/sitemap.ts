@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { blogPosts } from "./(marketing)/_lib/blog-posts";
 
 const BASE_URL = "https://app.neuronic-automation.ai";
 
@@ -19,12 +20,13 @@ const ENTRIES: Entry[] = [
   { de: "/pricing", en: "/en/pricing", priority: 0.8, changeFrequency: "monthly" },
   { de: "/kmu", priority: 0.7, changeFrequency: "monthly" },
   { de: "/wissen", priority: 0.7, changeFrequency: "monthly" },
+  { de: "/blog", priority: 0.6, changeFrequency: "weekly" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  return ENTRIES.flatMap((entry) => {
+  const staticEntries = ENTRIES.flatMap((entry) => {
     const languages: Record<string, string> = {
       de: `${BASE_URL}${entry.de}`,
       ...(entry.en ? { en: `${BASE_URL}${entry.en}` } : {}),
@@ -50,4 +52,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
 
     return [deEntry, enEntry];
   });
+
+  return [...staticEntries, ...blogEntries()];
+}
+
+function blogEntries(): MetadataRoute.Sitemap {
+  return blogPosts.map((post) => ({
+    url: `${BASE_URL}/blog/${post.slug}`,
+    lastModified: new Date(post.publishedAt),
+    changeFrequency: "monthly",
+    priority: 0.5,
+  }));
 }
