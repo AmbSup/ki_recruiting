@@ -52,6 +52,9 @@ export const metadata: Metadata = {
     description: "AI-Funnels mit KI-Anruf für Sales und Recruiting",
     images: ["/branding/neuronic-logo.png"],
   },
+  verification: {
+    google: "nPmJY89i-d0ijIJ5KpRMThPdA9e3zuxdhGRYapxOL-M",
+  },
 };
 
 export default function RootLayout({
