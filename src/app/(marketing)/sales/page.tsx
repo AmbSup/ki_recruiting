@@ -24,6 +24,20 @@ export const metadata: Metadata = {
       "x-default": "https://app.neuronic-automation.ai/sales",
     },
   },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://app.neuronic-automation.ai/sales",
+    title: "Für Vertrieb: KI ruft deinen Lead in 30 Sekunden zurück",
+    description:
+      "Speed-to-Lead ist die #1-Vertriebs-Kennzahl. Unser KI-Voice-Agent ruft jeden Funnel-Submit binnen Sekunden zurück — 24/7, vollautomatisch.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Für Vertrieb: KI ruft deinen Lead in 30 Sekunden zurück",
+    description:
+      "Speed-to-Lead ist die #1-Vertriebs-Kennzahl. Unser KI-Voice-Agent ruft jeden Funnel-Submit binnen Sekunden zurück — 24/7, vollautomatisch.",
+  },
 };
 
 export default function SalesPage() {

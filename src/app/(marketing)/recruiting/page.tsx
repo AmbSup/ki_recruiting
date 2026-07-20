@@ -16,7 +16,7 @@ const REC_COLOR = "#0E7C66";
 export const metadata: Metadata = {
   title: "Fürs Recruiting: KI screent Kandidaten in Minuten",
   description:
-    "Time-to-Hire ist heute die #1-Kandidaten-Barriere. Unser KI-Voice-Agent führt Erst-Screenings binnen Minuten nach der Quick-Apply-Bewerbung durch. DSGVO-konform, EU-Region.",
+    "Time-to-Hire ist die #1-Kandidaten-Barriere. Unser KI-Voice-Agent screent Kandidaten in Minuten nach der Bewerbung. DSGVO-konform, EU-Region.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/recruiting",
     languages: {
@@ -24,6 +24,20 @@ export const metadata: Metadata = {
       en: "https://app.neuronic-automation.ai/en/recruiting",
       "x-default": "https://app.neuronic-automation.ai/recruiting",
     },
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://app.neuronic-automation.ai/recruiting",
+    title: "Fürs Recruiting: KI screent Kandidaten in Minuten",
+    description:
+      "Time-to-Hire ist die #1-Kandidaten-Barriere. Unser KI-Voice-Agent screent Kandidaten in Minuten nach der Bewerbung. DSGVO-konform, EU-Region.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Fürs Recruiting: KI screent Kandidaten in Minuten",
+    description:
+      "Time-to-Hire ist die #1-Kandidaten-Barriere. Unser KI-Voice-Agent screent Kandidaten in Minuten nach der Bewerbung. DSGVO-konform, EU-Region.",
   },
 };
 

@@ -26,6 +26,20 @@ export const metadata: Metadata = {
       "x-default": "https://app.neuronic-automation.ai/",
     },
   },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://app.neuronic-automation.ai/",
+    title: "AI Funnel Expert — Der KI-Anruf in 30 Sekunden",
+    description:
+      "AI-Funnels für Vertrieb und Recruiting. Dein Lead oder Kandidat wird binnen 30 Sekunden vollautomatisch zurückgerufen. 24/7.",
+  },
+  twitter: {
+    card: "summary",
+    title: "AI Funnel Expert — Der KI-Anruf in 30 Sekunden",
+    description:
+      "AI-Funnels für Vertrieb und Recruiting. Dein Lead oder Kandidat wird binnen 30 Sekunden vollautomatisch zurückgerufen. 24/7.",
+  },
 };
 
 export default async function HomePage() {

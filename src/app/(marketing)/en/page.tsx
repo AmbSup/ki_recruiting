@@ -23,6 +23,20 @@ export const metadata: Metadata = {
       "x-default": "https://app.neuronic-automation.ai/",
     },
   },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://app.neuronic-automation.ai/en",
+    title: "AI Funnel Expert — The AI Call in 30 Seconds",
+    description:
+      "AI funnels for Sales and Recruiting. Your lead or candidate gets called back within 30 seconds. Fully automated. 24/7.",
+  },
+  twitter: {
+    card: "summary",
+    title: "AI Funnel Expert — The AI Call in 30 Seconds",
+    description:
+      "AI funnels for Sales and Recruiting. Your lead or candidate gets called back within 30 seconds. Fully automated. 24/7.",
+  },
 };
 
 export default async function EnHomePage() {

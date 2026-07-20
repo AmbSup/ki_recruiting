@@ -25,6 +25,20 @@ export const metadata: Metadata = {
       "x-default": "https://app.neuronic-automation.ai/recruiting",
     },
   },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://app.neuronic-automation.ai/en/recruiting",
+    title: "For Recruiting: AI screens candidates in minutes",
+    description:
+      "Time-to-Hire is today's #1 candidate barrier. Our AI voice agent runs first-round screenings within minutes of Quick-Apply. GDPR-compliant, EU region.",
+  },
+  twitter: {
+    card: "summary",
+    title: "For Recruiting: AI screens candidates in minutes",
+    description:
+      "Time-to-Hire is today's #1 candidate barrier. Our AI voice agent runs first-round screenings within minutes of Quick-Apply. GDPR-compliant, EU region.",
+  },
 };
 
 export default function EnRecruitingPage() {

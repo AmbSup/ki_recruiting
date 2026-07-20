@@ -14,9 +14,23 @@ const ACCENT = "#4F46E5"; // indigo-600 — eigenständige Farbe für Wissensman
 export const metadata: Metadata = {
   title: "KI-Wissensmanagement: Profile & Dokumente sofort finden (RAG + GraphRAG)",
   description:
-    "Modernstes KI-Wissensmanagement mit RAG und GraphRAG. HR-Berater finden Profile schneller, Interim-Agenturen matchen präziser, KMUs finden Dokumente sofort wieder.",
+    "KI-Wissensmanagement mit RAG und GraphRAG: HR-Berater finden Profile schneller, Interim-Agenturen matchen präziser, KMUs Dokumente sofort.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/wissen",
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://app.neuronic-automation.ai/wissen",
+    title: "KI-Wissensmanagement: Profile & Dokumente sofort finden (RAG + GraphRAG)",
+    description:
+      "KI-Wissensmanagement mit RAG und GraphRAG: HR-Berater finden Profile schneller, Interim-Agenturen matchen präziser, KMUs Dokumente sofort.",
+  },
+  twitter: {
+    card: "summary",
+    title: "KI-Wissensmanagement: Profile & Dokumente sofort finden (RAG + GraphRAG)",
+    description:
+      "KI-Wissensmanagement mit RAG und GraphRAG: HR-Berater finden Profile schneller, Interim-Agenturen matchen präziser, KMUs Dokumente sofort.",
   },
 };
 

@@ -69,6 +69,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   return {
     title,
     description,
+    // Ad-Landingpages für einzelne Kampagnen, kein organischer Such-Traffic-
+    // Zweck. noindex verhindert Duplicate/Thin-Content-Abwertung der
+    // Marketing-Seiten; OG/Twitter bleiben für Social-Share-Previews aktiv.
+    robots: { index: false, follow: false },
     openGraph: {
       title,
       description,

@@ -15,6 +15,20 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://app.neuronic-automation.ai/kmu",
   },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://app.neuronic-automation.ai/kmu",
+    title: "Softwarelösungen für KMUs: KI übernimmt die Bürokratie",
+    description:
+      "21 KI-Bausteine für KMUs: Anfragen, Angebote, Materialbestellung, Baustellenberichte, Rechnungen, Mahnwesen. Voice + Claude + Supabase.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Softwarelösungen für KMUs: KI übernimmt die Bürokratie",
+    description:
+      "21 KI-Bausteine für KMUs: Anfragen, Angebote, Materialbestellung, Baustellenberichte, Rechnungen, Mahnwesen. Voice + Claude + Supabase.",
+  },
 };
 
 export default function KmuPage() {

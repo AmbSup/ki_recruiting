@@ -60,6 +60,15 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${manrope.variable} ${newsreader.variable} ${syne.variable} ${inter.variable} ${playfair.variable} ${montserrat.variable} ${bebas.variable}`}>
       <head>
+        {/* Root-Layout ist statisch (kein headers()-Zugriff, sonst verliert
+            die ganze App SSG). /en/* korrigiert lang synchron vor First
+            Paint — hreflang-Tags (siehe page-Metadata) sind ohnehin das
+            Signal, das Google fürs Sprach-Targeting nutzt, nicht html[lang]. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if(location.pathname==="/en"||location.pathname.indexOf("/en/")===0){document.documentElement.lang="en";}`,
+          }}
+        />
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
           rel="stylesheet"

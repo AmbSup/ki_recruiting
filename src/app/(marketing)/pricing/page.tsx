@@ -6,6 +6,7 @@ import { PilotBanner } from "../_components/pilot-banner";
 import { PricingFAQ } from "../_components/pricing-faq";
 import { CTAFooter } from "../_components/cta-footer";
 import { MarketingFooter } from "../_components/marketing-footer";
+import { FaqJsonLd } from "../_components/json-ld";
 
 const ACCENT = "#1A3A6E";
 
@@ -20,6 +21,20 @@ export const metadata: Metadata = {
       en: "https://app.neuronic-automation.ai/en/pricing",
       "x-default": "https://app.neuronic-automation.ai/pricing",
     },
+  },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://app.neuronic-automation.ai/pricing",
+    title: "Preise: Setup + Monatsabo. Alle KI-Anrufe inklusive.",
+    description:
+      "Klare Preise für unsere KI-Voice-Funnels. Setup einmalig, danach €499-3.999 pro Monat mit inkludierten Anrufen. Keine Per-Minute-Überraschungen.",
+  },
+  twitter: {
+    card: "summary",
+    title: "Preise: Setup + Monatsabo. Alle KI-Anrufe inklusive.",
+    description:
+      "Klare Preise für unsere KI-Voice-Funnels. Setup einmalig, danach €499-3.999 pro Monat mit inkludierten Anrufen. Keine Per-Minute-Überraschungen.",
   },
 };
 
@@ -44,6 +59,7 @@ export default function PricingPage() {
         <PricingTable lang={lang} accentColor={ACCENT} />
         <PilotBanner lang={lang} accentColor={ACCENT} />
         <PricingFAQ lang={lang} />
+        <FaqJsonLd lang={lang} />
         <CTAFooter lang={lang} sectionKey="home.final_cta" accentColor={ACCENT} />
       </main>
       <MarketingFooter lang={lang} />

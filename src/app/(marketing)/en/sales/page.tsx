@@ -24,6 +24,20 @@ export const metadata: Metadata = {
       "x-default": "https://app.neuronic-automation.ai/sales",
     },
   },
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://app.neuronic-automation.ai/en/sales",
+    title: "For Sales: AI calls your lead in 30 seconds",
+    description:
+      "Speed-to-Lead is the #1 sales metric. Our AI voice agent calls every form submission back within seconds — 24/7, fully automated.",
+  },
+  twitter: {
+    card: "summary",
+    title: "For Sales: AI calls your lead in 30 seconds",
+    description:
+      "Speed-to-Lead is the #1 sales metric. Our AI voice agent calls every form submission back within seconds — 24/7, fully automated.",
+  },
 };
 
 export default function EnSalesPage() {
