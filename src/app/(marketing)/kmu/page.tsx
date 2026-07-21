@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { HeroPhoto } from "../_components/hero-photo";
 import { ProblemTiles } from "../_components/problem-tiles";
 import { SolutionGrid } from "../_components/solution-grid";
 import { CTAFooter } from "../_components/cta-footer";
@@ -49,6 +50,11 @@ export default function KmuPage() {
           secondaryCtaKey="kmu.secondary_cta"
           secondaryHref="/showcase"
           accentColor={ACCENT}
+        />
+        <HeroPhoto
+          src="/marketing/kmu-hero.jpg"
+          alt="Inhaber eines mittelständischen Unternehmens vor dem Firmengebäude"
+          priority
         />
         <ProblemTiles lang={lang} />
         <SolutionGrid lang={lang} accentColor={ACCENT} />

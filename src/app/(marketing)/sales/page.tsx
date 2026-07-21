@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { HeroPhoto } from "../_components/hero-photo";
 import { PainList } from "../_components/pain-list";
 import { MetricCard } from "../_components/metric-card";
 import { HowItWorks } from "../_components/how-it-works";
@@ -58,6 +59,11 @@ export default function SalesPage() {
           secondaryCtaKey="sales.secondary_cta"
           secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
           accentColor={SALES_COLOR}
+        />
+        <HeroPhoto
+          src="/marketing/sales-hero.jpg"
+          alt="Vertriebsleiterin im modernen Büro"
+          priority
         />
         <PainList lang={lang} sectionKey="sales.pain" accentColor={SALES_COLOR} />
         <MetricCard

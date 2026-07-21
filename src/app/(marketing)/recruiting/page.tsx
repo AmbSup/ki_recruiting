@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { HeroPhoto } from "../_components/hero-photo";
 import { PainList } from "../_components/pain-list";
 import { MetricCard } from "../_components/metric-card";
 import { HowItWorks } from "../_components/how-it-works";
@@ -59,6 +60,11 @@ export default function RecruitingPage() {
           secondaryCtaKey="recruiting.secondary_cta"
           secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
           accentColor={REC_COLOR}
+        />
+        <HeroPhoto
+          src="/marketing/recruiting-hero.jpg"
+          alt="Recruiter sichtet Kandidatenprofile am Laptop"
+          priority
         />
         <PainList lang={lang} sectionKey="recruiting.pain" accentColor={REC_COLOR} />
         <MetricCard
