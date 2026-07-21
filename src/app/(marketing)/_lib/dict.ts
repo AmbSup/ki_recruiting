@@ -477,6 +477,10 @@ export const dict: Record<Lang, Dict> = {
         "Profile, Verträge, Angebote, Protokolle, E-Mails — irgendwo liegt die Antwort schon in deinen Daten. Unser KI-Wissensmanagement mit RAG und GraphRAG versteht Bedeutung und Zusammenhänge, nicht nur Stichwörter, und liefert dir die richtige Antwort in Sekunden.",
       primary_cta: "30-Min-Demo buchen",
       universal_claim: "KI-Wissensmanagement ist für jede Firma wertvoll.",
+      pullquote: {
+        eyebrow: "GraphRAG in der Praxis",
+        text: "Du stellst eine Frage in normaler Sprache. Die KI kennt die Antwort — und woher sie stammt.",
+      },
       pain: {
         eyebrow: "Was dich heute Zeit kostet",
         headline: "Stichwortsuche findet nicht, was du meinst",
