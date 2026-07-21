@@ -74,6 +74,8 @@ export default function WissenPage() {
         <HeroPhoto
           src="/marketing/wissen-hero.jpg"
           alt="Mitarbeiter durchsucht Aktenordner nach einem Dokument"
+          slogan={t(lang, "wissen.hero_photo_slogan")}
+          accentColor={ACCENT}
           priority
         />
 

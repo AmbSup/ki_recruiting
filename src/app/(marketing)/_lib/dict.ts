@@ -35,6 +35,7 @@ export const dict: Record<Lang, Dict> = {
         "AI-Funnels für Vertrieb und Recruiting — die deinen Lead oder Kandidaten innerhalb von 30 Sekunden zurückrufen. 24/7. Vollautomatisch. In deiner Stimme, mit deinem Pitch.",
       primary_cta: "Live testen",
       secondary_cta: "Demo buchen",
+      hero_photo_slogan: "Dein Handy klingelt in 30 Sekunden. Nicht erst am Montag.",
       split_eyebrow: "Zwei Welten, eine Technologie",
       split_intro:
         "Vertrieb und Recruiting sind unterschiedliche Welten. Aber beide leiden am gleichen Problem: Wer zuerst antwortet, gewinnt. Wähle deine Welt.",
@@ -122,6 +123,7 @@ export const dict: Record<Lang, Dict> = {
         "Du zahlst pro Klick für heiße Leads. Aber wenn dein Sales-Team am Wochenende schläft, ist der Lead am Montag kalt. Wir lassen ihn nicht kalt werden. Nie.",
       primary_cta: "Als Kunde testen",
       secondary_cta: "Demo buchen",
+      hero_photo_slogan: "Du rufst den Lead zuerst an. Automatisch, in 30 Sekunden.",
       pain: {
         eyebrow: "Das kostet dich Umsatz",
         headline: "Speed-to-Lead ist die #1-Kennzahl im Vertrieb",
@@ -208,6 +210,7 @@ export const dict: Record<Lang, Dict> = {
         "Kandidaten bewerben sich bei 10 Firmen gleichzeitig. Wer zuerst mit einem echten Menschen oder einer klugen KI spricht, bekommt den Zuschlag. Bei allen anderen entstehen Karteileichen.",
       primary_cta: "Als Kandidat testen",
       secondary_cta: "Demo buchen",
+      hero_photo_slogan: "KI analysiert Profile und ruft Kandidaten automatisch an.",
       pain: {
         eyebrow: "Der versteckte Kandidaten-Kollaps",
         headline: "Time-to-Hire ist heute die #1-Kandidaten-Barriere",
@@ -302,6 +305,7 @@ export const dict: Record<Lang, Dict> = {
       headline_accent: "Der Rest darum kostet Zeit.",
       sub:
         "Angebote, Materialbestellungen, Baustellenberichte, Recruiting, Mahnwesen — die Arbeit rundum zieht KMUs Zeit, Geld und Nerven. KI-Automation für die Prozesse, die dich nicht weiterbringen. Voice + Claude + Supabase.",
+      hero_photo_slogan: "Die Bürokratie erledigt die KI. Du kümmerst dich ums Geschäft.",
       dogfood: {
         eyebrow: "Erlebe unseren KI-Agent",
         headline: "Fülle 3 Fragen aus — dein Handy klingelt in 30 Sekunden",
@@ -476,6 +480,7 @@ export const dict: Record<Lang, Dict> = {
       sub:
         "Profile, Verträge, Angebote, Protokolle, E-Mails — irgendwo liegt die Antwort schon in deinen Daten. Unser KI-Wissensmanagement mit RAG und GraphRAG versteht Bedeutung und Zusammenhänge, nicht nur Stichwörter, und liefert dir die richtige Antwort in Sekunden.",
       primary_cta: "30-Min-Demo buchen",
+      hero_photo_slogan: "Nie wieder suchen. Die KI kennt die Antwort — in Sekunden.",
       universal_claim: "KI-Wissensmanagement ist für jede Firma wertvoll.",
       pullquote: {
         eyebrow: "GraphRAG in der Praxis",

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { t } from "./_lib/t";
 import { MarketingNav } from "./_components/marketing-nav";
 import { Hero } from "./_components/hero";
 import { HeroPhoto } from "./_components/hero-photo";
@@ -68,6 +69,7 @@ export default async function HomePage() {
         <HeroPhoto
           src="/marketing/home-hero.jpg"
           alt="Frau nimmt lächelnd einen Anruf auf dem Handy entgegen"
+          slogan={t(lang, "home.hero_photo_slogan")}
           priority
         />
         <SplitFocus lang={lang} />

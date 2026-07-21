@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
 import { HeroPhoto } from "../_components/hero-photo";
@@ -54,6 +55,8 @@ export default function KmuPage() {
         <HeroPhoto
           src="/marketing/kmu-hero.jpg"
           alt="Inhaber eines mittelständischen Unternehmens vor dem Firmengebäude"
+          slogan={t(lang, "kmu.hero_photo_slogan")}
+          accentColor={ACCENT}
           priority
         />
         <ProblemTiles lang={lang} />

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
 import { HeroPhoto } from "../_components/hero-photo";
@@ -64,6 +65,8 @@ export default function RecruitingPage() {
         <HeroPhoto
           src="/marketing/recruiting-hero.jpg"
           alt="Recruiter sichtet Kandidatenprofile am Laptop"
+          slogan={t(lang, "recruiting.hero_photo_slogan")}
+          accentColor={REC_COLOR}
           priority
         />
         <PainList lang={lang} sectionKey="recruiting.pain" accentColor={REC_COLOR} />

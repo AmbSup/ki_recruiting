@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
 import { HeroPhoto } from "../_components/hero-photo";
@@ -63,6 +64,8 @@ export default function SalesPage() {
         <HeroPhoto
           src="/marketing/sales-hero.jpg"
           alt="Vertriebsleiterin im modernen Büro"
+          slogan={t(lang, "sales.hero_photo_slogan")}
+          accentColor={SALES_COLOR}
           priority
         />
         <PainList lang={lang} sectionKey="sales.pain" accentColor={SALES_COLOR} />
