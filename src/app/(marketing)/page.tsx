@@ -72,8 +72,8 @@ export default async function HomePage() {
             priority: true,
           }}
         />
-        <LogoCloud lang={lang} sectionKey="home.clients" />
-        <LogoCloud lang={lang} sectionKey="home.competence" />
+        <LogoCloud lang={lang} sectionKey="shared.clients" />
+        <LogoCloud lang={lang} sectionKey="shared.competence" />
         <SplitFocus lang={lang} />
         <ShowcaseTeaser lang={lang} />
         <HowItWorks lang={lang} sectionKey="home.how_it_works" />

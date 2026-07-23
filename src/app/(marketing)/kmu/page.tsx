@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { LogoCloud } from "../_components/logo-cloud";
 import { ProblemTiles } from "../_components/problem-tiles";
 import { SolutionGrid } from "../_components/solution-grid";
 import { CTAFooter } from "../_components/cta-footer";
@@ -57,6 +58,7 @@ export default function KmuPage() {
             priority: true,
           }}
         />
+        <LogoCloud lang={lang} sectionKey="shared.clients" variant="compact" />
         <ProblemTiles lang={lang} />
         <SolutionGrid lang={lang} accentColor={ACCENT} />
         <CTAFooter lang={lang} sectionKey="kmu.final_cta" accentColor={ACCENT} />

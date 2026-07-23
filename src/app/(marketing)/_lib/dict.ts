@@ -27,15 +27,7 @@ export const dict: Record<Lang, Dict> = {
       sales: "🎯 Sales-Demo",
       recruiting: "🧑‍💼 Recruiting-Demo",
     },
-    home: {
-      eyebrow: "AI Funnel Expert",
-      headline: "Der KI-Anruf, der in Sekunden geschieht.",
-      headline_accent: "Nicht nach dem Wochenende.",
-      sub:
-        "AI-Funnels für Vertrieb und Recruiting — die deinen Lead oder Kandidaten innerhalb von 30 Sekunden zurückrufen. 24/7. Vollautomatisch. In deiner Stimme, mit deinem Pitch.",
-      primary_cta: "Live testen",
-      secondary_cta: "Demo buchen",
-      hero_photo_slogan: "Dein Handy klingelt in 30 Sekunden. Nicht erst am Montag.",
+    shared: {
       clients: {
         eyebrow: "Meine zufriedenen Kunden",
         logos: [
@@ -61,6 +53,16 @@ export const dict: Record<Lang, Dict> = {
           { src: "/marketing/logos/competence/digital-consulting.png", alt: "Digital Consulting" },
         ],
       },
+    },
+    home: {
+      eyebrow: "AI Funnel Expert",
+      headline: "Der KI-Anruf, der in Sekunden geschieht.",
+      headline_accent: "Nicht nach dem Wochenende.",
+      sub:
+        "AI-Funnels für Vertrieb und Recruiting — die deinen Lead oder Kandidaten innerhalb von 30 Sekunden zurückrufen. 24/7. Vollautomatisch. In deiner Stimme, mit deinem Pitch.",
+      primary_cta: "Live testen",
+      secondary_cta: "Demo buchen",
+      hero_photo_slogan: "Dein Handy klingelt in 30 Sekunden. Nicht erst am Montag.",
       split_eyebrow: "Zwei Welten, eine Technologie",
       split_intro:
         "Vertrieb und Recruiting sind unterschiedliche Welten. Aber beide leiden am gleichen Problem: Wer zuerst antwortet, gewinnt. Wähle deine Welt.",

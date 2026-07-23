@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { LogoCloud } from "../_components/logo-cloud";
 import { PainList } from "../_components/pain-list";
 import { MetricCard } from "../_components/metric-card";
 import { BenefitGrid } from "../_components/benefit-grid";
@@ -75,6 +76,8 @@ export default function WissenPage() {
             />
           </div>
         </div>
+
+        <LogoCloud lang={lang} sectionKey="shared.clients" variant="compact" />
 
         <section className="mx-auto max-w-6xl px-6 pb-16">
           <ColorBlock

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { LogoCloud } from "../_components/logo-cloud";
 import { PainList } from "../_components/pain-list";
 import { MetricCard } from "../_components/metric-card";
 import { HowItWorks } from "../_components/how-it-works";
@@ -66,6 +67,7 @@ export default function SalesPage() {
             priority: true,
           }}
         />
+        <LogoCloud lang={lang} sectionKey="shared.clients" variant="compact" />
         <PainList lang={lang} sectionKey="sales.pain" accentColor={SALES_COLOR} />
         <MetricCard
           lang={lang}
