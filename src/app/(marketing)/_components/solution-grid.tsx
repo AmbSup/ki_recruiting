@@ -7,11 +7,16 @@ type Solution = {
   stack: string[];
 };
 
-// 3-Spalten-Grid für KMU-Lösungen. Jede Card zeigt:
+type Category = {
+  label: string;
+  items: Solution[];
+};
+
+// Gruppiertes Grid für KMU-Lösungen, in Kategorien mit Subheading statt
+// einer einzigen 21-Card-Wand. Jede Card zeigt:
 //  - Problem-Titel (fett)
 //  - Kurze Lösung (2-3 Sätze)
 //  - Tech-Stack-Badges (Vapi / Claude / n8n / Supabase)
-// Bewusst kompakt gehalten — 21 Cards passen so übersichtlich auf eine Seite.
 export function SolutionGrid({
   lang,
   accentColor = "#1A3A6E",
@@ -19,13 +24,13 @@ export function SolutionGrid({
   lang: Lang;
   accentColor?: string;
 }) {
-  const section = (dict[lang] as { kmu?: { solutions?: { items?: Solution[] } } })?.kmu
+  const section = (dict[lang] as { kmu?: { solutions?: { categories?: Category[] } } })?.kmu
     ?.solutions;
-  const items = (section?.items ?? []) as Solution[];
+  const categories = (section?.categories ?? []) as Category[];
 
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
-      <div className="text-center mb-10">
+      <div className="text-center mb-12">
         <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
           {t(lang, "kmu.solutions.eyebrow")}
         </p>
@@ -37,32 +42,39 @@ export function SolutionGrid({
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {items.map((s, idx) => (
-          <div
-            key={idx}
-            className="rounded-xl bg-white border border-slate-200 p-5 hover:border-slate-300 hover:shadow-sm transition"
-          >
-            <div className="flex items-start gap-2 mb-2">
+      <div className="space-y-12">
+        {categories.map((category) => (
+          <div key={category.label}>
+            <h3 className="flex items-center gap-2 font-body text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
               <span
-                className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: accentColor }}
               />
-              <h3 className="font-body font-semibold text-sm text-slate-900 leading-tight">
-                {s.problem}
-              </h3>
-            </div>
-            <p className="font-body text-[13px] text-slate-600 leading-relaxed mb-3">
-              {s.solution}
-            </p>
-            <div className="flex flex-wrap gap-1">
-              {s.stack.map((tech) => (
-                <span
-                  key={tech}
-                  className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-slate-50 text-slate-600 border border-slate-100"
+              {category.label}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {category.items.map((s) => (
+                <div
+                  key={s.problem}
+                  className="rounded-xl bg-white border border-slate-200 p-5 hover:border-slate-300 hover:shadow-sm transition"
                 >
-                  {tech}
-                </span>
+                  <h4 className="font-body font-semibold text-sm text-slate-900 leading-tight mb-2">
+                    {s.problem}
+                  </h4>
+                  <p className="font-body text-[13px] text-slate-600 leading-relaxed mb-3">
+                    {s.solution}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {s.stack.map((tech) => (
+                      <span
+                        key={tech}
+                        className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-slate-50 text-slate-600 border border-slate-100"
+                      >
+                        {tech}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>

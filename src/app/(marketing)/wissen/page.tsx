@@ -8,7 +8,6 @@ import { BenefitGrid } from "../_components/benefit-grid";
 import { ICPGrid } from "../_components/icp-grid";
 import { CTAFooter } from "../_components/cta-footer";
 import { MarketingFooter } from "../_components/marketing-footer";
-import { HeroPhoto } from "../_components/hero-photo";
 import { ColorBlock } from "../_components/color-block";
 import { WissenGraphIllustration } from "../_components/wissen-graph-illustration";
 import { WissenSearchIllustration } from "../_components/wissen-search-illustration";
@@ -67,17 +66,15 @@ export default function WissenPage() {
               primaryCtaKey="wissen.primary_cta"
               primaryHref="https://cal.com/martin-amon-l2hybo/30min"
               accentColor={ACCENT}
+              photo={{
+                src: "/marketing/wissen-hero.jpg",
+                alt: "Mitarbeiter durchsucht Aktenordner nach einem Dokument",
+                slogan: t(lang, "wissen.hero_photo_slogan"),
+                priority: true,
+              }}
             />
           </div>
         </div>
-
-        <HeroPhoto
-          src="/marketing/wissen-hero.jpg"
-          alt="Mitarbeiter durchsucht Aktenordner nach einem Dokument"
-          slogan={t(lang, "wissen.hero_photo_slogan")}
-          accentColor={ACCENT}
-          priority
-        />
 
         <section className="mx-auto max-w-6xl px-6 pb-16">
           <ColorBlock

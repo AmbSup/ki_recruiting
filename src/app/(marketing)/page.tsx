@@ -4,7 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { t } from "./_lib/t";
 import { MarketingNav } from "./_components/marketing-nav";
 import { Hero } from "./_components/hero";
-import { HeroPhoto } from "./_components/hero-photo";
 import { SplitFocus } from "./_components/split-focus";
 import { HowItWorks } from "./_components/how-it-works";
 import { DogfoodCTA } from "./_components/dogfood-cta";
@@ -65,12 +64,12 @@ export default async function HomePage() {
           primaryHref="#dogfood"
           secondaryCtaKey="home.secondary_cta"
           secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
-        />
-        <HeroPhoto
-          src="/marketing/home-hero.jpg"
-          alt="Frau nimmt lächelnd einen Anruf auf dem Handy entgegen"
-          slogan={t(lang, "home.hero_photo_slogan")}
-          priority
+          photo={{
+            src: "/marketing/home-hero.jpg",
+            alt: "Frau nimmt lächelnd einen Anruf auf dem Handy entgegen",
+            slogan: t(lang, "home.hero_photo_slogan"),
+            priority: true,
+          }}
         />
         <SplitFocus lang={lang} />
         <ShowcaseTeaser lang={lang} />

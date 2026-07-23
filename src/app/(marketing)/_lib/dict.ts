@@ -336,7 +336,10 @@ export const dict: Record<Lang, Dict> = {
         headline: "Für jedes Problem ein sofort einsetzbarer Baustein",
         sub:
           "Nicht als Suite verkauft — sondern einzeln implementiert. Du wählst was zuerst Schmerz macht, wir bauen es in 3-14 Tagen live.",
-        items: [
+        categories: [
+          {
+            label: "Anfragen, Angebote & Material",
+            items: [
           {
             problem: "Kundenanfragen unbeantwortet",
             solution:
@@ -379,6 +382,11 @@ export const dict: Record<Lang, Dict> = {
               "Materialentnahmen per Sprache melden — Claude erkennt Artikel + Menge, aktualisiert Bestand. Nachbestellung startet automatisch bei Unterschreitung des Mindestbestandes.",
             stack: ["Claude", "n8n", "Supabase"],
           },
+          ],
+          },
+          {
+            label: "Baustelle, Team & Termine",
+            items: [
           {
             problem: "Baustellenplanung",
             solution:
@@ -421,6 +429,11 @@ export const dict: Record<Lang, Dict> = {
               "Kunden buchen 24/7 telefonisch. Vapi prüft freie Kapazitäten, schlägt passende Termine vor und synchronisiert mit ERP + Kalender.",
             stack: ["Vapi", "n8n", "Supabase"],
           },
+          ],
+          },
+          {
+            label: "Rechnungen, Service & Reporting",
+            items: [
           {
             problem: "Rechnungsstellung",
             solution:
@@ -462,6 +475,8 @@ export const dict: Record<Lang, Dict> = {
             solution:
               "Telefon, WhatsApp und E-Mail landen in einem gemeinsamen Kanal. Claude erkennt Sender, Absicht und Priorität. Automatische Weiterleitung an zuständige Person.",
             stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+            ],
           },
         ],
       },
