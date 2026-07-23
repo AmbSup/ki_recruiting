@@ -36,6 +36,31 @@ export const dict: Record<Lang, Dict> = {
       primary_cta: "Live testen",
       secondary_cta: "Demo buchen",
       hero_photo_slogan: "Dein Handy klingelt in 30 Sekunden. Nicht erst am Montag.",
+      clients: {
+        eyebrow: "Meine zufriedenen Kunden",
+        logos: [
+          { src: "/marketing/logos/clients/wien-it.png", alt: "Wien IT" },
+          { src: "/marketing/logos/clients/bmw.png", alt: "BMW" },
+          { src: "/marketing/logos/clients/boge-rubber-plastics.png", alt: "BOGE Rubber & Plastics" },
+          { src: "/marketing/logos/clients/bt-group.png", alt: "BT Group" },
+          { src: "/marketing/logos/clients/dhl-consulting.webp", alt: "DHL Consulting" },
+          { src: "/marketing/logos/clients/smia.png", alt: "SMIA" },
+          { src: "/marketing/logos/clients/gfp-prozessmanagement.jpg", alt: "Gesellschaft für Prozessmanagement" },
+          { src: "/marketing/logos/clients/kardex.png", alt: "Kardex" },
+          { src: "/marketing/logos/clients/rewe-group.png", alt: "REWE Group" },
+          { src: "/marketing/logos/clients/siemens-advanta-consulting.webp", alt: "Siemens Advanta Consulting" },
+          { src: "/marketing/logos/clients/synergie.png", alt: "Synergie" },
+        ],
+      },
+      competence: {
+        eyebrow: "Kompetenz",
+        logos: [
+          { src: "/marketing/logos/competence/wu.jpg", alt: "WU Executive Academy" },
+          { src: "/marketing/logos/competence/prozessmanagement.jpg", alt: "Gesellschaft für Prozessmanagement" },
+          { src: "/marketing/logos/competence/scrum.jpg", alt: "Scrum Master Certified" },
+          { src: "/marketing/logos/competence/digital-consulting.png", alt: "Digital Consulting" },
+        ],
+      },
       split_eyebrow: "Zwei Welten, eine Technologie",
       split_intro:
         "Vertrieb und Recruiting sind unterschiedliche Welten. Aber beide leiden am gleichen Problem: Wer zuerst antwortet, gewinnt. Wähle deine Welt.",

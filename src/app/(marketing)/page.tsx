@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { t } from "./_lib/t";
 import { MarketingNav } from "./_components/marketing-nav";
 import { Hero } from "./_components/hero";
+import { LogoCloud } from "./_components/logo-cloud";
 import { SplitFocus } from "./_components/split-focus";
 import { HowItWorks } from "./_components/how-it-works";
 import { DogfoodCTA } from "./_components/dogfood-cta";
@@ -71,6 +72,8 @@ export default async function HomePage() {
             priority: true,
           }}
         />
+        <LogoCloud lang={lang} sectionKey="home.clients" />
+        <LogoCloud lang={lang} sectionKey="home.competence" />
         <SplitFocus lang={lang} />
         <ShowcaseTeaser lang={lang} />
         <HowItWorks lang={lang} sectionKey="home.how_it_works" />
