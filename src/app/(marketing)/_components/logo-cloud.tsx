@@ -20,18 +20,18 @@ export function LogoCloud({ lang, sectionKey }: { lang: Lang; sectionKey: string
       <p className="text-center font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-8">
         {eyebrow}
       </p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      <div className="flex flex-wrap justify-center gap-4">
         {logos.map((logo) => (
           <div
             key={logo.src}
-            className="flex items-center justify-center h-20 sm:h-24 rounded-xl bg-white border border-slate-200 p-4"
+            className="flex items-center justify-center w-36 sm:w-40 h-20 sm:h-24 rounded-xl bg-white border border-slate-200 p-3"
           >
             <Image
               src={logo.src}
               alt={logo.alt}
               width={160}
               height={64}
-              className="max-h-10 sm:max-h-12 w-auto object-contain"
+              className="max-h-14 sm:max-h-16 max-w-full w-auto object-contain"
             />
           </div>
         ))}
