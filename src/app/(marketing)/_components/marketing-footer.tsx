@@ -61,6 +61,13 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
               )}
               {lang === "de" && (
                 <li>
+                  <Link href="/aria" className="text-slate-600 hover:text-slate-900">
+                    {t(lang, "footer.links.aria")}
+                  </Link>
+                </li>
+              )}
+              {lang === "de" && (
+                <li>
                   <Link href="/blog" className="text-slate-600 hover:text-slate-900">
                     {t(lang, "footer.links.blog")}
                   </Link>

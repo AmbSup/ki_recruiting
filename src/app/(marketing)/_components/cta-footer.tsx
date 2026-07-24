@@ -6,10 +6,12 @@ export function CTAFooter({
   lang,
   sectionKey,
   accentColor = "#0F172A",
+  href = "https://cal.com/martin-amon-l2hybo/30min",
 }: {
   lang: Lang;
   sectionKey: string;
   accentColor?: string;
+  href?: string;
 }) {
   return (
     <section className="mx-auto max-w-4xl px-6 py-16 text-center">
@@ -26,7 +28,7 @@ export function CTAFooter({
         {t(lang, `${sectionKey}.sub`)}
       </p>
       <a
-        href="https://cal.com/martin-amon-l2hybo/30min"
+        href={href}
         target="_blank"
         rel="noopener noreferrer"
         className="inline-flex items-center rounded-full bg-slate-900 px-8 py-4 text-base font-medium text-white hover:bg-slate-800 transition shadow-md"

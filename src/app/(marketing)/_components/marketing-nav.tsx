@@ -61,6 +61,14 @@ export function MarketingNav({ lang }: { lang: Lang }) {
           )}
           {lang === "de" && (
             <Link
+              href="/aria"
+              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+            >
+              {t(lang, "nav.aria")}
+            </Link>
+          )}
+          {lang === "de" && (
+            <Link
               href="/blog"
               className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
             >

@@ -16,6 +16,7 @@ export const dict: Record<Lang, Dict> = {
       recruiting: "Fürs Recruiting",
       kmu: "Für KMUs",
       wissen: "Wissensmanagement",
+      aria: "ARIA",
       blog: "Blog",
       pricing: "Preise",
       showcase: "Live-Funnels",
@@ -614,6 +615,104 @@ export const dict: Record<Lang, Dict> = {
         cta: "30-Min-Demo buchen →",
       },
     },
+    aria: {
+      eyebrow: "Neue Unternehmensintelligenz",
+      headline: "Jede Frage. Die richtige Antwort.",
+      headline_accent: "Aus der richtigen Quelle. Zur richtigen Zeit.",
+      sub:
+        "ARIA verbindet euer verteiltes Unternehmenswissen zu einer permission-aware Intelligenz. Jede Mitarbeiterin bekommt genau die Information, die sie braucht — nicht mehr, nicht weniger, und immer mit Quellenangabe.",
+      primary_cta: "Demo ansehen →",
+      universal_claim: "Neue KI-Intelligenz statt zentrales Datenchaos.",
+      pullquote: {
+        eyebrow: "Die Idee dahinter",
+        text: "Jeder bekommt die richtige Information, aus der richtigen Quelle, zum richtigen Zeitpunkt, zum richtigen Zweck.",
+      },
+      pain: {
+        eyebrow: "Der Status quo",
+        headline: "Wissen ist da. Nur nicht dort, wo es gebraucht wird.",
+        items: [
+          {
+            title: "Wissen sitzt in Silos",
+            body:
+              "Dokumente, Tickets, Protokolle, Postfächer — jedes System kennt nur seinen eigenen Ausschnitt der Wahrheit.",
+          },
+          {
+            title: "Suche kostet Zeit, die niemand hat",
+            body:
+              "Mitarbeiter verbringen Stunden pro Woche damit, die richtige Datei im falschen System zu suchen.",
+          },
+          {
+            title: "Zugriffsrechte sind ein Blackbox-Problem",
+            body:
+              "Wer was sehen darf, wird oft grob statt granular geregelt — zu offen oder zu restriktiv.",
+          },
+          {
+            title: "Entscheidungen basieren auf veralteten Ständen",
+            body:
+              "Bis die richtige Information gefunden ist, hat sich die Grundlage der Entscheidung oft schon wieder geändert.",
+          },
+        ],
+      },
+      benefits: {
+        eyebrow: "Was ARIA anders macht",
+        headline: "Verteiltes Wissen, zentral nutzbar.",
+        sub: "Kein weiteres Dashboard — eine Intelligenz-Schicht über eurem bestehenden Wissen.",
+        items: [
+          {
+            title: "Permission-aware Zugriff",
+            body: "Jede Antwort respektiert automatisch, wer was sehen darf — bis auf Dokumenten-Ebene.",
+          },
+          {
+            title: "Antworten mit Quellenangabe",
+            body: "Jede Aussage lässt sich bis zum Ursprungsdokument zurückverfolgen — keine Blackbox.",
+          },
+          {
+            title: "Verknüpfung über Systeme hinweg",
+            body: "ARIA verbindet Dokumente, Tickets und Gespräche zu einem gemeinsamen Wissensgraphen.",
+          },
+          {
+            title: "Immer aktuell",
+            body: "Neue Quellen werden laufend eingebunden — keine veralteten Exporte, keine Insellösungen.",
+          },
+        ],
+      },
+      icp: {
+        eyebrow: "Für wen",
+        headline: "Für Teams, bei denen Wissen der Engpass ist.",
+        industries: [
+          {
+            name: "Legal & Compliance",
+            pain: "Verträge, Richtlinien und Präzedenzfälle über Jahre verteilt in verschiedenen Ablagen.",
+          },
+          {
+            name: "HR & People",
+            pain: "Richtlinien, Verträge, Fallhistorie — verstreut über Systeme, die selten miteinander sprechen.",
+          },
+          {
+            name: "Vertrieb & Customer Success",
+            pain: "Produktwissen, Preislisten, Kundenhistorie: nie da, wo gerade das Kundengespräch läuft.",
+          },
+          {
+            name: "Support",
+            pain: "Neue Mitarbeiter brauchen Monate, bis sie wissen, wo welche Antwort liegt.",
+          },
+          {
+            name: "Konzern-IT & Compliance",
+            pain: "Zugriff auf Wissen muss nachvollziehbar und auditierbar bleiben — nicht nur schnell.",
+          },
+          {
+            name: "Wissensintensive Beratung",
+            pain: "Jedes Projekt startet wieder bei null, obwohl die Antwort meist schon irgendwo im Haus existiert.",
+          },
+        ],
+      },
+      final_cta: {
+        eyebrow: "Sieh es dir live an",
+        headline: "Probier ARIA in der Live-Demo aus",
+        sub: "Keine Anmeldung nötig — stell deine erste Frage direkt in der Demo-Umgebung.",
+        cta: "Zur Demo →",
+      },
+    },
     pricing: {
       eyebrow: "Preise",
       headline: "Setup + Base-Fee + Minuten. Zahl was du sprichst.",
@@ -761,6 +860,7 @@ export const dict: Record<Lang, Dict> = {
         recruiting: "Fürs Recruiting",
         kmu: "Für KMUs",
         wissen: "KI-Wissensmanagement",
+        aria: "ARIA",
         blog: "Blog",
         pricing: "Preise",
         demo: "Demo buchen",
