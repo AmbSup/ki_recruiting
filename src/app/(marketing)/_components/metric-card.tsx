@@ -23,7 +23,7 @@ export function MetricCard({
   return (
     <div className="mx-auto max-w-3xl px-6 py-14 text-center">
       <p
-        className="font-label text-xs font-bold uppercase tracking-widest mb-3"
+        className="font-label text-[15.6px] font-bold uppercase tracking-widest mb-3"
         style={{ color: BRAND_COLOR }}
       >
         {t(lang, labelKey)}

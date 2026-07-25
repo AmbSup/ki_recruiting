@@ -625,7 +625,7 @@ export const dict: Record<Lang, Dict> = {
       universal_claim: "Neue KI-Intelligenz statt zentrales Datenchaos.",
       pullquote: {
         eyebrow: "Die Idee dahinter",
-        text: "Jeder bekommt die richtige Information, aus der richtigen Quelle, zum richtigen Zeitpunkt, zum richtigen Zweck.",
+        text: "KI Betriebssysteme und verteilte Intelligenz sind die klare Zukunft.",
       },
       pain: {
         eyebrow: "Der Status quo",

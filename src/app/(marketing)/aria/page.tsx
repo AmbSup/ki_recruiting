@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
@@ -89,6 +90,15 @@ export default function AriaPage() {
             variant="tertiary"
             eyebrow={t(lang, "aria.pullquote.eyebrow")}
             text={t(lang, "aria.pullquote.text")}
+            illustration={
+              <Image
+                src="/marketing/ki-netzwerk.jpg"
+                alt="KI-Netzwerk aus verteilten, verbundenen Knoten"
+                width={640}
+                height={355}
+                className="rounded-2xl object-cover w-full max-w-md"
+              />
+            }
           />
         </section>
 

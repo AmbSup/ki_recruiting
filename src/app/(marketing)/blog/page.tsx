@@ -38,7 +38,7 @@ export default function BlogIndexPage() {
       <main>
         <section className="mx-auto max-w-4xl px-6 pt-20 pb-12 text-center">
           <p
-            className="font-label text-xs font-bold uppercase tracking-widest mb-4"
+            className="font-label text-[15.6px] font-bold uppercase tracking-widest mb-4"
             style={{ color: BRAND_COLOR }}
           >
             Blog

@@ -22,7 +22,7 @@ export function PainList({
     <section className="mx-auto max-w-4xl px-6 py-16">
       <div className="text-center mb-10">
         <p
-          className="font-label text-xs font-bold uppercase tracking-widest mb-3"
+          className="font-label text-[15.6px] font-bold uppercase tracking-widest mb-3"
           style={{ color: BRAND_COLOR }}
         >
           {t(lang, `${sectionKey}.eyebrow`)}

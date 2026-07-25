@@ -25,7 +25,7 @@ export function DogfoodCTA({
         style={{ backgroundColor: `${accentColor}0a`, border: `1px solid ${accentColor}22` }}
       >
         <p
-          className="font-label text-xs font-bold uppercase tracking-widest mb-3"
+          className="font-label text-[15.6px] font-bold uppercase tracking-widest mb-3"
           style={{ color: BRAND_COLOR }}
         >
           {t(lang, `${sectionKey}.eyebrow`)}

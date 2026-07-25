@@ -33,7 +33,7 @@ export function LogoCloud({
   return (
     <section className={`mx-auto max-w-6xl px-6 ${compact ? "py-8" : "py-12"}`}>
       <p
-        className={`text-center font-label text-xs font-bold uppercase tracking-widest ${
+        className={`text-center font-label text-[15.6px] font-bold uppercase tracking-widest ${
           compact ? "mb-4" : "mb-8"
         }`}
         style={{ color: BRAND_COLOR }}

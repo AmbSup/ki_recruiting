@@ -49,7 +49,7 @@ export function Hero({
   const text = (
     <div className={photo ? "text-center lg:text-left" : "text-center"}>
       <p
-        className="font-label text-xs font-bold uppercase tracking-widest mb-4"
+        className="font-label text-[15.6px] font-bold uppercase tracking-widest mb-4"
         style={{ color: BRAND_COLOR }}
       >
         {eyebrow}

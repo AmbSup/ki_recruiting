@@ -71,7 +71,7 @@ export default async function BlogPostPage({
               ← Blog
             </Link>
             <p
-              className="font-label text-xs font-bold uppercase tracking-widest mt-6 mb-4"
+              className="font-label text-[15.6px] font-bold uppercase tracking-widest mt-6 mb-4"
               style={{ color: BRAND_COLOR }}
             >
               {post.heroEyebrow}
