@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MarketingNav } from "../_components/marketing-nav";
 import { MarketingFooter } from "../_components/marketing-footer";
 import { blogPosts } from "../_lib/blog-posts";
+import { BRAND_COLOR } from "../_lib/brand";
 
 export const metadata: Metadata = {
   title: "Blog: KI für Recruiting, Vertrieb und KMUs",
@@ -36,7 +37,10 @@ export default function BlogIndexPage() {
       <MarketingNav lang={lang} />
       <main>
         <section className="mx-auto max-w-4xl px-6 pt-20 pb-12 text-center">
-          <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
+          <p
+            className="font-label text-xs font-bold uppercase tracking-widest mb-4"
+            style={{ color: BRAND_COLOR }}
+          >
             Blog
           </p>
           <h1 className="font-headline text-4xl sm:text-5xl italic leading-[1.05] text-slate-900 mb-6">

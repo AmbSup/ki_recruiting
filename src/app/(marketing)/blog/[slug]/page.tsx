@@ -6,6 +6,7 @@ import { MarketingFooter } from "../../_components/marketing-footer";
 import { BlogBody } from "../../_components/blog-body";
 import { ArticleJsonLd } from "../../_components/json-ld";
 import { blogPosts, getBlogPost } from "../../_lib/blog-posts";
+import { BRAND_COLOR } from "../../_lib/brand";
 
 const BASE_URL = "https://app.neuronic-automation.ai";
 
@@ -71,7 +72,7 @@ export default async function BlogPostPage({
             </Link>
             <p
               className="font-label text-xs font-bold uppercase tracking-widest mt-6 mb-4"
-              style={{ color: post.accentColor }}
+              style={{ color: BRAND_COLOR }}
             >
               {post.heroEyebrow}
             </p>

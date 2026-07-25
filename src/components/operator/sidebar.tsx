@@ -10,6 +10,7 @@ const navItems = [
   { href: "/companies",    icon: "domain",         label: "Firmen" },
   { href: "/jobs",         icon: "work",           label: "Jobs" },
   { href: "/funnels",      icon: "filter_alt",     label: "Funnels" },
+  { href: "/analytics",    icon: "monitoring",     label: "Website-Analytics" },
   { href: "/ads-setup",    icon: "ads_click",      label: "Ads Setup" },
   { href: "/applicants",   icon: "people",         label: "Bewerber" },
   { href: "/sales-dashboard", icon: "trending_up",  label: "Sales" },

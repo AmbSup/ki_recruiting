@@ -1,5 +1,6 @@
 import { dict, type Lang } from "../_lib/dict";
 import { t } from "../_lib/t";
+import { BRAND_COLOR } from "../_lib/brand";
 
 type Solution = {
   problem: string;
@@ -31,7 +32,10 @@ export function SolutionGrid({
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
       <div className="text-center mb-12">
-        <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+        <p
+          className="font-label text-xs font-bold uppercase tracking-widest mb-3"
+          style={{ color: BRAND_COLOR }}
+        >
           {t(lang, "kmu.solutions.eyebrow")}
         </p>
         <h2 className="font-headline text-3xl sm:text-4xl italic text-slate-900 mb-3 max-w-2xl mx-auto leading-tight">

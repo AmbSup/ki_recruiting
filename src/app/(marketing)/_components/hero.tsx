@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { t, type Lang } from "../_lib/t";
+import { BRAND_COLOR } from "../_lib/brand";
 
 type HeroPhoto = {
   src: string;
@@ -47,7 +48,10 @@ export function Hero({
 
   const text = (
     <div className={photo ? "text-center lg:text-left" : "text-center"}>
-      <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
+      <p
+        className="font-label text-xs font-bold uppercase tracking-widest mb-4"
+        style={{ color: BRAND_COLOR }}
+      >
         {eyebrow}
       </p>
       <h1 className="font-headline text-4xl sm:text-5xl md:text-6xl italic leading-[1.05] text-slate-900 mb-6">

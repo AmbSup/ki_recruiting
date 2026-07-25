@@ -7,6 +7,7 @@ import { ProblemTiles } from "../_components/problem-tiles";
 import { SolutionGrid } from "../_components/solution-grid";
 import { CTAFooter } from "../_components/cta-footer";
 import { MarketingFooter } from "../_components/marketing-footer";
+import { PageViewBeacon } from "../_components/page-view-beacon";
 
 const ACCENT = "#B45309"; // amber-700 — warmer Erdton für KMU-Positioning
 
@@ -38,6 +39,7 @@ export default function KmuPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-amber-50/30">
+      <PageViewBeacon slug="kmu" />
       <MarketingNav lang={lang} />
       <main>
         <Hero

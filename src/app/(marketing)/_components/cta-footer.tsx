@@ -1,4 +1,5 @@
 import { t, type Lang } from "../_lib/t";
+import { BRAND_COLOR } from "../_lib/brand";
 
 // Final Call-to-Action mit Cal.com-Booking-Link.
 // Auf jeder Page einmalig als Abschluss.
@@ -17,7 +18,7 @@ export function CTAFooter({
     <section className="mx-auto max-w-4xl px-6 py-16 text-center">
       <p
         className="font-label text-xs font-bold uppercase tracking-widest mb-3"
-        style={{ color: accentColor }}
+        style={{ color: BRAND_COLOR }}
       >
         {t(lang, `${sectionKey}.eyebrow`)}
       </p>

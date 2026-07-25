@@ -26,7 +26,7 @@ export function MarketingNav({ lang }: { lang: Lang }) {
             className="rounded"
           />
           <span className="font-headline text-lg italic text-slate-900 hidden sm:inline">
-            AI Funnel Expert
+            NEURONIC
           </span>
         </Link>
 

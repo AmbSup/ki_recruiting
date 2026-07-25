@@ -1,5 +1,6 @@
 import { dict, type Lang } from "../_lib/dict";
 import { t } from "../_lib/t";
+import { BRAND_COLOR } from "../_lib/brand";
 
 // Kompakte 2-Spalten-Liste der 10 größten KMU-Zeitfresser.
 // Dient als Problem-Bewusstsein-Anker vor der Solutions-Grid.
@@ -12,7 +13,10 @@ export function ProblemTiles({ lang }: { lang: Lang }) {
   return (
     <section className="mx-auto max-w-4xl px-6 py-14">
       <div className="text-center mb-8">
-        <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+        <p
+          className="font-label text-xs font-bold uppercase tracking-widest mb-3"
+          style={{ color: BRAND_COLOR }}
+        >
           {t(lang, "kmu.problems.eyebrow")}
         </p>
         <h2 className="font-headline text-3xl sm:text-4xl italic text-slate-900 leading-tight">

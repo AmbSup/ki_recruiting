@@ -38,7 +38,7 @@ export function BarWaterfall({ steps, accent }: { steps: WaterfallStep[]; accent
 
 type DayPoint = { date: string; visits: number; submits: number; cr: number };
 
-export function LineChart({ points, accent, height = 180 }: { points: DayPoint[]; accent?: string; height?: number }) {
+export function LineChart({ points, accent, height = 180, showSecondary = true }: { points: DayPoint[]; accent?: string; height?: number; showSecondary?: boolean }) {
   if (points.length === 0) {
     return <p className="font-body text-sm text-outline italic">Keine Daten in den letzten 30 Tagen.</p>;
   }
@@ -77,7 +77,9 @@ export function LineChart({ points, accent, height = 180 }: { points: DayPoint[]
         {/* Visits-Linie (absolut, links Y) */}
         <path d={visitsPath} fill="none" stroke={color} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
         {/* CR-Linie (rechts Y, gestrichelt) */}
-        <path d={crPath} fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="4 4" />
+        {showSecondary && (
+          <path d={crPath} fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" strokeDasharray="4 4" />
+        )}
         {/* X-Labels */}
         {xLabels.map((p, i) => {
           const idx = points.indexOf(p);
@@ -103,10 +105,12 @@ export function LineChart({ points, accent, height = 180 }: { points: DayPoint[]
           <span className="w-3 h-0.5" style={{ background: color }} />
           Besuche
         </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-3 h-0.5 border-t border-dashed" style={{ borderColor: "#10b981" }} />
-          Conversion-Rate
-        </span>
+        {showSecondary && (
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-0.5 border-t border-dashed" style={{ borderColor: "#10b981" }} />
+            Conversion-Rate
+          </span>
+        )}
       </div>
     </div>
   );

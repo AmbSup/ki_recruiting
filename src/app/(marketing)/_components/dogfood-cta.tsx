@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { t, type Lang } from "../_lib/t";
 import { dogfoodUrl } from "../_lib/dogfood";
+import { BRAND_COLOR } from "../_lib/brand";
 
 type Variant = "home" | "sales" | "recruiting" | "kmu";
 
@@ -25,7 +26,7 @@ export function DogfoodCTA({
       >
         <p
           className="font-label text-xs font-bold uppercase tracking-widest mb-3"
-          style={{ color: accentColor }}
+          style={{ color: BRAND_COLOR }}
         >
           {t(lang, `${sectionKey}.eyebrow`)}
         </p>

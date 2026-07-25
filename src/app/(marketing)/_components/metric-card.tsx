@@ -1,4 +1,5 @@
 import { t, type Lang } from "../_lib/t";
+import { BRAND_COLOR } from "../_lib/brand";
 
 type MetricCardProps = {
   lang: Lang;
@@ -21,7 +22,10 @@ export function MetricCard({
 }: MetricCardProps) {
   return (
     <div className="mx-auto max-w-3xl px-6 py-14 text-center">
-      <p className="font-label text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">
+      <p
+        className="font-label text-xs font-bold uppercase tracking-widest mb-3"
+        style={{ color: BRAND_COLOR }}
+      >
         {t(lang, labelKey)}
       </p>
       <div className="flex items-baseline justify-center gap-3 mb-4">

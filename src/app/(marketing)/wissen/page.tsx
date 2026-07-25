@@ -12,6 +12,7 @@ import { MarketingFooter } from "../_components/marketing-footer";
 import { ColorBlock } from "../_components/color-block";
 import { WissenGraphIllustration } from "../_components/wissen-graph-illustration";
 import { WissenSearchIllustration } from "../_components/wissen-search-illustration";
+import { PageViewBeacon } from "../_components/page-view-beacon";
 
 // Tertiary-Ton aus dem Claude-Design-System (globals.css) — eigenständige,
 // aber zur warmen Rust/Cream-Palette passende Farbe für Wissensmanagement-
@@ -46,6 +47,7 @@ export default function WissenPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <PageViewBeacon slug="wissen" />
       <MarketingNav lang={lang} />
       <main>
         <div className="relative overflow-hidden">
