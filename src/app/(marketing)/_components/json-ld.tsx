@@ -37,21 +37,22 @@ export function OrganizationJsonLd() {
 
 // BlogPosting-Schema pro Artikel. author/publisher zeigen auf dieselbe
 // Organization-@id wie OrganizationJsonLd — kein zweiter Entity-Eintrag.
-export function ArticleJsonLd({ post }: { post: BlogPost }) {
-  const url = `${BASE_URL}/blog/${post.slug}`;
+export function ArticleJsonLd({ post, lang }: { post: BlogPost; lang: Lang }) {
+  const content = post[lang];
+  const url = lang === "de" ? `${BASE_URL}/blog/${post.slug}` : `${BASE_URL}/en/blog/${post.slug}`;
   const json = {
     "@context": "https://schema.org",
     "@type": "BlogPosting",
     "@id": `${url}#article`,
     mainEntityOfPage: url,
-    headline: post.title,
-    description: post.metaDescription,
+    headline: content.title,
+    description: content.metaDescription,
     datePublished: post.publishedAt,
     dateModified: post.publishedAt,
-    inLanguage: "de-DE",
+    inLanguage: lang === "de" ? "de-DE" : "en-US",
     author: { "@id": `${BASE_URL}/#organization` },
     publisher: { "@id": `${BASE_URL}/#organization` },
-    keywords: post.keywords.join(", "),
+    keywords: content.keywords.join(", "),
   };
 
   return (

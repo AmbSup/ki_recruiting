@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { MarketingNav } from "../_components/marketing-nav";
-import { MarketingFooter } from "../_components/marketing-footer";
-import { blogPosts } from "../_lib/blog-posts";
-import { BRAND_COLOR } from "../_lib/brand";
+import { MarketingNav } from "../../_components/marketing-nav";
+import { MarketingFooter } from "../../_components/marketing-footer";
+import { blogPosts } from "../../_lib/blog-posts";
+import { BRAND_COLOR } from "../../_lib/brand";
 
 export const metadata: Metadata = {
-  title: "Blog: KI für Recruiting, Vertrieb und KMUs",
+  title: "Blog: AI for Recruiting, Sales, and SMBs",
   description:
-    "Praxisnahe Artikel zu KI-Voice-Agents, Speed-to-Lead, Time-to-Hire und KI-Wissensmanagement — für Recruiting, Vertrieb und KMUs in Österreich und DACH.",
+    "Practical articles on AI voice agents, speed-to-lead, time-to-hire, and AI knowledge management — for recruiting, sales, and SMBs in Austria and the DACH region.",
   alternates: {
-    canonical: "https://app.neuronic-automation.ai/blog",
+    canonical: "https://app.neuronic-automation.ai/en/blog",
     languages: {
       de: "https://app.neuronic-automation.ai/blog",
       en: "https://app.neuronic-automation.ai/en/blog",
@@ -19,22 +19,22 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    locale: "de_DE",
-    url: "https://app.neuronic-automation.ai/blog",
-    title: "Blog: KI für Recruiting, Vertrieb und KMUs",
+    locale: "en_US",
+    url: "https://app.neuronic-automation.ai/en/blog",
+    title: "Blog: AI for Recruiting, Sales, and SMBs",
     description:
-      "Praxisnahe Artikel zu KI-Voice-Agents, Speed-to-Lead, Time-to-Hire und KI-Wissensmanagement — für Recruiting, Vertrieb und KMUs in Österreich und DACH.",
+      "Practical articles on AI voice agents, speed-to-lead, time-to-hire, and AI knowledge management — for recruiting, sales, and SMBs in Austria and the DACH region.",
   },
   twitter: {
     card: "summary",
-    title: "Blog: KI für Recruiting, Vertrieb und KMUs",
+    title: "Blog: AI for Recruiting, Sales, and SMBs",
     description:
-      "Praxisnahe Artikel zu KI-Voice-Agents, Speed-to-Lead, Time-to-Hire und KI-Wissensmanagement — für Recruiting, Vertrieb und KMUs in Österreich und DACH.",
+      "Practical articles on AI voice agents, speed-to-lead, time-to-hire, and AI knowledge management — for recruiting, sales, and SMBs in Austria and the DACH region.",
   },
 };
 
-export default function BlogIndexPage() {
-  const lang = "de" as const;
+export default function EnBlogIndexPage() {
+  const lang = "en" as const;
   const posts = [...blogPosts].sort((a, b) => (a.publishedAt < b.publishedAt ? 1 : -1));
 
   return (
@@ -49,11 +49,11 @@ export default function BlogIndexPage() {
             Blog
           </p>
           <h1 className="font-headline text-4xl sm:text-5xl italic leading-[1.05] text-slate-900 mb-6">
-            KI für Recruiting, Vertrieb und KMUs
+            AI for Recruiting, Sales, and SMBs
           </h1>
           <p className="font-body text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Praxisnahe Artikel zu Speed-to-Lead, Time-to-Hire, KI-Wissensmanagement und
-            KI-Automatisierung für KMUs — ohne Buzzword-Nebel.
+            Practical articles on speed-to-lead, time-to-hire, AI knowledge management, and AI
+            automation for SMBs — no buzzword fog.
           </p>
         </section>
 
@@ -62,24 +62,24 @@ export default function BlogIndexPage() {
             {posts.map((post) => (
               <Link
                 key={post.slug}
-                href={`/blog/${post.slug}`}
+                href={`/en/blog/${post.slug}`}
                 className="block rounded-xl border border-slate-200 bg-white p-6 hover:border-slate-300 hover:shadow-sm transition"
               >
                 <time
                   dateTime={post.publishedAt}
                   className="font-label text-xs font-bold uppercase tracking-widest text-slate-400"
                 >
-                  {new Date(post.publishedAt).toLocaleDateString("de-DE", {
+                  {new Date(post.publishedAt).toLocaleDateString("en-US", {
                     year: "numeric",
                     month: "long",
                     day: "numeric",
                   })}
                 </time>
                 <h2 className="font-headline text-2xl italic text-slate-900 mt-2 mb-3">
-                  {post.de.title}
+                  {post.en.title}
                 </h2>
                 <p className="font-body text-sm text-slate-600 leading-relaxed">
-                  {post.de.excerpt}
+                  {post.en.excerpt}
                 </p>
               </Link>
             ))}

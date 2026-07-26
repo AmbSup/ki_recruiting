@@ -885,6 +885,10 @@ export const dict: Record<Lang, Dict> = {
     nav: {
       sales: "For Sales",
       recruiting: "For Recruiting",
+      kmu: "For SMBs",
+      wissen: "Knowledge Management",
+      aria: "ARIA",
+      blog: "Blog",
       pricing: "Pricing",
       showcase: "Live Funnels",
       login: "Login",
@@ -895,6 +899,33 @@ export const dict: Record<Lang, Dict> = {
       sales: "🎯 Sales demo",
       recruiting: "🧑‍💼 Recruiting demo",
     },
+    shared: {
+      clients: {
+        eyebrow: "Clients who trust us",
+        logos: [
+          { src: "/marketing/logos/clients/wien-it.png", alt: "Wien IT" },
+          { src: "/marketing/logos/clients/bmw.png", alt: "BMW" },
+          { src: "/marketing/logos/clients/boge-rubber-plastics.png", alt: "BOGE Rubber & Plastics" },
+          { src: "/marketing/logos/clients/bt-group.png", alt: "BT Group" },
+          { src: "/marketing/logos/clients/dhl-consulting.webp", alt: "DHL Consulting" },
+          { src: "/marketing/logos/clients/smia.png", alt: "SMIA" },
+          { src: "/marketing/logos/clients/gfp-prozessmanagement.jpg", alt: "Gesellschaft für Prozessmanagement" },
+          { src: "/marketing/logos/clients/kardex.png", alt: "Kardex" },
+          { src: "/marketing/logos/clients/rewe-group.png", alt: "REWE Group" },
+          { src: "/marketing/logos/clients/siemens-advanta-consulting.webp", alt: "Siemens Advanta Consulting" },
+          { src: "/marketing/logos/clients/synergie.png", alt: "Synergie" },
+        ],
+      },
+      competence: {
+        eyebrow: "Expertise",
+        logos: [
+          { src: "/marketing/logos/competence/wu.jpg", alt: "WU Executive Academy" },
+          { src: "/marketing/logos/competence/prozessmanagement.jpg", alt: "Gesellschaft für Prozessmanagement" },
+          { src: "/marketing/logos/competence/scrum.jpg", alt: "Scrum Master Certified" },
+          { src: "/marketing/logos/competence/digital-consulting.png", alt: "Digital Consulting" },
+        ],
+      },
+    },
     home: {
       eyebrow: "AI Funnel Expert",
       headline: "The AI call that happens in seconds.",
@@ -903,6 +934,7 @@ export const dict: Record<Lang, Dict> = {
         "AI funnels for Sales and Recruiting — calling your lead or candidate back within 30 seconds. 24/7. Fully automated. In your voice, with your pitch.",
       primary_cta: "Try it live",
       secondary_cta: "Book a demo",
+      hero_photo_slogan: "Your phone rings in 30 seconds. Not just on Monday.",
       split_eyebrow: "Two worlds, one technology",
       split_intro:
         "Sales and Recruiting are different worlds. But both suffer from the same problem: whoever answers first, wins. Pick your world.",
@@ -990,6 +1022,7 @@ export const dict: Record<Lang, Dict> = {
         "You pay per click for hot leads. But if your sales team is asleep on weekends, the lead is cold by Monday. We don't let it get cold. Ever.",
       primary_cta: "Try as a prospect",
       secondary_cta: "Book a demo",
+      hero_photo_slogan: "You call the lead first. Automatically, in 30 seconds.",
       pain: {
         eyebrow: "This is costing you revenue",
         headline: "Speed-to-Lead is the #1 sales metric",
@@ -1076,6 +1109,7 @@ export const dict: Record<Lang, Dict> = {
         "Candidates apply to 10 companies at once. Whoever speaks to them first with a real human or a smart AI wins. Everyone else gets ghosted rows in an ATS.",
       primary_cta: "Try as a candidate",
       secondary_cta: "Book a demo",
+      hero_photo_slogan: "AI analyzes profiles and calls candidates automatically.",
       pain: {
         eyebrow: "The hidden candidate collapse",
         headline: "Time-to-Hire is today's #1 candidate barrier",
@@ -1162,6 +1196,392 @@ export const dict: Record<Lang, Dict> = {
         sub:
           "Bring your hardest skill test. We build a live screening prompt together and let it call you. By the end you have a blueprint for your first role.",
         cta: "Book a 30-min demo →",
+      },
+    },
+    kmu: {
+      eyebrow: "Software solutions for SMBs",
+      headline: "Your business runs.",
+      headline_accent: "Everything around it costs time.",
+      sub:
+        "Quotes, material orders, site reports, recruiting, dunning — the work around the work is what drains SMBs of time, money, and nerves. AI automation for the processes that don't move you forward. Voice + Claude + Supabase.",
+      hero_photo_slogan: "The AI handles the paperwork. You handle the business.",
+      dogfood: {
+        eyebrow: "Experience our AI agent",
+        headline: "Answer 3 questions — your phone rings in 30 seconds",
+        sub:
+          "Our AI calls you, asks about your biggest time sink, and matches the right AI building block. This is exactly how your customers or applicants experience our voice agent firsthand. Hang up any time.",
+        cta: "Start SMB demo →",
+      },
+      primary_cta: "Book a 30-min demo",
+      secondary_cta: "See live examples",
+      problems: {
+        eyebrow: "What costs SMBs the most",
+        headline: "The 10 unsolved time sinks",
+        items: [
+          "Customer inquiries that go unanswered",
+          "Building quotes from photos, voice memos, and notes",
+          "Material ordering without a system break",
+          "Tracking delivery dates, spotting delays",
+          "Staff recruiting and applicant screening",
+          "Site scheduling and technician dispatch",
+          "Change-order management and approvals",
+          "Invoicing from field reports",
+          "Dunning without cash-flow gaps",
+          "Central communication across phone, WhatsApp, and email",
+        ],
+      },
+      solutions: {
+        eyebrow: "21 AI building blocks",
+        headline: "A ready-to-deploy block for every problem",
+        sub:
+          "Not sold as a suite — implemented one at a time. You pick what hurts most right now, we build it live in 3-14 days.",
+        categories: [
+          {
+            label: "Inquiries, quotes & material",
+            items: [
+          {
+            problem: "Customer inquiries unanswered",
+            solution:
+              "AI picks up calls you can't get to, gathers project info from the customer, and automatically proposes appointments. No lead gets lost, response time drops from days to minutes.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Callback management",
+            solution:
+              "Vapi calls new prospects back within minutes of their inquiry, qualifies budget + buying readiness, and creates tasks or appointments.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Quote creation",
+            solution:
+              "Staff record the site visit as a voice memo — Claude drafts a quote including scope of work. The office only reviews the final version.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Quote follow-up",
+            solution:
+              "n8n tracks deadlines after a quote is sent. Vapi calls a few days later, asks about the decision and open questions. Answers land cleanly in the database.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Material ordering",
+            solution:
+              "Technicians report needs by voice or WhatsApp. Claude extracts items, quantities, and priorities; n8n places the order with the supplier. Everything logged in Supabase.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Delivery-date monitoring",
+            solution:
+              "Orders are tracked automatically, n8n checks status and detects delays. Project leads + technicians are notified immediately when there's a problem.",
+            stack: ["n8n", "Supabase"],
+          },
+          {
+            problem: "Inventory management",
+            solution:
+              "Report material withdrawals by voice — Claude recognizes item + quantity, updates stock. Reordering starts automatically once minimum stock is reached.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          ],
+          },
+          {
+            label: "Site, team & scheduling",
+            items: [
+          {
+            problem: "Site scheduling",
+            solution:
+              "Claude analyzes capacity, qualifications, and resources. n8n builds daily and weekly schedules. Changes are communicated by SMS, WhatsApp, or call.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Technician dispatch",
+            solution:
+              "On short-notice absence, the system suggests qualified replacements (skills, distance, availability). Vapi calls and confirms appointments.",
+            stack: ["Vapi", "Claude", "n8n"],
+          },
+          {
+            problem: "Site reports",
+            solution:
+              "Technician speaks the daily report into their phone. Claude turns it into a structured report with hours, material, and issues. Zero typing, everything in Supabase.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Change-order management",
+            solution:
+              "Extra work discovered on site is detected automatically. Claude drafts a change order including description + cost estimate. Customer approval is logged in an audit-proof way.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Applicant screening",
+            solution:
+              "Vapi calls applicants right after they apply, asks recruiter questions, and scores the answers. Candidate profiles land in Supabase. Saves up to 90% of screening effort.",
+            stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Employee onboarding",
+            solution:
+              "New hires are walked through processes, tools, and safety by a phone assistant. n8n drives the onboarding steps, progress is logged.",
+            stack: ["Vapi", "Claude", "n8n"],
+          },
+          {
+            problem: "Appointment scheduling",
+            solution:
+              "Customers book by phone, 24/7. Vapi checks open capacity, proposes matching slots, and syncs with your ERP + calendar.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          ],
+          },
+          {
+            label: "Invoicing, service & reporting",
+            items: [
+          {
+            problem: "Invoicing",
+            solution:
+              "Field reports, material, and hours flow together into a draft invoice. Claude generates the PDF, n8n sends it automatically. All invoices live centrally in Supabase.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Dunning",
+            solution:
+              "Open invoices are monitored, overdue payments detected, dunning processes triggered. Vapi calls customers with a friendly reminder about outstanding invoices.",
+            stack: ["Vapi", "n8n", "Supabase"],
+          },
+          {
+            problem: "Customer service",
+            solution:
+              "Service hotline takes standard questions and fault reports. Claude analyzes the request and prioritizes cases. n8n creates tickets in Supabase.",
+            stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Quality management",
+            solution:
+              "After project completion, AI calls customers for feedback. Results are captured in a structured way. Claude spots recurring issues and improvement opportunities.",
+            stack: ["Vapi", "Claude", "Supabase"],
+          },
+          {
+            problem: "Project-status communication",
+            solution:
+              "Customers get automatic updates on start, delivery, and completion. Claude drafts the status messages, n8n sends them by email, SMS, or call.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Management cockpit",
+            solution:
+              "All data from leads, projects, staff, and invoices lives centrally in Supabase. Claude generates management reports and forecasts. Daily or weekly reports, automatically.",
+            stack: ["Claude", "n8n", "Supabase"],
+          },
+          {
+            problem: "Central communication",
+            solution:
+              "Phone, WhatsApp, and email land in one shared channel. Claude detects sender, intent, and priority. Automatic routing to the right person.",
+            stack: ["Vapi", "Claude", "n8n", "Supabase"],
+          },
+            ],
+          },
+        ],
+      },
+      final_cta: {
+        eyebrow: "Where do you want to start?",
+        headline: "Show me 3 of your biggest time sinks in 30 minutes",
+        sub:
+          "We'll look together at which 1-2 building blocks hurt most for you right now. I'll build you a pilot in 5-10 days — you only pay if it works.",
+        cta: "Book a demo →",
+      },
+    },
+    wissen: {
+      eyebrow: "AI knowledge management",
+      headline: "Find what you're looking for —",
+      headline_accent: "even if you can't remember what it's called.",
+      sub:
+        "Profiles, contracts, quotes, meeting notes, emails — the answer is usually already sitting somewhere in your data. Our AI knowledge management with RAG and GraphRAG understands meaning and relationships, not just keywords, and gets you the right answer in seconds.",
+      primary_cta: "Book a 30-min demo",
+      hero_photo_slogan: "Never search again. The AI knows the answer — in seconds.",
+      universal_claim: "AI knowledge management is valuable for every company.",
+      pullquote: {
+        eyebrow: "GraphRAG in practice",
+        text: "You ask a question in plain language. The AI knows the answer — and where it came from.",
+      },
+      pain: {
+        eyebrow: "What's costing you time today",
+        headline: "Keyword search doesn't find what you mean",
+        items: [
+          {
+            title: "Full-text search doesn't understand language",
+            body:
+              "You search for 'experienced caregiver with night-shift experience' and get 40 hits for 'care' — sorted by upload date, not relevance.",
+          },
+          {
+            title: "Knowledge is scattered across 10 systems",
+            body:
+              "CVs in the ATS, contracts in Drive, notes in emails, memos in Slack. Nobody has an overview of where the answer actually lives.",
+          },
+          {
+            title: "Connections get lost",
+            body:
+              "Which profile fits which past mandate? Which customer connects to which project? Classic search only knows words, not relationships.",
+          },
+        ],
+      },
+      metric: {
+        label: "Time to the right answer",
+        value: "Seconds",
+        after: "instead of hours",
+        note:
+          "Instead of searching CVs, documents, and emails one by one, you ask a question in plain language — the AI knows the context and relationships across all your data.",
+      },
+      benefits: {
+        eyebrow: "The difference",
+        headline: "What changes for you",
+        sub: "No retraining for your team — you ask, the AI answers.",
+        items: [
+          {
+            title: "Understands meaning, not just words",
+            body:
+              "Searches for sense and context instead of exact keyword matches. 'Experienced caregiver' also finds profiles with '10 years hospital, night shift' in the CV.",
+          },
+          {
+            title: "Spots connections across documents",
+            body:
+              "Links people, projects, companies, and topics automatically — even when they never appear side by side in the same document.",
+          },
+          {
+            title: "Always stays current",
+            body:
+              "Every new document, every new profile is indexed instantly. No manual upkeep, no stale folder structures.",
+          },
+          {
+            title: "Answers, instead of just linking",
+            body:
+              "You get a concrete answer with a source — not a list of 50 results you have to sift through yourself.",
+          },
+        ],
+      },
+      icp: {
+        eyebrow: "Who we build for",
+        headline: "Anyone drowning in profiles and documents today",
+        industries: [
+          {
+            name: "HR consultants & recruiters",
+            pain:
+              "Finds the right candidate profile in seconds out of thousands of CVs — even if the requirement never appears verbatim.",
+          },
+          {
+            name: "Interim agencies",
+            pain:
+              "Matches mandates to the right interim managers across the whole network — including industry experience from past projects.",
+          },
+          {
+            name: "SMBs & mid-market",
+            pain:
+              "Finds contracts, quotes, and reports instantly again — without anyone still knowing what the file was named back then.",
+          },
+        ],
+        size: "5+ employees with growing document chaos",
+        stack: "Google Drive, SharePoint, email, ATS, CRM — wherever your knowledge lives today",
+      },
+      final_cta: {
+        eyebrow: "Next step",
+        headline: "Show me your unfindable documents",
+        sub:
+          "Bring 2-3 examples that are hard to find today. We'll show you live how fast the answer arrives with AI knowledge management.",
+        cta: "Book a 30-min demo →",
+      },
+    },
+    aria: {
+      eyebrow: "The new enterprise intelligence",
+      headline: "Every question. The right answer.",
+      headline_accent: "From the right source. At the right time.",
+      sub:
+        "ARIA connects your company's scattered knowledge into one permission-aware intelligence. Every employee gets exactly the information they need — no more, no less, always with a source.",
+      primary_cta: "Watch the demo →",
+      universal_claim: "New AI intelligence instead of centralized data chaos.",
+      pullquote: {
+        eyebrow: "The idea behind it",
+        text: "AI operating systems and distributed intelligence are the clear future.",
+      },
+      pain: {
+        eyebrow: "The status quo",
+        headline: "The knowledge exists. Just not where it's needed.",
+        items: [
+          {
+            title: "Knowledge sits in silos",
+            body:
+              "Documents, tickets, meeting notes, inboxes — every system only knows its own slice of the truth.",
+          },
+          {
+            title: "Search costs time nobody has",
+            body:
+              "Employees spend hours a week hunting for the right file in the wrong system.",
+          },
+          {
+            title: "Access rights are a black box",
+            body:
+              "Who's allowed to see what is often set coarsely instead of granularly — too open or too restrictive.",
+          },
+          {
+            title: "Decisions run on stale information",
+            body:
+              "By the time the right information surfaces, the basis for the decision has often already changed.",
+          },
+        ],
+      },
+      benefits: {
+        eyebrow: "What ARIA does differently",
+        headline: "Distributed knowledge, usable centrally.",
+        sub: "Not another dashboard — an intelligence layer over your existing knowledge.",
+        items: [
+          {
+            title: "Permission-aware access",
+            body: "Every answer automatically respects who's allowed to see what, down to the document level.",
+          },
+          {
+            title: "Answers with sources",
+            body: "Every statement traces back to its source document — no black box.",
+          },
+          {
+            title: "Cross-system linking",
+            body: "ARIA connects documents, tickets, and conversations into one shared knowledge graph.",
+          },
+          {
+            title: "Always current",
+            body: "New sources are continuously ingested — no stale exports, no data silos.",
+          },
+        ],
+      },
+      icp: {
+        eyebrow: "Who it's for",
+        headline: "For teams where knowledge is the bottleneck.",
+        industries: [
+          {
+            name: "Legal & Compliance",
+            pain: "Contracts, policies, and precedents scattered across different archives for years.",
+          },
+          {
+            name: "HR & People",
+            pain: "Policies, contracts, case history — spread across systems that rarely talk to each other.",
+          },
+          {
+            name: "Sales & Customer Success",
+            pain: "Product knowledge, price lists, customer history: never where the customer conversation is actually happening.",
+          },
+          {
+            name: "Support",
+            pain: "New hires need months before they know where which answer lives.",
+          },
+          {
+            name: "Enterprise IT & Compliance",
+            pain: "Access to knowledge has to stay traceable and auditable — not just fast.",
+          },
+          {
+            name: "Knowledge-intensive consulting",
+            pain: "Every project starts from zero, even though the answer usually already exists somewhere in the company.",
+          },
+        ],
+      },
+      final_cta: {
+        eyebrow: "See it live",
+        headline: "Try ARIA in the live demo",
+        sub: "No sign-up required — ask your first question directly in the demo environment.",
+        cta: "Go to the demo →",
       },
     },
     pricing: {
@@ -1309,6 +1729,10 @@ export const dict: Record<Lang, Dict> = {
       links: {
         sales: "For Sales",
         recruiting: "For Recruiting",
+        kmu: "For SMBs",
+        wissen: "AI Knowledge Management",
+        aria: "ARIA",
+        blog: "Blog",
         pricing: "Pricing",
         demo: "Book a demo",
         showcase: "See all live funnels",

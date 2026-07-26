@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
+import { LogoCloud } from "../_components/logo-cloud";
 import { SplitFocus } from "../_components/split-focus";
 import { HowItWorks } from "../_components/how-it-works";
 import { DogfoodCTA } from "../_components/dogfood-cta";
@@ -60,7 +62,15 @@ export default async function EnHomePage() {
           primaryHref="#dogfood"
           secondaryCtaKey="home.secondary_cta"
           secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
+          photo={{
+            src: "/marketing/home-hero.jpg",
+            alt: "Woman smiling while taking a call on her phone",
+            slogan: t(lang, "home.hero_photo_slogan"),
+            priority: true,
+          }}
         />
+        <LogoCloud lang={lang} sectionKey="shared.clients" />
+        <LogoCloud lang={lang} sectionKey="shared.competence" />
         <SplitFocus lang={lang} />
         <ShowcaseTeaser lang={lang} />
         <HowItWorks lang={lang} sectionKey="home.how_it_works" />

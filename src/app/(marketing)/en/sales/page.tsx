@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import { t } from "../../_lib/t";
 import { MarketingNav } from "../../_components/marketing-nav";
 import { Hero } from "../../_components/hero";
+import { LogoCloud } from "../../_components/logo-cloud";
 import { PainList } from "../../_components/pain-list";
 import { MetricCard } from "../../_components/metric-card";
 import { HowItWorks } from "../../_components/how-it-works";
@@ -58,7 +60,14 @@ export default function EnSalesPage() {
           secondaryCtaKey="sales.secondary_cta"
           secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
           accentColor={SALES_COLOR}
+          photo={{
+            src: "/marketing/sales-hero.jpg",
+            alt: "Sales manager in a modern office",
+            slogan: t(lang, "sales.hero_photo_slogan"),
+            priority: true,
+          }}
         />
+        <LogoCloud lang={lang} sectionKey="shared.clients" variant="compact" />
         <PainList lang={lang} sectionKey="sales.pain" accentColor={SALES_COLOR} />
         <MetricCard
           lang={lang}

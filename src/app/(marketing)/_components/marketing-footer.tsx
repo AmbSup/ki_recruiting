@@ -7,6 +7,10 @@ import { t, type Lang } from "../_lib/t";
 export function MarketingFooter({ lang }: { lang: Lang }) {
   const salesHref = lang === "de" ? "/sales" : "/en/sales";
   const recruitingHref = lang === "de" ? "/recruiting" : "/en/recruiting";
+  const kmuHref = lang === "de" ? "/kmu" : "/en/kmu";
+  const wissenHref = lang === "de" ? "/wissen" : "/en/wissen";
+  const ariaHref = lang === "de" ? "/aria" : "/en/aria";
+  const blogHref = lang === "de" ? "/blog" : "/en/blog";
   const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const email = t(lang, "footer.contact.email");
 
@@ -45,34 +49,26 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
                   {t(lang, "footer.links.recruiting")}
                 </Link>
               </li>
-              {lang === "de" && (
-                <li>
-                  <Link href="/kmu" className="text-slate-600 hover:text-slate-900">
-                    {t(lang, "footer.links.kmu")}
-                  </Link>
-                </li>
-              )}
-              {lang === "de" && (
-                <li>
-                  <Link href="/wissen" className="text-slate-600 hover:text-slate-900">
-                    {t(lang, "footer.links.wissen")}
-                  </Link>
-                </li>
-              )}
-              {lang === "de" && (
-                <li>
-                  <Link href="/aria" className="text-slate-600 hover:text-slate-900">
-                    {t(lang, "footer.links.aria")}
-                  </Link>
-                </li>
-              )}
-              {lang === "de" && (
-                <li>
-                  <Link href="/blog" className="text-slate-600 hover:text-slate-900">
-                    {t(lang, "footer.links.blog")}
-                  </Link>
-                </li>
-              )}
+              <li>
+                <Link href={kmuHref} className="text-slate-600 hover:text-slate-900">
+                  {t(lang, "footer.links.kmu")}
+                </Link>
+              </li>
+              <li>
+                <Link href={wissenHref} className="text-slate-600 hover:text-slate-900">
+                  {t(lang, "footer.links.wissen")}
+                </Link>
+              </li>
+              <li>
+                <Link href={ariaHref} className="text-slate-600 hover:text-slate-900">
+                  {t(lang, "footer.links.aria")}
+                </Link>
+              </li>
+              <li>
+                <Link href={blogHref} className="text-slate-600 hover:text-slate-900">
+                  {t(lang, "footer.links.blog")}
+                </Link>
+              </li>
               <li>
                 <Link href={pricingHref} className="text-slate-600 hover:text-slate-900">
                   {t(lang, "footer.links.pricing")}

@@ -9,8 +9,10 @@ import { t, type Lang } from "../_lib/t";
 export function MarketingNav({ lang }: { lang: Lang }) {
   const salesHref = lang === "de" ? "/sales" : "/en/sales";
   const recruitingHref = lang === "de" ? "/recruiting" : "/en/recruiting";
-  const kmuHref = "/kmu"; // DE-only, EN-Version ist Backlog
-  const wissenHref = "/wissen"; // DE-only, EN-Version ist Backlog
+  const kmuHref = lang === "de" ? "/kmu" : "/en/kmu";
+  const wissenHref = lang === "de" ? "/wissen" : "/en/wissen";
+  const ariaHref = lang === "de" ? "/aria" : "/en/aria";
+  const blogHref = lang === "de" ? "/blog" : "/en/blog";
   const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const homeHref = lang === "de" ? "/" : "/en";
 
@@ -43,38 +45,30 @@ export function MarketingNav({ lang }: { lang: Lang }) {
           >
             {t(lang, "nav.recruiting")}
           </Link>
-          {lang === "de" && (
-            <Link
-              href={kmuHref}
-              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
-            >
-              {t(lang, "nav.kmu")}
-            </Link>
-          )}
-          {lang === "de" && (
-            <Link
-              href={wissenHref}
-              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
-            >
-              {t(lang, "nav.wissen")}
-            </Link>
-          )}
-          {lang === "de" && (
-            <Link
-              href="/aria"
-              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
-            >
-              {t(lang, "nav.aria")}
-            </Link>
-          )}
-          {lang === "de" && (
-            <Link
-              href="/blog"
-              className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
-            >
-              {t(lang, "nav.blog")}
-            </Link>
-          )}
+          <Link
+            href={kmuHref}
+            className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+          >
+            {t(lang, "nav.kmu")}
+          </Link>
+          <Link
+            href={wissenHref}
+            className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+          >
+            {t(lang, "nav.wissen")}
+          </Link>
+          <Link
+            href={ariaHref}
+            className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+          >
+            {t(lang, "nav.aria")}
+          </Link>
+          <Link
+            href={blogHref}
+            className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+          >
+            {t(lang, "nav.blog")}
+          </Link>
           <Link
             href={pricingHref}
             className="hidden sm:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"

@@ -18,9 +18,10 @@ const ENTRIES: Entry[] = [
   { de: "/recruiting", en: "/en/recruiting", priority: 0.9, changeFrequency: "weekly" },
   { de: "/sales", en: "/en/sales", priority: 0.9, changeFrequency: "weekly" },
   { de: "/pricing", en: "/en/pricing", priority: 0.8, changeFrequency: "monthly" },
-  { de: "/kmu", priority: 0.7, changeFrequency: "monthly" },
-  { de: "/wissen", priority: 0.7, changeFrequency: "monthly" },
-  { de: "/blog", priority: 0.6, changeFrequency: "weekly" },
+  { de: "/kmu", en: "/en/kmu", priority: 0.7, changeFrequency: "monthly" },
+  { de: "/wissen", en: "/en/wissen", priority: 0.7, changeFrequency: "monthly" },
+  { de: "/aria", en: "/en/aria", priority: 0.7, changeFrequency: "monthly" },
+  { de: "/blog", en: "/en/blog", priority: 0.6, changeFrequency: "weekly" },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {
@@ -57,10 +58,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
 }
 
 function blogEntries(): MetadataRoute.Sitemap {
-  return blogPosts.map((post) => ({
-    url: `${BASE_URL}/blog/${post.slug}`,
-    lastModified: new Date(post.publishedAt),
-    changeFrequency: "monthly",
-    priority: 0.5,
-  }));
+  return blogPosts.flatMap((post) => {
+    const languages = {
+      de: `${BASE_URL}/blog/${post.slug}`,
+      en: `${BASE_URL}/en/blog/${post.slug}`,
+    };
+    return [
+      {
+        url: languages.de,
+        lastModified: new Date(post.publishedAt),
+        changeFrequency: "monthly" as const,
+        priority: 0.5,
+        alternates: { languages },
+      },
+      {
+        url: languages.en,
+        lastModified: new Date(post.publishedAt),
+        changeFrequency: "monthly" as const,
+        priority: 0.45,
+        alternates: { languages },
+      },
+    ];
+  });
 }
