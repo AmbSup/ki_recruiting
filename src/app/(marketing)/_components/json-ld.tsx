@@ -65,14 +65,23 @@ export function ArticleJsonLd({ post, lang }: { post: BlogPost; lang: Lang }) {
 
 type FaqItem = { q: string; a: string };
 
-// Baut das FAQPage-Schema direkt aus dict[lang].pricing.faq.items — derselben
-// Quelle, aus der PricingFAQ die sichtbaren <details>-Elemente rendert. Damit
-// ist 1:1-Übereinstimmung mit dem sichtbaren Content garantiert (Google-
-// Anforderung für FAQ-Rich-Snippets), keine zweite Content-Quelle zum
-// Pflegen.
-export function FaqJsonLd({ lang }: { lang: Lang }) {
-  const items = ((dict[lang] as { pricing?: { faq?: { items?: FaqItem[] } } })
-    ?.pricing?.faq?.items ?? []) as FaqItem[];
+// Baut das FAQPage-Schema direkt aus dict[lang][sectionKey].items — derselben
+// Quelle, aus der Faq/PricingFAQ die sichtbaren <details>-Elemente rendern.
+// Damit ist 1:1-Übereinstimmung mit dem sichtbaren Content garantiert
+// (Google-Anforderung für FAQ-Rich-Snippets), keine zweite Content-Quelle
+// zum Pflegen. Default bleibt "pricing.faq" für Bestandsaufrufe ohne Prop.
+export function FaqJsonLd({ lang, sectionKey = "pricing.faq" }: { lang: Lang; sectionKey?: string }) {
+  const parts = sectionKey.split(".");
+  let cursor: unknown = dict[lang];
+  for (const p of parts) {
+    if (cursor && typeof cursor === "object" && p in (cursor as Record<string, unknown>)) {
+      cursor = (cursor as Record<string, unknown>)[p];
+    } else {
+      cursor = null;
+      break;
+    }
+  }
+  const items = ((cursor as { items?: FaqItem[] } | null)?.items ?? []) as FaqItem[];
 
   if (items.length === 0) return null;
 

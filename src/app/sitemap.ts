@@ -21,6 +21,7 @@ const ENTRIES: Entry[] = [
   { de: "/kmu", en: "/en/kmu", priority: 0.7, changeFrequency: "monthly" },
   { de: "/wissen", en: "/en/wissen", priority: 0.7, changeFrequency: "monthly" },
   { de: "/aria", en: "/en/aria", priority: 0.7, changeFrequency: "monthly" },
+  { de: "/pilot-30-tage", en: "/en/pilot-30-tage", priority: 0.7, changeFrequency: "monthly" },
   { de: "/blog", en: "/en/blog", priority: 0.6, changeFrequency: "weekly" },
 ];
 

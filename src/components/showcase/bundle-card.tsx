@@ -147,10 +147,11 @@ export function BundleCard({ bundle }: { bundle: Bundle }) {
     >
       {/* Hero */}
       <div
-        className="h-48 bg-cover bg-center"
+        className="h-48 bg-cover"
         style={{
           backgroundColor: bundle.primary_color,
           backgroundImage: bundle.hero_image ? `url(${bundle.hero_image})` : undefined,
+          backgroundPosition: "center 20%",
         }}
       />
 

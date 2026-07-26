@@ -18,6 +18,7 @@ export const dict: Record<Lang, Dict> = {
       wissen: "Wissensmanagement",
       aria: "ARIA",
       blog: "Blog",
+      pilot: "KI-Pilot",
       pricing: "Preise",
       showcase: "Live-Funnels",
       login: "Login",
@@ -713,6 +714,356 @@ export const dict: Record<Lang, Dict> = {
         cta: "Zur Demo →",
       },
     },
+    pilot: {
+      eyebrow: "30-Tage-Pilotprogramm",
+      headline: "KI-Pilot in",
+      headline_accent: "30 Tagen",
+      sub:
+        "Von der KI-Idee zum funktionierenden Anwendungsfall: Wir identifizieren gemeinsam einen konkreten Prozess, setzen einen funktionierenden KI-Piloten um und messen, welchen Nutzen er in Ihrem Unternehmen erzielt.",
+      primary_cta: "Kostenloses Erstgespräch vereinbaren",
+      claim:
+        "Innerhalb von 30 Tagen erhalten Sie keinen weiteren KI-Workshop, sondern einen einsatzfähigen Pilotprozess mit nachvollziehbarem Business Case.",
+      why: {
+        eyebrow: "Der Ansatzpunkt",
+        headline: "KI muss nicht beeindruckend aussehen. Sie muss Ergebnisse liefern.",
+        intro:
+          "Viele KI-Projekte starten mit einer Technologie oder einem neuen Tool. Die wichtigere Frage lautet: Welcher Prozess kostet Ihr Unternehmen heute unnötig Zeit, Geld oder Qualität? Genau dort setzen wir an. Gemeinsam wählen wir einen klar abgegrenzten Prozess aus, definieren messbare Ziele und entwickeln eine KI-Lösung, die mit Ihren bestehenden Arbeitsabläufen, Dokumenten und Systemen getestet wird. Mögliche Ziele sind:",
+        items: [
+          "weniger manuelle Bearbeitungszeit",
+          "schnellere Informationssuche",
+          "geringere Fehlerquoten",
+          "automatisierte Dokumentenverarbeitung",
+          "schnellere Angebotserstellung",
+          "bessere Nutzung internen Wissens",
+          "kürzere Reaktions- und Durchlaufzeiten",
+        ],
+      },
+      deliverables: {
+        eyebrow: "Ergebnis",
+        headline: "Was Sie nach 30 Tagen erhalten",
+        items: [
+          {
+            title: "Einen funktionierenden KI-Piloten",
+            body:
+              "Der ausgewählte Anwendungsfall wird nicht nur beschrieben, sondern technisch umgesetzt und mit realistischen Beispielen getestet.",
+          },
+          {
+            title: "Einen messbaren Vorher-Nachher-Vergleich",
+            body:
+              "Wir dokumentieren, wie viel Zeit, Aufwand oder Fehlerpotenzial der bisherige Prozess verursacht und welche Verbesserung durch den Piloten erreicht wurde.",
+          },
+          {
+            title: "Einen nachvollziehbaren Business Case",
+            body:
+              "Sie erhalten eine belastbare Grundlage für die Entscheidung, ob und wie die Lösung weiter ausgebaut werden soll.",
+          },
+          {
+            title: "Eine konkrete Skalierungsroadmap",
+            body:
+              "Wir zeigen, welche nächsten Schritte für die Einführung, Integration, Governance und Erweiterung notwendig sind.",
+          },
+        ],
+      },
+      timeline: {
+        eyebrow: "Ablauf",
+        headline: "So läuft der 30-Tage-Pilot ab",
+        result_label: "Ergebnis",
+        steps: [
+          {
+            label: "Woche 1",
+            title: "Prozesse analysieren und Potenzial bewerten",
+            intro:
+              "In einem gemeinsamen Workshop betrachten wir Prozesse, wiederkehrende Aufgaben, vorhandene Daten und aktuelle Engpässe. Dabei identifizieren wir mögliche KI-Anwendungsfälle und bewerten sie nach:",
+            bullets: [
+              "wirtschaftlichem Nutzen",
+              "technischer Machbarkeit",
+              "Datenverfügbarkeit",
+              "Integrationsaufwand",
+              "Datenschutz und Risiko",
+              "Umsetzbarkeit innerhalb von 30 Tagen",
+            ],
+            result: "Ein klar definierter Pilotprozess mit messbarem Ziel.",
+          },
+          {
+            label: "Woche 2",
+            title: "Lösung konzipieren und vorbereiten",
+            intro:
+              "Wir entwickeln das technische und fachliche Konzept für den ausgewählten Anwendungsfall. Je nach Aufgabenstellung umfasst dies beispielsweise:",
+            bullets: [
+              "Prozess- und Datenmodell",
+              "Prompts und KI-Anweisungen",
+              "Dokumenten- und Wissensbasis",
+              "Automatisierungsabläufe",
+              "Rollen und Zugriffsrechte",
+              "Schnittstellen zu bestehenden Systemen",
+              "Qualitäts- und Prüfkriterien",
+            ],
+            result: "Ein umsetzbares Lösungskonzept mit klaren Testfällen.",
+          },
+          {
+            label: "Woche 3",
+            title: "KI-Pilot entwickeln",
+            intro:
+              "Wir setzen den Piloten technisch um und testen ihn mit ausgewählten Dokumenten, Aufgaben oder Prozessdaten. Mögliche Bestandteile sind:",
+            bullets: [
+              "KI-Assistenten",
+              "interne Wissenssuche",
+              "Dokumentenanalyse",
+              "automatische Klassifizierung",
+              "Datenextraktion",
+              "Berichtserstellung",
+              "E-Mail- und Prozessautomatisierung",
+              "RAG- oder GraphRAG-Systeme",
+              "Anbindung vorhandener Unternehmenssoftware",
+            ],
+            result: "Ein funktionsfähiger Prototyp für den ausgewählten Unternehmensprozess.",
+          },
+          {
+            label: "Woche 4",
+            title: "Praxistest und Ergebnismessung",
+            intro:
+              "Der Pilot wird gemeinsam mit ausgewählten Anwenderinnen und Anwendern getestet. Wir prüfen:",
+            bullets: [
+              "Qualität der Ergebnisse",
+              "Zeitersparnis",
+              "Zuverlässigkeit",
+              "Fehlerfälle",
+              "Benutzerfreundlichkeit",
+              "Datenschutz und Berechtigungen",
+              "Potenzial für einen produktiven Rollout",
+            ],
+            result: "Ein getesteter KI-Pilot mit Business Case und Skalierungsplan.",
+          },
+        ],
+      },
+      use_cases: {
+        eyebrow: "Praxis",
+        headline: "Typische Anwendungsfälle",
+        items: [
+          {
+            title: "Unternehmenswissen schneller finden",
+            body:
+              "Mitarbeitende stellen Fragen in natürlicher Sprache und erhalten passende Informationen aus Verträgen, Angeboten, Projektdokumenten, Richtlinien oder internen Notizen.",
+            quotes: [
+              "Welche Vertragsbedingungen wurden bei ähnlichen Kunden vereinbart?",
+              "Wo finden wir die Dokumentation zu diesem Projekt?",
+              "Welche Angebote wurden im vergangenen Jahr für vergleichbare Leistungen erstellt?",
+            ],
+          },
+          {
+            title: "Dokumente automatisch analysieren",
+            body:
+              "Die KI liest Dokumente aus, erkennt relevante Inhalte und überträgt Informationen strukturiert in Ihre Prozesse.",
+            listLabel: "Geeignet für:",
+            list: [
+              "Rechnungen",
+              "Verträge",
+              "Ausschreibungen",
+              "Bewerbungsunterlagen",
+              "technische Dokumentationen",
+              "Lieferscheine",
+              "Wartungsberichte",
+              "Qualitätsprotokolle",
+            ],
+          },
+          {
+            title: "Berichte und Auswertungen automatisieren",
+            body: "Regelmäßig wiederkehrende Berichte werden aus vorhandenen Daten und Dokumenten vorbereitet.",
+            listLabel: "Beispiele:",
+            list: [
+              "Projektstatusberichte",
+              "Managementzusammenfassungen",
+              "Vertriebsberichte",
+              "Qualitätsauswertungen",
+              "Sitzungsprotokolle",
+              "Risikoübersichten",
+              "Wochen- und Monatsberichte",
+            ],
+          },
+          {
+            title: "Kunden- und Vertriebsprozesse beschleunigen",
+            body:
+              "KI unterstützt bei der Bearbeitung von Anfragen, der Qualifizierung von Interessenten und der Erstellung passender Antworten oder Angebote.",
+            listLabel: "Beispiele:",
+            list: [
+              "automatische Anfrageklassifizierung",
+              "Zusammenfassung von Kundenhistorien",
+              "Vorbereitung von Angeboten",
+              "personalisierte Vertriebsansprache",
+              "Lead-Qualifizierung",
+              "Unterstützung des Kundenservices",
+            ],
+          },
+          {
+            title: "Interne Abläufe automatisieren",
+            body: "Wiederkehrende Aufgaben werden mit KI und Automatisierungsplattformen verbunden.",
+            listLabel: "Beispiele:",
+            list: [
+              "E-Mails verarbeiten",
+              "Informationen zwischen Systemen übertragen",
+              "Aufgaben aus Dokumenten erkennen",
+              "Freigaben vorbereiten",
+              "Termine koordinieren",
+              "Daten prüfen und ergänzen",
+              "Mitarbeitende automatisch informieren",
+            ],
+          },
+        ],
+      },
+      audience: {
+        eyebrow: "Passt das zu uns?",
+        headline: "Für welche Unternehmen eignet sich der KI-Pilot?",
+        intro: "Das Angebot richtet sich an Unternehmen, die:",
+        items: [
+          "bereits erste KI-Tools getestet haben",
+          "einen konkreten Anwendungsfall umsetzen möchten",
+          "viele Dokumente oder Informationen verarbeiten",
+          "wiederkehrende manuelle Aufgaben reduzieren wollen",
+          "einen KI-Business-Case vor einer größeren Investition prüfen möchten",
+          "nicht sofort ein mehrmonatiges Transformationsprojekt starten wollen",
+          "eine unabhängige Bewertung ihrer KI-Möglichkeiten benötigen",
+        ],
+        teams_intro:
+          "Besonders geeignet ist der Pilot für mittelständische Unternehmen, Fachabteilungen und Teams aus:",
+        teams: [
+          "Vertrieb",
+          "Einkauf",
+          "Personalwesen",
+          "Projektmanagement",
+          "Produktion",
+          "Qualitätsmanagement",
+          "Technik und Service",
+          "Verwaltung",
+          "Kundenservice",
+          "Wissensmanagement",
+        ],
+      },
+      not_this: {
+        eyebrow: "Abgrenzung",
+        headline: "Was der KI-Pilot nicht ist",
+        items: [
+          {
+            title: "Kein allgemeiner KI-Vortrag",
+            body: "Wir erklären nicht nur, was künstliche Intelligenz theoretisch leisten könnte.",
+          },
+          {
+            title: "Kein isolierter Chatbot",
+            body: "Der Pilot wird auf einen konkreten Unternehmensprozess und Ihre tatsächlichen Anforderungen ausgerichtet.",
+          },
+          {
+            title: "Kein monatelanges Großprojekt",
+            body: "Der Anwendungsfall wird bewusst so abgegrenzt, dass innerhalb von 30 Tagen ein bewertbares Ergebnis entsteht.",
+          },
+          {
+            title: "Keine Technologie ohne Nutzen",
+            body: "Die Auswahl der Werkzeuge folgt dem Anwendungsfall. Nicht umgekehrt.",
+          },
+        ],
+      },
+      tech: {
+        eyebrow: "Technologie",
+        headline: "Technologieoffen und passend zu Ihrer Infrastruktur",
+        intro:
+          "Abhängig von Ihrem Anwendungsfall können unterschiedliche Technologien eingesetzt werden. Dazu gehören beispielsweise:",
+        items: [
+          "kommerzielle oder lokale KI-Modelle",
+          "Microsoft- und OpenAI-Lösungen",
+          "Claude",
+          "Open-Source-Modelle",
+          "Vektor- und Graphdatenbanken",
+          "RAG und GraphRAG",
+          "Workflow-Automatisierung",
+          "APIs und bestehende Unternehmenssysteme",
+          "private Cloud- oder On-Premises-Lösungen",
+        ],
+        closing:
+          "Entscheidend ist nicht der Name des KI-Modells, sondern ob die Lösung zuverlässig, sicher und wirtschaftlich in Ihrem Unternehmen eingesetzt werden kann.",
+      },
+      results: {
+        eyebrow: "Zusammenfassung",
+        headline: "Ihre Ergebnisse auf einen Blick",
+        intro: "Nach Abschluss des Piloten erhalten Sie:",
+        items: [
+          "dokumentierten Ausgangsprozess",
+          "ausgewählten und priorisierten KI-Anwendungsfall",
+          "definierte Zielkennzahlen",
+          "funktionsfähigen KI-Prototyp",
+          "Test mit realistischen Unternehmensdaten",
+          "Bewertung von Qualität und Zeitersparnis",
+          "technische Dokumentation",
+          "Risiko- und Datenschutzbetrachtung",
+          "Business Case",
+          "Roadmap für Integration und Rollout",
+        ],
+      },
+      why_pilot: {
+        eyebrow: "Warum ein Pilot?",
+        headline: "Warum mit einem Pilotprojekt starten?",
+        intro:
+          "Eine große KI-Strategie beantwortet noch nicht, ob ein konkreter Prozess funktioniert. Ein 30-Tage-Pilot reduziert das Risiko und schafft eine belastbare Entscheidungsgrundlage. Sie erkennen frühzeitig:",
+        items: [
+          "ob die verfügbaren Daten ausreichen",
+          "welche Ergebnisqualität erreichbar ist",
+          "welche technischen Hürden bestehen",
+          "wie Mitarbeitende mit der Lösung arbeiten",
+          "welche Einsparungen realistisch sind",
+          "welche Investitionen für den Rollout notwendig werden",
+        ],
+        closing: "So investieren Sie erst dann größer, wenn der Nutzen praktisch nachgewiesen wurde.",
+      },
+      mid_cta: {
+        eyebrow: "Nächster Schritt",
+        headline: "In 30 Tagen zu einem messbaren KI-Anwendungsfall",
+        intro:
+          "Sie haben einen Prozess, bei dem Mitarbeitende regelmäßig Informationen suchen, Dokumente bearbeiten, Berichte erstellen oder Daten zwischen Systemen übertragen? Dann prüfen wir gemeinsam, ob sich daraus ein geeigneter KI-Pilot entwickeln lässt.",
+        list_intro: "Im kostenlosen Erstgespräch klären wir:",
+        items: [
+          "welcher Prozess betrachtet werden soll",
+          "welches Problem aktuell besteht",
+          "welche Daten verfügbar sind",
+          "welches Ergebnis innerhalb von 30 Tagen realistisch ist",
+          "ob der Anwendungsfall für einen Pilot geeignet ist",
+        ],
+        cta: "Kostenloses Erstgespräch vereinbaren",
+        tagline: "Von der KI-Idee zum funktionierenden Unternehmensprozess.",
+      },
+      faq: {
+        heading: "Häufige Fragen",
+        items: [
+          {
+            q: "Muss unser Unternehmen bereits KI einsetzen?",
+            a: "Nein. Der Pilot eignet sich sowohl für Unternehmen ohne bisherige KI-Erfahrung als auch für Unternehmen, die bereits verschiedene Tools oder erste Prototypen getestet haben.",
+          },
+          {
+            q: "Müssen wir sensible Daten bereitstellen?",
+            a: "Für die erste Analyse sind keine sensiblen Daten notwendig. Während der Umsetzung wird gemeinsam festgelegt, welche Daten verwendet werden dürfen und welche technische Umgebung dafür geeignet ist.",
+          },
+          {
+            q: "Ist der Pilot nach 30 Tagen produktionsbereit?",
+            a: "Der Pilot soll die technische Machbarkeit und den wirtschaftlichen Nutzen nachweisen. Abhängig von Komplexität, Sicherheitsanforderungen und Systemintegration können für den vollständigen Produktivbetrieb weitere Schritte notwendig sein.",
+          },
+          {
+            q: "Welche KI-Technologie wird eingesetzt?",
+            a: "Die Technologie wird passend zum Anwendungsfall, zu Ihren Datenschutzanforderungen und zu Ihrer bestehenden IT-Infrastruktur ausgewählt.",
+          },
+          {
+            q: "Können bestehende Systeme angebunden werden?",
+            a: "Grundsätzlich ja. Im Rahmen der Analyse prüfen wir, welche Schnittstellen verfügbar sind und ob eine Integration bereits innerhalb des Piloten sinnvoll ist.",
+          },
+          {
+            q: "Was passiert nach dem Pilotprojekt?",
+            a: "Sie entscheiden auf Basis der Ergebnisse, ob die Lösung eingestellt, angepasst oder produktiv ausgerollt wird. Für einen Rollout erhalten Sie eine konkrete technische und organisatorische Roadmap.",
+          },
+        ],
+      },
+      final_cta: {
+        eyebrow: "Jetzt starten",
+        headline: "Starten Sie mit einem Prozess, nicht mit einer Plattform",
+        sub:
+          "Der beste Einstieg in künstliche Intelligenz ist kein umfangreiches Transformationsprogramm. Es ist ein konkretes Problem, ein messbares Ziel und eine Lösung, die im Arbeitsalltag funktioniert.",
+        cta: "KI-Pilot anfragen",
+      },
+    },
     pricing: {
       eyebrow: "Preise",
       headline: "Setup + Base-Fee + Minuten. Zahl was du sprichst.",
@@ -862,6 +1213,7 @@ export const dict: Record<Lang, Dict> = {
         wissen: "KI-Wissensmanagement",
         aria: "ARIA",
         blog: "Blog",
+        pilot: "KI-Pilot in 30 Tagen",
         pricing: "Preise",
         demo: "Demo buchen",
         showcase: "Alle Live-Funnels ansehen",
@@ -889,6 +1241,7 @@ export const dict: Record<Lang, Dict> = {
       wissen: "Knowledge Management",
       aria: "ARIA",
       blog: "Blog",
+      pilot: "AI Pilot",
       pricing: "Pricing",
       showcase: "Live Funnels",
       login: "Login",
@@ -1584,6 +1937,355 @@ export const dict: Record<Lang, Dict> = {
         cta: "Go to the demo →",
       },
     },
+    pilot: {
+      eyebrow: "30-day pilot program",
+      headline: "AI pilot in",
+      headline_accent: "30 days",
+      sub:
+        "From AI idea to working use case: we identify a concrete process together, build a functioning AI pilot, and measure the value it creates in your business.",
+      primary_cta: "Book a free intro call",
+      claim:
+        "Within 30 days you don't get another AI workshop — you get a deployable pilot process with a traceable business case.",
+      why: {
+        eyebrow: "The starting point",
+        headline: "AI doesn't need to look impressive. It needs to deliver results.",
+        intro:
+          "Many AI projects start with a technology or a new tool. The more important question is: which process is costing your business unnecessary time, money, or quality today? That's exactly where we start. Together we pick a clearly scoped process, define measurable goals, and build an AI solution that gets tested against your existing workflows, documents, and systems. Possible goals include:",
+        items: [
+          "less manual processing time",
+          "faster information retrieval",
+          "lower error rates",
+          "automated document processing",
+          "faster quote generation",
+          "better use of internal knowledge",
+          "shorter response and turnaround times",
+        ],
+      },
+      deliverables: {
+        eyebrow: "Outcome",
+        headline: "What you get after 30 days",
+        items: [
+          {
+            title: "A working AI pilot",
+            body:
+              "The selected use case isn't just described — it's technically built and tested with realistic examples.",
+          },
+          {
+            title: "A measurable before/after comparison",
+            body:
+              "We document how much time, effort, or error potential the existing process causes, and what improvement the pilot achieves.",
+          },
+          {
+            title: "A traceable business case",
+            body:
+              "You get a solid basis for deciding whether and how the solution should be scaled further.",
+          },
+          {
+            title: "A concrete scaling roadmap",
+            body:
+              "We show which next steps are needed for rollout, integration, governance, and expansion.",
+          },
+        ],
+      },
+      timeline: {
+        eyebrow: "Timeline",
+        headline: "How the 30-day pilot runs",
+        result_label: "Outcome",
+        steps: [
+          {
+            label: "Week 1",
+            title: "Analyze processes and assess potential",
+            intro:
+              "In a joint workshop we look at processes, recurring tasks, existing data, and current bottlenecks. We identify possible AI use cases and score them on:",
+            bullets: [
+              "economic value",
+              "technical feasibility",
+              "data availability",
+              "integration effort",
+              "privacy and risk",
+              "feasibility within 30 days",
+            ],
+            result: "A clearly defined pilot process with a measurable goal.",
+          },
+          {
+            label: "Week 2",
+            title: "Design and prepare the solution",
+            intro:
+              "We develop the technical and functional concept for the selected use case. Depending on the task, this includes for example:",
+            bullets: [
+              "process and data model",
+              "prompts and AI instructions",
+              "document and knowledge base",
+              "automation flows",
+              "roles and access rights",
+              "interfaces to existing systems",
+              "quality and review criteria",
+            ],
+            result: "An actionable solution concept with clear test cases.",
+          },
+          {
+            label: "Week 3",
+            title: "Build the AI pilot",
+            intro:
+              "We technically build the pilot and test it with selected documents, tasks, or process data. Possible components include:",
+            bullets: [
+              "AI assistants",
+              "internal knowledge search",
+              "document analysis",
+              "automatic classification",
+              "data extraction",
+              "report generation",
+              "email and process automation",
+              "RAG or GraphRAG systems",
+              "connection to existing business software",
+            ],
+            result: "A working prototype for the selected business process.",
+          },
+          {
+            label: "Week 4",
+            title: "Real-world testing and results measurement",
+            intro: "The pilot is tested together with selected users. We check:",
+            bullets: [
+              "quality of results",
+              "time savings",
+              "reliability",
+              "failure cases",
+              "usability",
+              "privacy and permissions",
+              "potential for a production rollout",
+            ],
+            result: "A tested AI pilot with a business case and scaling plan.",
+          },
+        ],
+      },
+      use_cases: {
+        eyebrow: "In practice",
+        headline: "Typical use cases",
+        items: [
+          {
+            title: "Find company knowledge faster",
+            body:
+              "Employees ask questions in natural language and get matching information from contracts, quotes, project documents, policies, or internal notes.",
+            quotes: [
+              "What contract terms were agreed with similar customers?",
+              "Where do we find the documentation for this project?",
+              "What quotes were created last year for comparable work?",
+            ],
+          },
+          {
+            title: "Analyze documents automatically",
+            body:
+              "The AI reads documents, identifies relevant content, and transfers information into your processes in structured form.",
+            listLabel: "Suited for:",
+            list: [
+              "invoices",
+              "contracts",
+              "tenders",
+              "job applications",
+              "technical documentation",
+              "delivery notes",
+              "maintenance reports",
+              "quality records",
+            ],
+          },
+          {
+            title: "Automate reports and analyses",
+            body: "Recurring reports get prepared automatically from existing data and documents.",
+            listLabel: "Examples:",
+            list: [
+              "project status reports",
+              "management summaries",
+              "sales reports",
+              "quality analyses",
+              "meeting minutes",
+              "risk overviews",
+              "weekly and monthly reports",
+            ],
+          },
+          {
+            title: "Speed up customer and sales processes",
+            body:
+              "AI helps process inquiries, qualify prospects, and draft matching replies or quotes.",
+            listLabel: "Examples:",
+            list: [
+              "automatic inquiry classification",
+              "customer history summaries",
+              "quote preparation",
+              "personalized sales outreach",
+              "lead qualification",
+              "customer service support",
+            ],
+          },
+          {
+            title: "Automate internal workflows",
+            body: "Recurring tasks get connected to AI and automation platforms.",
+            listLabel: "Examples:",
+            list: [
+              "processing emails",
+              "moving information between systems",
+              "detecting tasks from documents",
+              "preparing approvals",
+              "coordinating appointments",
+              "checking and completing data",
+              "automatically notifying employees",
+            ],
+          },
+        ],
+      },
+      audience: {
+        eyebrow: "Is this a fit?",
+        headline: "Which companies is the AI pilot for?",
+        intro: "This offer is for companies that:",
+        items: [
+          "have already tried some AI tools",
+          "want to implement a concrete use case",
+          "process a lot of documents or information",
+          "want to reduce recurring manual tasks",
+          "want to test an AI business case before a bigger investment",
+          "don't want to start a multi-month transformation project right away",
+          "need an independent assessment of their AI options",
+        ],
+        teams_intro:
+          "The pilot is especially well suited for mid-sized companies, functional departments, and teams from:",
+        teams: [
+          "Sales",
+          "Procurement",
+          "HR",
+          "Project management",
+          "Production",
+          "Quality management",
+          "Technical service",
+          "Administration",
+          "Customer service",
+          "Knowledge management",
+        ],
+      },
+      not_this: {
+        eyebrow: "What this isn't",
+        headline: "What the AI pilot is not",
+        items: [
+          {
+            title: "Not a generic AI talk",
+            body: "We don't just explain what artificial intelligence could theoretically do.",
+          },
+          {
+            title: "Not an isolated chatbot",
+            body: "The pilot is built around a concrete business process and your actual requirements.",
+          },
+          {
+            title: "Not a months-long megaproject",
+            body: "The use case is deliberately scoped so a measurable result exists within 30 days.",
+          },
+          {
+            title: "Not technology without benefit",
+            body: "Tool selection follows the use case. Not the other way around.",
+          },
+        ],
+      },
+      tech: {
+        eyebrow: "Technology",
+        headline: "Technology-agnostic, matched to your infrastructure",
+        intro:
+          "Depending on your use case, different technologies can be used. These include for example:",
+        items: [
+          "commercial or local AI models",
+          "Microsoft and OpenAI solutions",
+          "Claude",
+          "open-source models",
+          "vector and graph databases",
+          "RAG and GraphRAG",
+          "workflow automation",
+          "APIs and existing business systems",
+          "private cloud or on-premises solutions",
+        ],
+        closing:
+          "What matters isn't the name of the AI model — it's whether the solution can run reliably, securely, and economically in your business.",
+      },
+      results: {
+        eyebrow: "Summary",
+        headline: "Your results at a glance",
+        intro: "After the pilot, you get:",
+        items: [
+          "a documented starting process",
+          "a selected and prioritized AI use case",
+          "defined target metrics",
+          "a working AI prototype",
+          "a test with realistic business data",
+          "an assessment of quality and time savings",
+          "technical documentation",
+          "a risk and privacy assessment",
+          "a business case",
+          "a roadmap for integration and rollout",
+        ],
+      },
+      why_pilot: {
+        eyebrow: "Why a pilot?",
+        headline: "Why start with a pilot project?",
+        intro:
+          "A big AI strategy doesn't yet answer whether a specific process actually works. A 30-day pilot reduces the risk and creates a solid basis for decisions. You find out early:",
+        items: [
+          "whether the available data is sufficient",
+          "what result quality is achievable",
+          "what technical hurdles exist",
+          "how employees work with the solution",
+          "what savings are realistic",
+          "what investment the rollout requires",
+        ],
+        closing: "That way you only invest bigger once the benefit has been proven in practice.",
+      },
+      mid_cta: {
+        eyebrow: "Next step",
+        headline: "A measurable AI use case in 30 days",
+        intro:
+          "Do you have a process where employees regularly search for information, edit documents, create reports, or move data between systems? Then let's check together whether a suitable AI pilot can be built from it.",
+        list_intro: "In the free intro call, we'll clarify:",
+        items: [
+          "which process should be looked at",
+          "what problem currently exists",
+          "what data is available",
+          "what result is realistic within 30 days",
+          "whether the use case is suited for a pilot",
+        ],
+        cta: "Book a free intro call",
+        tagline: "From AI idea to working business process.",
+      },
+      faq: {
+        heading: "Frequently asked questions",
+        items: [
+          {
+            q: "Does our company need to already use AI?",
+            a: "No. The pilot works both for companies with no prior AI experience and for companies that have already tried various tools or early prototypes.",
+          },
+          {
+            q: "Do we need to provide sensitive data?",
+            a: "No sensitive data is needed for the initial analysis. During implementation, we jointly define what data may be used and what technical environment is suitable for it.",
+          },
+          {
+            q: "Is the pilot production-ready after 30 days?",
+            a: "The pilot is meant to prove technical feasibility and economic value. Depending on complexity, security requirements, and system integration, further steps may be needed for full production use.",
+          },
+          {
+            q: "Which AI technology is used?",
+            a: "The technology is chosen to fit the use case, your privacy requirements, and your existing IT infrastructure.",
+          },
+          {
+            q: "Can existing systems be connected?",
+            a: "In principle, yes. As part of the analysis we check which interfaces are available and whether an integration already makes sense within the pilot.",
+          },
+          {
+            q: "What happens after the pilot project?",
+            a: "You decide, based on the results, whether the solution is discontinued, adjusted, or rolled out into production. For a rollout you get a concrete technical and organizational roadmap.",
+          },
+        ],
+      },
+      final_cta: {
+        eyebrow: "Get started",
+        headline: "Start with a process, not a platform",
+        sub:
+          "The best way into artificial intelligence isn't a sprawling transformation program. It's a concrete problem, a measurable goal, and a solution that works in everyday operations.",
+        cta: "Request an AI pilot",
+      },
+    },
     pricing: {
       eyebrow: "Pricing",
       headline: "Setup + base fee + per-minute. Pay for what you talk.",
@@ -1733,6 +2435,7 @@ export const dict: Record<Lang, Dict> = {
         wissen: "AI Knowledge Management",
         aria: "ARIA",
         blog: "Blog",
+        pilot: "AI Pilot in 30 Days",
         pricing: "Pricing",
         demo: "Book a demo",
         showcase: "See all live funnels",
