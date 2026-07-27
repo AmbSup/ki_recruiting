@@ -5,7 +5,14 @@
 
 export type Lang = "de" | "en";
 
-export type SitField = { key: string; label: string; type: "input" | "textarea" };
+// aiGenerated=true: das Feld ist die eigentliche Anwendung der Methode
+// (z.B. "welche Komponente streichst du") — wird NICHT als leeres
+// Eingabefeld gezeigt, sondern ausschließlich über "KI-Vorschläge
+// generieren" befüllt (danach frei editierbar). Alle anderen Felder sind
+// Kontext (Produkt, Komponentenliste, ...), den der Nutzer manuell einträgt
+// und der 1:1 an die KI weitergegeben wird — nie als "von der KI zu
+// erfindendes" Feld behandelt.
+export type SitField = { key: string; label: string; type: "input" | "textarea"; aiGenerated?: boolean };
 export type SitTool = {
   id: string;
   num: string;
@@ -41,6 +48,7 @@ export type SitUi = {
   aiWhyLabel: string;
   aiSuggestionsHeading: string;
   aiSuggestionLabel: (n: number) => string;
+  aiFieldsHint: string;
 };
 
 export const SIT_TOOLS: Record<Lang, SitTool[]> = {
@@ -57,8 +65,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       fields: [
         { key: "product", label: "Dein Produkt oder Service", type: "input" },
         { key: "core", label: "Kernkomponenten (was gilt heute als essenziell?)", type: "textarea" },
-        { key: "removed", label: "Welche Komponente streichst du?", type: "input" },
-        { key: "effect", label: "Was passiert dadurch — für wen wird es besser oder anders?", type: "textarea" },
+        { key: "removed", label: "Welche Komponente streichst du?", type: "input", aiGenerated: true },
+        { key: "effect", label: "Was passiert dadurch — für wen wird es besser oder anders?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -76,8 +84,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       fields: [
         { key: "product", label: "Dein Produkt oder Service", type: "input" },
         { key: "parts", label: "Woraus besteht es? (Komponenten)", type: "textarea" },
-        { key: "line", label: "Entlang welcher Linie teilst du eine Komponente?", type: "input" },
-        { key: "reorg", label: "Wie ordnest du die Teile neu an?", type: "textarea" },
+        { key: "line", label: "Entlang welcher Linie teilst du eine Komponente?", type: "input", aiGenerated: true },
+        { key: "reorg", label: "Wie ordnest du die Teile neu an?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -94,8 +102,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       },
       fields: [
         { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "component", label: "Welche Komponente vervielfachst du?", type: "input" },
-        { key: "variation", label: "Wie unterscheiden sich die Kopien voneinander?", type: "textarea" },
+        { key: "component", label: "Welche Komponente vervielfachst du?", type: "input", aiGenerated: true },
+        { key: "variation", label: "Wie unterscheiden sich die Kopien voneinander?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -109,8 +117,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       },
       fields: [
         { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "component", label: "Welche vorhandene Komponente wählst du aus?", type: "input" },
-        { key: "job", label: "Welchen zusätzlichen Job übernimmt sie?", type: "textarea" },
+        { key: "component", label: "Welche vorhandene Komponente wählst du aus?", type: "input", aiGenerated: true },
+        { key: "job", label: "Welchen zusätzlichen Job übernimmt sie?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -124,9 +132,9 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       },
       fields: [
         { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "attrA", label: "Eigenschaft A (oder Umgebungsfaktor)", type: "input" },
-        { key: "attrB", label: "Eigenschaft B, die sich mitverändern soll", type: "input" },
-        { key: "rule", label: "Wie genau hängen sie zusammen? (z. B. „steigt A, steigt B“)", type: "textarea" },
+        { key: "attrA", label: "Eigenschaft A (oder Umgebungsfaktor)", type: "input", aiGenerated: true },
+        { key: "attrB", label: "Eigenschaft B, die sich mitverändern soll", type: "input", aiGenerated: true },
+        { key: "rule", label: "Wie genau hängen sie zusammen? (z. B. „steigt A, steigt B“)", type: "textarea", aiGenerated: true },
       ],
     },
   ],
@@ -143,8 +151,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       fields: [
         { key: "product", label: "Your product or service", type: "input" },
         { key: "core", label: "Core components (what counts as essential today?)", type: "textarea" },
-        { key: "removed", label: "Which component do you remove?", type: "input" },
-        { key: "effect", label: "What happens as a result — who benefits, or what changes?", type: "textarea" },
+        { key: "removed", label: "Which component do you remove?", type: "input", aiGenerated: true },
+        { key: "effect", label: "What happens as a result — who benefits, or what changes?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -162,8 +170,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       fields: [
         { key: "product", label: "Your product or service", type: "input" },
         { key: "parts", label: "What is it made of? (components)", type: "textarea" },
-        { key: "line", label: "Along what line do you split a component?", type: "input" },
-        { key: "reorg", label: "How do you reorganize the parts?", type: "textarea" },
+        { key: "line", label: "Along what line do you split a component?", type: "input", aiGenerated: true },
+        { key: "reorg", label: "How do you reorganize the parts?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -180,8 +188,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       },
       fields: [
         { key: "product", label: "Your product or service", type: "input" },
-        { key: "component", label: "Which component do you multiply?", type: "input" },
-        { key: "variation", label: "How do the copies differ from each other?", type: "textarea" },
+        { key: "component", label: "Which component do you multiply?", type: "input", aiGenerated: true },
+        { key: "variation", label: "How do the copies differ from each other?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -195,8 +203,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       },
       fields: [
         { key: "product", label: "Your product or service", type: "input" },
-        { key: "component", label: "Which existing component do you pick?", type: "input" },
-        { key: "job", label: "What additional job does it take on?", type: "textarea" },
+        { key: "component", label: "Which existing component do you pick?", type: "input", aiGenerated: true },
+        { key: "job", label: "What additional job does it take on?", type: "textarea", aiGenerated: true },
       ],
     },
     {
@@ -210,9 +218,9 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       },
       fields: [
         { key: "product", label: "Your product or service", type: "input" },
-        { key: "attrA", label: "Attribute A (or environmental factor)", type: "input" },
-        { key: "attrB", label: "Attribute B that should change along with it", type: "input" },
-        { key: "rule", label: 'How exactly are they linked? (e.g. "as A increases, B increases")', type: "textarea" },
+        { key: "attrA", label: "Attribute A (or environmental factor)", type: "input", aiGenerated: true },
+        { key: "attrB", label: "Attribute B that should change along with it", type: "input", aiGenerated: true },
+        { key: "rule", label: 'How exactly are they linked? (e.g. "as A increases, B increases")', type: "textarea", aiGenerated: true },
       ],
     },
   ],
@@ -246,6 +254,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     aiWhyLabel: "Warum wertvoll",
     aiSuggestionsHeading: "KI-Vorschläge",
     aiSuggestionLabel: (n) => `Vorschlag ${n}`,
+    aiFieldsHint: "Die restlichen Felder füllt die KI aus — Vorschläge generieren und übernehmen.",
   },
   en: {
     eyebrowTag: "T-01–T-05",
@@ -274,5 +283,6 @@ export const SIT_UI: Record<Lang, SitUi> = {
     aiWhyLabel: "Why it could be valuable",
     aiSuggestionsHeading: "AI suggestions",
     aiSuggestionLabel: (n) => `Suggestion ${n}`,
+    aiFieldsHint: "The AI fills in the rest — generate suggestions and apply one.",
   },
 };

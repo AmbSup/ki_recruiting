@@ -204,32 +204,37 @@ export function SitTool({ lang }: { lang: Lang }) {
             autoComplete="off"
             onSubmit={(e) => e.preventDefault()}
           >
-            {activeTool.fields.map((f) => {
-              const fieldId = `${activeTool.id}-${f.key}`;
-              const value = state[activeTool.id]?.[f.key] ?? "";
-              return (
-                <div className={styles.field} key={f.key}>
-                  <label htmlFor={fieldId}>{f.label}</label>
-                  {f.type === "textarea" ? (
-                    <textarea
-                      id={fieldId}
-                      value={value}
-                      onChange={(e) => handleFieldChange(activeTool.id, f.key, e.target.value)}
-                    />
-                  ) : (
-                    <input
-                      id={fieldId}
-                      type="text"
-                      value={value}
-                      onChange={(e) => handleFieldChange(activeTool.id, f.key, e.target.value)}
-                    />
-                  )}
-                </div>
-              );
-            })}
+            {activeTool.fields
+              .filter((f) => !f.aiGenerated || (state[activeTool.id]?.[f.key] ?? "").trim().length > 0)
+              .map((f) => {
+                const fieldId = `${activeTool.id}-${f.key}`;
+                const value = state[activeTool.id]?.[f.key] ?? "";
+                return (
+                  <div className={styles.field} key={f.key}>
+                    <label htmlFor={fieldId}>{f.label}</label>
+                    {f.type === "textarea" ? (
+                      <textarea
+                        id={fieldId}
+                        value={value}
+                        onChange={(e) => handleFieldChange(activeTool.id, f.key, e.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id={fieldId}
+                        type="text"
+                        value={value}
+                        onChange={(e) => handleFieldChange(activeTool.id, f.key, e.target.value)}
+                      />
+                    )}
+                  </div>
+                );
+              })}
             <p className={`${styles.saveHint} ${savedHint ? styles.saveHintShow : ""}`}>
               {savedHint ?? " "}
             </p>
+            {activeTool.fields.some((f) => f.aiGenerated) && (
+              <p className={styles.aiNotice}>{ui.aiFieldsHint}</p>
+            )}
           </form>
 
           <div className={styles.aiRow}>

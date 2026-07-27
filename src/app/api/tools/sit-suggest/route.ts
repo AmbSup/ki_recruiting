@@ -59,6 +59,8 @@ const COPY = {
     jsonNote:
       'Antworte NUR mit einem validen JSON-Objekt der Form {"suggestions": [...]}, kein Markdown, keine Erklärung davor oder danach.',
     schemaIntro: (fieldSchema: string) => `Jedes Objekt im Suggestions-Array braucht genau diese Felder (${fieldSchema}):`,
+    groundingNote:
+      "Halte dich STRIKT an die oben angegebenen Kontext-Informationen (z.B. eine Liste vorhandener Komponenten). Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
   },
   en: {
     intro: (name: string, def: string, example: string) =>
@@ -68,6 +70,8 @@ const COPY = {
     jsonNote:
       'Respond ONLY with a valid JSON object of the shape {"suggestions": [...]}, no markdown, no explanation before or after.',
     schemaIntro: (fieldSchema: string) => `Each object in the suggestions array needs exactly these fields (${fieldSchema}):`,
+    groundingNote:
+      "Stick STRICTLY to the context information given above (e.g. a list of existing components). Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
   },
 } as const;
 
@@ -95,19 +99,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "product_required" }, { status: 400 });
   }
 
-  const outputFields = tool.fields.filter((f) => f.key !== "product");
-  const outputKeys = new Set(outputFields.map((f) => f.key));
-  // Nur Felder, die die KI NICHT selbst generieren soll (z.B. "core" bei
-  // Subtraktion), zählen als Kontext — sonst würde ein schon halb
-  // ausgefülltes Output-Feld sich selbst als Vorgabe zurückspiegeln.
-  const contextEntries = Object.entries(body.context ?? {})
-    .filter(([key]) => !outputKeys.has(key))
+  // outputFields = was die KI erzeugen soll (removed/effect etc.).
+  // contextFields = was der Nutzer bereits geliefert hat (core, parts, ...)
+  // und was 1:1 als Vorgabe an die KI weitergereicht wird. Eine Verwechslung
+  // der beiden führte zuvor dazu, dass z.B. eine vom Nutzer eingetragene
+  // Komponentenliste nie im Prompt ankam und die KI stattdessen frei
+  // erfundene Komponenten vorschlug.
+  const outputFields = tool.fields.filter((f) => f.aiGenerated);
+  const contextFields = tool.fields.filter((f) => f.key !== "product" && !f.aiGenerated);
+  const contextEntries = contextFields
     .slice(0, MAX_CONTEXT_FIELDS)
-    .map(([key, value]) => {
-      const field = tool.fields.find((f) => f.key === key);
-      const label = field?.label ?? key;
-      const v = String(value ?? "").trim().slice(0, MAX_CONTEXT_VALUE_LEN);
-      return v ? `${label}: ${v}` : null;
+    .map((f) => {
+      const v = String(body.context?.[f.key] ?? "").trim().slice(0, MAX_CONTEXT_VALUE_LEN);
+      return v ? `${f.label}: ${v}` : null;
     })
     .filter((line): line is string => Boolean(line));
 
@@ -119,7 +123,8 @@ export async function POST(req: NextRequest) {
     .concat([`- "why": ${lang === "de" ? "1-2 Sätze, warum das wertvoll sein könnte" : "1-2 sentences on why this could be valuable"}`])
     .join("\n");
 
-  const system = `${copy.intro(tool.name, tool.def, exampleText)}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}\n\n${copy.jsonNote}`;
+  const groundingLine = contextEntries.length > 0 ? `\n\n${copy.groundingNote}` : "";
+  const system = `${copy.intro(tool.name, tool.def, exampleText)}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
   const user = copy.task(product, contextEntries.join("\n"));
 
   let text: string;
