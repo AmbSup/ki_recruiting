@@ -12,6 +12,7 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
   const ariaHref = lang === "de" ? "/aria" : "/en/aria";
   const blogHref = lang === "de" ? "/blog" : "/en/blog";
   const pilotHref = lang === "de" ? "/pilot-30-tage" : "/en/pilot-30-tage";
+  const toolsHref = lang === "de" ? "/innovations-werkzeuge" : "/en/innovations-werkzeuge";
   const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const email = t(lang, "footer.contact.email");
 
@@ -73,6 +74,11 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
               <li>
                 <Link href={pilotHref} className="text-slate-600 hover:text-slate-900">
                   {t(lang, "footer.links.pilot")}
+                </Link>
+              </li>
+              <li>
+                <Link href={toolsHref} className="text-slate-600 hover:text-slate-900">
+                  {t(lang, "footer.links.tools")}
                 </Link>
               </li>
               <li>

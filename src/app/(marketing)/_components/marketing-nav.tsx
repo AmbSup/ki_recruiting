@@ -14,6 +14,7 @@ export function MarketingNav({ lang }: { lang: Lang }) {
   const ariaHref = lang === "de" ? "/aria" : "/en/aria";
   const blogHref = lang === "de" ? "/blog" : "/en/blog";
   const pilotHref = lang === "de" ? "/pilot-30-tage" : "/en/pilot-30-tage";
+  const toolsHref = lang === "de" ? "/innovations-werkzeuge" : "/en/innovations-werkzeuge";
   const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const homeHref = lang === "de" ? "/" : "/en";
 
@@ -75,6 +76,12 @@ export function MarketingNav({ lang }: { lang: Lang }) {
             className="hidden md:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
           >
             {t(lang, "nav.pilot")}
+          </Link>
+          <Link
+            href={toolsHref}
+            className="hidden lg:inline-flex text-sm text-slate-600 hover:text-slate-900 transition px-2 py-1"
+          >
+            {t(lang, "nav.tools")}
           </Link>
           <Link
             href={pricingHref}

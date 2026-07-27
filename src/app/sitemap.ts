@@ -22,6 +22,7 @@ const ENTRIES: Entry[] = [
   { de: "/wissen", en: "/en/wissen", priority: 0.7, changeFrequency: "monthly" },
   { de: "/aria", en: "/en/aria", priority: 0.7, changeFrequency: "monthly" },
   { de: "/pilot-30-tage", en: "/en/pilot-30-tage", priority: 0.7, changeFrequency: "monthly" },
+  { de: "/innovations-werkzeuge", en: "/en/innovations-werkzeuge", priority: 0.6, changeFrequency: "monthly" },
   { de: "/blog", en: "/en/blog", priority: 0.6, changeFrequency: "weekly" },
 ];
 
