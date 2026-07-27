@@ -32,6 +32,15 @@ export type SitUi = {
   confirmResetText: string;
   exportHeader: string;
   savedPrefix: string;
+  aiButtonLabel: string;
+  aiLoadingLabel: string;
+  aiErrorLabel: string;
+  aiRateLimitLabel: string;
+  aiRequireProductLabel: string;
+  aiApplyLabel: string;
+  aiWhyLabel: string;
+  aiSuggestionsHeading: string;
+  aiSuggestionLabel: (n: number) => string;
 };
 
 export const SIT_TOOLS: Record<Lang, SitTool[]> = {
@@ -228,6 +237,15 @@ export const SIT_UI: Record<Lang, SitUi> = {
     confirmResetText: "Alle Einträge in allen 5 Werkzeugen löschen?",
     exportHeader: "INNOVATIONS-SKIZZE — Systematic Inventive Thinking",
     savedPrefix: "gespeichert ·",
+    aiButtonLabel: "KI-Vorschläge generieren",
+    aiLoadingLabel: "KI denkt nach …",
+    aiErrorLabel: "Vorschläge konnten nicht generiert werden — nochmal versuchen.",
+    aiRateLimitLabel: "Zu viele Anfragen — bitte kurz warten und nochmal versuchen.",
+    aiRequireProductLabel: "Trage zuerst dein Produkt oder deinen Service ein.",
+    aiApplyLabel: "Übernehmen →",
+    aiWhyLabel: "Warum wertvoll",
+    aiSuggestionsHeading: "KI-Vorschläge",
+    aiSuggestionLabel: (n) => `Vorschlag ${n}`,
   },
   en: {
     eyebrowTag: "T-01–T-05",
@@ -247,5 +265,14 @@ export const SIT_UI: Record<Lang, SitUi> = {
     confirmResetText: "Clear all entries in all 5 tools?",
     exportHeader: "INNOVATION SKETCH — Systematic Inventive Thinking",
     savedPrefix: "saved ·",
+    aiButtonLabel: "Generate AI suggestions",
+    aiLoadingLabel: "AI is thinking …",
+    aiErrorLabel: "Couldn't generate suggestions — try again.",
+    aiRateLimitLabel: "Too many requests — please wait a moment and try again.",
+    aiRequireProductLabel: "Enter your product or service first.",
+    aiApplyLabel: "Apply →",
+    aiWhyLabel: "Why it could be valuable",
+    aiSuggestionsHeading: "AI suggestions",
+    aiSuggestionLabel: (n) => `Suggestion ${n}`,
   },
 };

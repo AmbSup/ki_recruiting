@@ -7,6 +7,7 @@ import styles from "./sit-tool.module.css";
 
 type FieldValues = Record<string, string>;
 type ToolState = Record<string, FieldValues>;
+type AiStatus = "idle" | "loading" | "error" | "rate_limited" | "notice";
 
 function storageKey(lang: Lang) {
   return `sit-tools-v1-${lang}`;
@@ -26,6 +27,8 @@ export function SitTool({ lang }: { lang: Lang }) {
   const [loaded, setLoaded] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [aiStatus, setAiStatus] = useState<Record<string, AiStatus>>({});
+  const [aiSuggestions, setAiSuggestions] = useState<Record<string, Record<string, string>[]>>({});
   const hintTimer = useRef<number | null>(null);
 
   // Client-only Load — localStorage existiert nicht beim Server-Render, ein
@@ -33,7 +36,6 @@ export function SitTool({ lang }: { lang: Lang }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(storageKey(lang));
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Sync mit externem Storage nach Mount, kein Render-Zyklus zu vermeiden
       if (raw) setState(JSON.parse(raw) as ToolState);
     } catch {
       // corrupt/blocked storage — einfach leer starten
@@ -65,6 +67,45 @@ export function SitTool({ lang }: { lang: Lang }) {
   function handleReset() {
     if (!window.confirm(ui.confirmResetText)) return;
     setState({});
+    setAiSuggestions({});
+    setAiStatus({});
+  }
+
+  async function handleGenerateSuggestions(toolId: string) {
+    const product = (state[toolId]?.product || "").trim();
+    if (!product) {
+      setAiStatus((prev) => ({ ...prev, [toolId]: "notice" }));
+      return;
+    }
+    setAiStatus((prev) => ({ ...prev, [toolId]: "loading" }));
+    try {
+      const res = await fetch("/api/tools/sit-suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lang, toolId, product, context: state[toolId] || {} }),
+      });
+      if (res.status === 429) {
+        setAiStatus((prev) => ({ ...prev, [toolId]: "rate_limited" }));
+        return;
+      }
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as { suggestions?: Record<string, string>[] };
+      setAiSuggestions((prev) => ({ ...prev, [toolId]: data.suggestions ?? [] }));
+      setAiStatus((prev) => ({ ...prev, [toolId]: "idle" }));
+    } catch {
+      setAiStatus((prev) => ({ ...prev, [toolId]: "error" }));
+    }
+  }
+
+  function handleApplySuggestion(toolId: string, suggestion: Record<string, string>) {
+    setState((prev) => {
+      const next = { ...(prev[toolId] || {}) };
+      for (const [key, value] of Object.entries(suggestion)) {
+        if (key === "why" || !value) continue;
+        next[key] = value;
+      }
+      return { ...prev, [toolId]: next };
+    });
   }
 
   function buildExportText(): string {
@@ -190,6 +231,62 @@ export function SitTool({ lang }: { lang: Lang }) {
               {savedHint ?? " "}
             </p>
           </form>
+
+          <div className={styles.aiRow}>
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnPrimary}`}
+              onClick={() => handleGenerateSuggestions(activeTool.id)}
+              disabled={aiStatus[activeTool.id] === "loading"}
+            >
+              {aiStatus[activeTool.id] === "loading" ? ui.aiLoadingLabel : ui.aiButtonLabel}
+            </button>
+            {aiStatus[activeTool.id] === "notice" && (
+              <span className={styles.aiNotice}>{ui.aiRequireProductLabel}</span>
+            )}
+            {aiStatus[activeTool.id] === "error" && (
+              <span className={styles.aiNotice}>{ui.aiErrorLabel}</span>
+            )}
+            {aiStatus[activeTool.id] === "rate_limited" && (
+              <span className={styles.aiNotice}>{ui.aiRateLimitLabel}</span>
+            )}
+          </div>
+
+          {(aiSuggestions[activeTool.id]?.length ?? 0) > 0 && (
+            <div className={styles.aiSuggestions}>
+              <p className={styles.aiSuggestionsHeading}>{ui.aiSuggestionsHeading}</p>
+              <div className={styles.aiCards}>
+                {aiSuggestions[activeTool.id]!.map((sugg, i) => (
+                  <div className={styles.aiCard} key={i}>
+                    <p className={styles.aiCardLabel}>{ui.aiSuggestionLabel(i + 1)}</p>
+                    <dl className={styles.aiCardFields}>
+                      {activeTool.fields
+                        .filter((f) => f.key !== "product" && sugg[f.key])
+                        .map((f) => (
+                          <Fragment key={f.key}>
+                            <dt>{f.label}</dt>
+                            <dd>{sugg[f.key]}</dd>
+                          </Fragment>
+                        ))}
+                    </dl>
+                    {sugg.why && (
+                      <p className={styles.aiWhy}>
+                        <span className={styles.aiWhyLabel}>{ui.aiWhyLabel}: </span>
+                        {sugg.why}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className={styles.btn}
+                      onClick={() => handleApplySuggestion(activeTool.id, sugg)}
+                    >
+                      {ui.aiApplyLabel}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <section className={styles.summary}>
