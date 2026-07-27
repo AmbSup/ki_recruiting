@@ -7,21 +7,20 @@ export const maxDuration = 30;
 export const dynamic = "force-dynamic";
 
 // Public, unauthenticated Endpoint für das Innovations-Werkzeuge-Tool
-// (/innovations-werkzeuge). Nimmt Produkt + optionalen Kontext, lässt
-// Claude 3 konkrete Anwendungen der jeweiligen SIT-Methode generieren
-// (inkl. Begründung, warum das wertvoll sein könnte).
+// (/innovations-werkzeuge). Produkt + Komponenten werden EINMAL oben auf
+// der Seite eingegeben und für alle 5 Werkzeuge als Kontext mitgeschickt —
+// jeder Tool-Call generiert nur noch seine eigenen Output-Felder (removed/
+// effect, line/reorg, ...), alles davon ist KI-Output.
 //
 // Kein Login vorhanden (Marketing-Tool) → kein DB-Rate-Limit wie bei
-// /api/showcase/feedback (bräuchte eine neue Tabelle). Stattdessen:
-// harte Input-Caps (Produkt/Kontext-Länge, Anzahl Kontext-Felder) und ein
-// knappes maxTokens-Budget, die den Worst-Case-Cost pro Call begrenzen,
-// plus ein simpler In-Memory-Sliding-Window-Limiter pro IP-Hash (best
-// effort — überlebt keinen Cold-Start/Multi-Instance, aber bremst
-// naive Scripted-Abuse-Versuche ab).
+// /api/showcase/feedback (bräuchte eine neue Tabelle). Stattdessen: harte
+// Input-Caps (Produkt-/Komponenten-Länge) und ein knappes maxTokens-Budget,
+// die den Worst-Case-Cost pro Call begrenzen, plus ein simpler In-Memory-
+// Sliding-Window-Limiter pro IP (best effort — überlebt keinen Cold-Start/
+// Multi-Instance, aber bremst naive Scripted-Abuse-Versuche ab).
 
 const MAX_PRODUCT_LEN = 160;
-const MAX_CONTEXT_VALUE_LEN = 300;
-const MAX_CONTEXT_FIELDS = 6;
+const MAX_COMPONENTS_LEN = 500;
 const SUGGESTION_COUNT = 3;
 const RATE_LIMIT_PER_HOUR = 20;
 const RATE_WINDOW_MS = 60 * 60 * 1000;
@@ -47,31 +46,33 @@ type SuggestBody = {
   lang?: string;
   toolId?: string;
   product?: string;
-  context?: Record<string, string>;
+  components?: string;
 };
 
 const COPY = {
   de: {
     intro: (name: string, def: string, example: string) =>
       `Du hilfst dabei, die Kreativitätsmethode "${name}" (Systematic Inventive Thinking) auf ein konkretes Produkt anzuwenden.\n\nMethode: ${def}\nBekanntes Beispiel: ${example}`,
-    task: (product: string, contextLines: string) =>
-      `Produkt/Service: ${product}${contextLines ? `\n${contextLines}` : ""}\n\nGeneriere genau ${SUGGESTION_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
+    task: (product: string, componentsLine: string) =>
+      `Produkt/Service: ${product}${componentsLine}\n\nGeneriere genau ${SUGGESTION_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
+    componentsPrefix: "Vorhandene Komponenten",
     jsonNote:
       'Antworte NUR mit einem validen JSON-Objekt der Form {"suggestions": [...]}, kein Markdown, keine Erklärung davor oder danach.',
     schemaIntro: (fieldSchema: string) => `Jedes Objekt im Suggestions-Array braucht genau diese Felder (${fieldSchema}):`,
     groundingNote:
-      "Halte dich STRIKT an die oben angegebenen Kontext-Informationen (z.B. eine Liste vorhandener Komponenten). Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
+      "Halte dich STRIKT an die oben angegebene Komponentenliste. Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
   },
   en: {
     intro: (name: string, def: string, example: string) =>
       `You help apply the creativity method "${name}" (Systematic Inventive Thinking) to a concrete product.\n\nMethod: ${def}\nKnown example: ${example}`,
-    task: (product: string, contextLines: string) =>
-      `Product/service: ${product}${contextLines ? `\n${contextLines}` : ""}\n\nGenerate exactly ${SUGGESTION_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
+    task: (product: string, componentsLine: string) =>
+      `Product/service: ${product}${componentsLine}\n\nGenerate exactly ${SUGGESTION_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
+    componentsPrefix: "Existing components",
     jsonNote:
       'Respond ONLY with a valid JSON object of the shape {"suggestions": [...]}, no markdown, no explanation before or after.',
     schemaIntro: (fieldSchema: string) => `Each object in the suggestions array needs exactly these fields (${fieldSchema}):`,
     groundingNote:
-      "Stick STRICTLY to the context information given above (e.g. a list of existing components). Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
+      "Stick STRICTLY to the components list given above. Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
   },
 } as const;
 
@@ -98,34 +99,20 @@ export async function POST(req: NextRequest) {
   if (!product) {
     return NextResponse.json({ error: "product_required" }, { status: 400 });
   }
-
-  // outputFields = was die KI erzeugen soll (removed/effect etc.).
-  // contextFields = was der Nutzer bereits geliefert hat (core, parts, ...)
-  // und was 1:1 als Vorgabe an die KI weitergereicht wird. Eine Verwechslung
-  // der beiden führte zuvor dazu, dass z.B. eine vom Nutzer eingetragene
-  // Komponentenliste nie im Prompt ankam und die KI stattdessen frei
-  // erfundene Komponenten vorschlug.
-  const outputFields = tool.fields.filter((f) => f.aiGenerated);
-  const contextFields = tool.fields.filter((f) => f.key !== "product" && !f.aiGenerated);
-  const contextEntries = contextFields
-    .slice(0, MAX_CONTEXT_FIELDS)
-    .map((f) => {
-      const v = String(body.context?.[f.key] ?? "").trim().slice(0, MAX_CONTEXT_VALUE_LEN);
-      return v ? `${f.label}: ${v}` : null;
-    })
-    .filter((line): line is string => Boolean(line));
+  const components = (body.components ?? "").trim().slice(0, MAX_COMPONENTS_LEN);
 
   const copy = COPY[lang];
   const exampleText = `${tool.example.name} — ${tool.example.rows.map(([k, v]) => `${k}: ${v}`).join("; ")}`;
-  const fieldSchema = [...outputFields.map((f) => `"${f.key}"`), '"why"'].join(", ");
-  const fieldDescriptions = outputFields
+  const fieldSchema = [...tool.fields.map((f) => `"${f.key}"`), '"why"'].join(", ");
+  const fieldDescriptions = tool.fields
     .map((f) => `- "${f.key}": ${f.label}`)
     .concat([`- "why": ${lang === "de" ? "1-2 Sätze, warum das wertvoll sein könnte" : "1-2 sentences on why this could be valuable"}`])
     .join("\n");
 
-  const groundingLine = contextEntries.length > 0 ? `\n\n${copy.groundingNote}` : "";
+  const groundingLine = components ? `\n\n${copy.groundingNote}` : "";
   const system = `${copy.intro(tool.name, tool.def, exampleText)}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
-  const user = copy.task(product, contextEntries.join("\n"));
+  const componentsLine = components ? `\n${copy.componentsPrefix}: ${components}` : "";
+  const user = copy.task(product, componentsLine);
 
   let text: string;
   try {
@@ -149,7 +136,7 @@ export async function POST(req: NextRequest) {
     suggestions = arr.slice(0, SUGGESTION_COUNT).map((item) => {
       const record = (item ?? {}) as Record<string, unknown>;
       const out: Record<string, string> = {};
-      for (const f of outputFields) out[f.key] = String(record[f.key] ?? "").trim();
+      for (const f of tool.fields) out[f.key] = String(record[f.key] ?? "").trim();
       out.why = String(record.why ?? "").trim();
       return out;
     });

@@ -127,6 +127,7 @@
   border-radius: 3px;
   padding: 16px 14px 14px;
   text-align: left;
+  text-decoration: none;
   cursor: pointer;
   font-family: inherit;
   color: inherit;
@@ -136,10 +137,6 @@
   transition: border-color 0.15s ease, transform 0.15s ease;
 }
 .tile:hover { border-color: var(--line); }
-.tileActive {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
 @media (prefers-reduced-motion: no-preference) {
   .tile:active { transform: translateY(1px); }
 }
@@ -297,6 +294,12 @@
 
 .aiSuggestions { margin-top: 20px; }
 
+.answerBlock {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
 .aiSuggestionsHeading {
   font-family: var(--font-mono);
   font-size: 0.75rem;
@@ -343,6 +346,10 @@
   margin: 2px 0 0;
   font-size: 0.875rem;
   color: var(--ink);
+}
+.aiCardFieldsPrimary {
+  font-size: 1.1rem;
+  font-weight: 700;
 }
 
 .aiWhy {

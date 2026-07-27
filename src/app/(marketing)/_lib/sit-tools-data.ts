@@ -2,17 +2,16 @@
 // (Systematic Inventive Thinking). Getrennt von dict.ts, weil die Struktur
 // (Felder pro Werkzeug, Beispiel-Zeilen) nicht ins flache t()-Key-Schema
 // passt — SitTool liest hier direkt statt über t().
+//
+// Produkt + Komponenten werden EINMAL oben eingegeben (nicht mehr pro
+// Werkzeug) und für alle 5 Generierungen als Kontext mitgeschickt. Jedes
+// Tool-Objekt listet daher nur noch seine eigenen KI-Output-Felder (z.B.
+// "welche Komponente streichst du") — alles davon ist KI-generiert, nichts
+// manuell vorausgefüllt.
 
 export type Lang = "de" | "en";
 
-// aiGenerated=true: das Feld ist die eigentliche Anwendung der Methode
-// (z.B. "welche Komponente streichst du") — wird NICHT als leeres
-// Eingabefeld gezeigt, sondern ausschließlich über "KI-Vorschläge
-// generieren" befüllt (danach frei editierbar). Alle anderen Felder sind
-// Kontext (Produkt, Komponentenliste, ...), den der Nutzer manuell einträgt
-// und der 1:1 an die KI weitergegeben wird — nie als "von der KI zu
-// erfindendes" Feld behandelt.
-export type SitField = { key: string; label: string; type: "input" | "textarea"; aiGenerated?: boolean };
+export type SitField = { key: string; label: string; type: "input" | "textarea" };
 export type SitTool = {
   id: string;
   num: string;
@@ -27,6 +26,10 @@ export type SitUi = {
   eyebrowLabel: string;
   title: string;
   lede: string;
+  sharedProductLabel: string;
+  sharedComponentsLabel: string;
+  generateAllLabel: string;
+  generateAllLoadingLabel: string;
   exampleLabel: string;
   summaryTitle: string;
   countLabel: (filled: number, total: number) => string;
@@ -40,15 +43,17 @@ export type SitUi = {
   exportHeader: string;
   savedPrefix: string;
   aiButtonLabel: string;
+  regenerateLabel: string;
   aiLoadingLabel: string;
   aiErrorLabel: string;
   aiRateLimitLabel: string;
   aiRequireProductLabel: string;
   aiApplyLabel: string;
+  aiAppliedLabel: string;
   aiWhyLabel: string;
   aiSuggestionsHeading: string;
   aiSuggestionLabel: (n: number) => string;
-  aiFieldsHint: string;
+  yourPickHeading: string;
 };
 
 export const SIT_TOOLS: Record<Lang, SitTool[]> = {
@@ -63,10 +68,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         rows: [["Gestrichen", "Der Kassierer – galt als essenziell für den Verkauf"]],
       },
       fields: [
-        { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "core", label: "Kernkomponenten (was gilt heute als essenziell?)", type: "textarea" },
-        { key: "removed", label: "Welche Komponente streichst du?", type: "input", aiGenerated: true },
-        { key: "effect", label: "Was passiert dadurch — für wen wird es besser oder anders?", type: "textarea", aiGenerated: true },
+        { key: "removed", label: "Welche Komponente streichst du?", type: "input" },
+        { key: "effect", label: "Was passiert dadurch — für wen wird es besser oder anders?", type: "textarea" },
       ],
     },
     {
@@ -82,10 +85,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         ],
       },
       fields: [
-        { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "parts", label: "Woraus besteht es? (Komponenten)", type: "textarea" },
-        { key: "line", label: "Entlang welcher Linie teilst du eine Komponente?", type: "input", aiGenerated: true },
-        { key: "reorg", label: "Wie ordnest du die Teile neu an?", type: "textarea", aiGenerated: true },
+        { key: "line", label: "Entlang welcher Linie teilst du eine Komponente?", type: "input" },
+        { key: "reorg", label: "Wie ordnest du die Teile neu an?", type: "textarea" },
       ],
     },
     {
@@ -101,9 +102,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         ],
       },
       fields: [
-        { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "component", label: "Welche Komponente vervielfachst du?", type: "input", aiGenerated: true },
-        { key: "variation", label: "Wie unterscheiden sich die Kopien voneinander?", type: "textarea", aiGenerated: true },
+        { key: "component", label: "Welche Komponente vervielfachst du?", type: "input" },
+        { key: "variation", label: "Wie unterscheiden sich die Kopien voneinander?", type: "textarea" },
       ],
     },
     {
@@ -116,9 +116,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         rows: [["Zusatzjob", "Kamera-LED übernimmt die Beleuchtungsfunktion"]],
       },
       fields: [
-        { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "component", label: "Welche vorhandene Komponente wählst du aus?", type: "input", aiGenerated: true },
-        { key: "job", label: "Welchen zusätzlichen Job übernimmt sie?", type: "textarea", aiGenerated: true },
+        { key: "component", label: "Welche vorhandene Komponente wählst du aus?", type: "input" },
+        { key: "job", label: "Welchen zusätzlichen Job übernimmt sie?", type: "textarea" },
       ],
     },
     {
@@ -131,10 +130,9 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         rows: [["Abhängigkeit", "Regenmenge ↔ Wischtempo"]],
       },
       fields: [
-        { key: "product", label: "Dein Produkt oder Service", type: "input" },
-        { key: "attrA", label: "Eigenschaft A (oder Umgebungsfaktor)", type: "input", aiGenerated: true },
-        { key: "attrB", label: "Eigenschaft B, die sich mitverändern soll", type: "input", aiGenerated: true },
-        { key: "rule", label: "Wie genau hängen sie zusammen? (z. B. „steigt A, steigt B“)", type: "textarea", aiGenerated: true },
+        { key: "attrA", label: "Eigenschaft A (oder Umgebungsfaktor)", type: "input" },
+        { key: "attrB", label: "Eigenschaft B, die sich mitverändern soll", type: "input" },
+        { key: "rule", label: "Wie genau hängen sie zusammen? (z. B. „steigt A, steigt B“)", type: "textarea" },
       ],
     },
   ],
@@ -149,10 +147,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         rows: [["Removed", "The cashier — considered essential to making a sale"]],
       },
       fields: [
-        { key: "product", label: "Your product or service", type: "input" },
-        { key: "core", label: "Core components (what counts as essential today?)", type: "textarea" },
-        { key: "removed", label: "Which component do you remove?", type: "input", aiGenerated: true },
-        { key: "effect", label: "What happens as a result — who benefits, or what changes?", type: "textarea", aiGenerated: true },
+        { key: "removed", label: "Which component do you remove?", type: "input" },
+        { key: "effect", label: "What happens as a result — who benefits, or what changes?", type: "textarea" },
       ],
     },
     {
@@ -168,10 +164,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         ],
       },
       fields: [
-        { key: "product", label: "Your product or service", type: "input" },
-        { key: "parts", label: "What is it made of? (components)", type: "textarea" },
-        { key: "line", label: "Along what line do you split a component?", type: "input", aiGenerated: true },
-        { key: "reorg", label: "How do you reorganize the parts?", type: "textarea", aiGenerated: true },
+        { key: "line", label: "Along what line do you split a component?", type: "input" },
+        { key: "reorg", label: "How do you reorganize the parts?", type: "textarea" },
       ],
     },
     {
@@ -187,9 +181,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         ],
       },
       fields: [
-        { key: "product", label: "Your product or service", type: "input" },
-        { key: "component", label: "Which component do you multiply?", type: "input", aiGenerated: true },
-        { key: "variation", label: "How do the copies differ from each other?", type: "textarea", aiGenerated: true },
+        { key: "component", label: "Which component do you multiply?", type: "input" },
+        { key: "variation", label: "How do the copies differ from each other?", type: "textarea" },
       ],
     },
     {
@@ -202,9 +195,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         rows: [["Extra job", "Camera LED takes over the lighting function"]],
       },
       fields: [
-        { key: "product", label: "Your product or service", type: "input" },
-        { key: "component", label: "Which existing component do you pick?", type: "input", aiGenerated: true },
-        { key: "job", label: "What additional job does it take on?", type: "textarea", aiGenerated: true },
+        { key: "component", label: "Which existing component do you pick?", type: "input" },
+        { key: "job", label: "What additional job does it take on?", type: "textarea" },
       ],
     },
     {
@@ -217,10 +209,9 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
         rows: [["Dependency", "Rainfall ↔ wiper speed"]],
       },
       fields: [
-        { key: "product", label: "Your product or service", type: "input" },
-        { key: "attrA", label: "Attribute A (or environmental factor)", type: "input", aiGenerated: true },
-        { key: "attrB", label: "Attribute B that should change along with it", type: "input", aiGenerated: true },
-        { key: "rule", label: 'How exactly are they linked? (e.g. "as A increases, B increases")', type: "textarea", aiGenerated: true },
+        { key: "attrA", label: "Attribute A (or environmental factor)", type: "input" },
+        { key: "attrB", label: "Attribute B that should change along with it", type: "input" },
+        { key: "rule", label: 'How exactly are they linked? (e.g. "as A increases, B increases")', type: "textarea" },
       ],
     },
   ],
@@ -232,57 +223,69 @@ export const SIT_UI: Record<Lang, SitUi> = {
     eyebrowLabel: "Systematic Inventive Thinking",
     title: "5 Werkzeuge für systematisch innovatives Denken",
     lede:
-      "Innovation ist kein Zufallstreffer. Diese fünf Denkoperationen zerlegen ein bestehendes Produkt in seine Komponenten und wenden eine feste Regel darauf an — subtrahieren, teilen, vervielfachen, verschmelzen, verknüpfen. Werkzeug wählen, Definition & Beispiel lesen, auf die eigene Idee anwenden.",
+      "Innovation ist kein Zufallstreffer. Diese fünf Denkoperationen zerlegen ein bestehendes Produkt in seine Komponenten und wenden eine feste Regel darauf an — subtrahieren, teilen, vervielfachen, verschmelzen, verknüpfen. Produkt einmal eintragen, alle 5 Werkzeuge generieren lassen.",
+    sharedProductLabel: "Dein Produkt oder Service",
+    sharedComponentsLabel: "Woraus besteht es? (Komponenten)",
+    generateAllLabel: "Alle 5 Vorschläge generieren",
+    generateAllLoadingLabel: "KI generiert alle 5 Werkzeuge …",
     exampleLabel: "Beispiel",
     summaryTitle: "Deine Innovations-Skizze",
     countLabel: (filled, total) => `${filled} von ${total} Werkzeugen ausgefüllt`,
     resetLabel: "Zurücksetzen",
     copyLabel: "Skizze kopieren",
     copiedLabel: "Kopiert ✓",
-    emptyText: "Noch keine Einträge — fülle ein Werkzeug oben aus, dann erscheint hier deine Skizze.",
+    emptyText: "Noch keine Einträge — trag oben dein Produkt ein und generiere Vorschläge.",
     footerNote: "Lokal gespeichert in diesem Browser — verlässt dieses Gerät nicht.",
     stampText: "✓ erfasst",
     confirmResetText: "Alle Einträge in allen 5 Werkzeugen löschen?",
     exportHeader: "INNOVATIONS-SKIZZE — Systematic Inventive Thinking",
     savedPrefix: "gespeichert ·",
-    aiButtonLabel: "KI-Vorschläge generieren",
+    aiButtonLabel: "Vorschläge generieren",
+    regenerateLabel: "Neu generieren",
     aiLoadingLabel: "KI denkt nach …",
     aiErrorLabel: "Vorschläge konnten nicht generiert werden — nochmal versuchen.",
     aiRateLimitLabel: "Zu viele Anfragen — bitte kurz warten und nochmal versuchen.",
-    aiRequireProductLabel: "Trage zuerst dein Produkt oder deinen Service ein.",
+    aiRequireProductLabel: "Trage oben zuerst dein Produkt oder deinen Service ein.",
     aiApplyLabel: "Übernehmen →",
+    aiAppliedLabel: "✓ Übernommen",
     aiWhyLabel: "Warum wertvoll",
     aiSuggestionsHeading: "KI-Vorschläge",
     aiSuggestionLabel: (n) => `Vorschlag ${n}`,
-    aiFieldsHint: "Die restlichen Felder füllt die KI aus — Vorschläge generieren und übernehmen.",
+    yourPickHeading: "Deine Auswahl",
   },
   en: {
     eyebrowTag: "T-01–T-05",
     eyebrowLabel: "Systematic Inventive Thinking",
     title: "5 Tools for Systematically Innovative Thinking",
     lede:
-      "Innovation isn't a lucky break. These five thinking operations break an existing product down into its components and apply one fixed rule — subtract, split, multiply, merge, link. Pick a tool, read the definition & example, apply it to your own idea.",
+      "Innovation isn't a lucky break. These five thinking operations break an existing product down into its components and apply one fixed rule — subtract, split, multiply, merge, link. Enter your product once, generate all 5 tools.",
+    sharedProductLabel: "Your product or service",
+    sharedComponentsLabel: "What is it made of? (components)",
+    generateAllLabel: "Generate all 5 suggestions",
+    generateAllLoadingLabel: "AI is generating all 5 tools …",
     exampleLabel: "Example",
     summaryTitle: "Your Innovation Sketch",
     countLabel: (filled, total) => `${filled} of ${total} tools filled in`,
     resetLabel: "Reset",
     copyLabel: "Copy sketch",
     copiedLabel: "Copied ✓",
-    emptyText: "No entries yet — fill in a tool above and your sketch will appear here.",
+    emptyText: "No entries yet — enter your product above and generate suggestions.",
     footerNote: "Saved locally in this browser — never leaves your device.",
     stampText: "✓ captured",
     confirmResetText: "Clear all entries in all 5 tools?",
     exportHeader: "INNOVATION SKETCH — Systematic Inventive Thinking",
     savedPrefix: "saved ·",
-    aiButtonLabel: "Generate AI suggestions",
+    aiButtonLabel: "Generate suggestions",
+    regenerateLabel: "Regenerate",
     aiLoadingLabel: "AI is thinking …",
     aiErrorLabel: "Couldn't generate suggestions — try again.",
     aiRateLimitLabel: "Too many requests — please wait a moment and try again.",
-    aiRequireProductLabel: "Enter your product or service first.",
+    aiRequireProductLabel: "Enter your product or service above first.",
     aiApplyLabel: "Apply →",
+    aiAppliedLabel: "✓ Applied",
     aiWhyLabel: "Why it could be valuable",
     aiSuggestionsHeading: "AI suggestions",
     aiSuggestionLabel: (n) => `Suggestion ${n}`,
-    aiFieldsHint: "The AI fills in the rest — generate suggestions and apply one.",
+    yourPickHeading: "Your pick",
   },
 };
