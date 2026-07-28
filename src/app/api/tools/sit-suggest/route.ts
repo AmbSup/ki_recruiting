@@ -61,6 +61,7 @@ const COPY = {
     schemaIntro: (fieldSchema: string) => `Jedes Objekt im Suggestions-Array braucht genau diese Felder (${fieldSchema}):`,
     groundingNote:
       "Halte dich STRIKT an die oben angegebene Komponentenliste. Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
+    pitfallPrefix: "Häufiger Fallstrick, den du unbedingt vermeiden musst",
   },
   en: {
     intro: (name: string, def: string, example: string) =>
@@ -73,6 +74,7 @@ const COPY = {
     schemaIntro: (fieldSchema: string) => `Each object in the suggestions array needs exactly these fields (${fieldSchema}):`,
     groundingNote:
       "Stick STRICTLY to the components list given above. Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
+    pitfallPrefix: "Common pitfall you must avoid",
   },
 } as const;
 
@@ -110,7 +112,8 @@ export async function POST(req: NextRequest) {
     .join("\n");
 
   const groundingLine = components ? `\n\n${copy.groundingNote}` : "";
-  const system = `${copy.intro(tool.name, tool.def, exampleText)}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
+  const pitfallLine = `\n\n${copy.pitfallPrefix}: ${tool.pitfall}`;
+  const system = `${copy.intro(tool.name, tool.def, exampleText)}${pitfallLine}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
   const componentsLine = components ? `\n${copy.componentsPrefix}: ${components}` : "";
   const user = copy.task(product, componentsLine);
 

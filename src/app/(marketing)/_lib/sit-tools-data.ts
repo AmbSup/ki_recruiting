@@ -17,6 +17,10 @@ export type SitTool = {
   num: string;
   name: string;
   def: string;
+  // Nicht in der UI sichtbar — geht nur in den AI-System-Prompt (sit-suggest
+  // route), um den häufigsten Fehlanwendungs-Fallstrick pro Methode zu
+  // vermeiden (z.B. Subtraktion mit simplem Rezeptur-Ändern verwechseln).
+  pitfall: string;
   example: { name: string; rows: [string, string][] };
   fields: SitField[];
 };
@@ -63,6 +67,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-01",
       name: "Subtraktion",
       def: "Man streicht eine Kernkomponente eines Produktes oder Services – etwas, das zuvor als essenziell galt.",
+      pitfall:
+        "Nicht verwechseln mit simplem Entfernen eines störenden/schlechten Teils (das ist nur eine Rezeptur-Änderung, keine echte Subtraktion). Es muss eine wirklich essenzielle Komponente sein, und der Vorschlag muss einen NEUEN Nutzen beschreiben, keine bloße Verbesserung oder billigere Variante (das wäre nur Unbundling).",
       example: {
         name: "Self-Service-Tankstelle ohne Kassierer",
         rows: [["Gestrichen", "Der Kassierer – galt als essenziell für den Verkauf"]],
@@ -77,6 +83,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-02",
       name: "Division",
       def: "Du nimmst eine Komponente und teilst sie entlang einer physischen oder funktionalen Linie. Anschließend reorganisierst du sie zurück in das Produkt.",
+      pitfall:
+        "Die geteilten Teile müssen wirklich neu angeordnet werden — in Raum (an einen anderen Ort verlegt) oder in Zeit (erscheint nur zeitweise statt durchgehend). Reines gedankliches Trennen ohne Neuanordnung zählt nicht.",
       example: {
         name: "Elektrische Zahnbürste mit Wechselkopf",
         rows: [
@@ -94,6 +102,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-03",
       name: "Multiplikation",
       def: "Viele innovative Produkte nehmen eine Komponente, kopieren sie und verändern sie auf eine nicht erwartungsgemäße Art.",
+      pitfall:
+        "Eine unveränderte Kopie ist keine Multiplikation, nur mehr vom Gleichen (z.B. 10 Klingen an einem Rasierer ohne Veränderung bringt nichts). Die Kopie muss in mindestens einem Attribut (Farbe, Ort, Stärke, Zeitpunkt, ...) anders sein als das Original. Auch kein simples Hinzufügen eines neuen, unabhängigen Features.",
       example: {
         name: "Mehrklingen-Rasierer",
         rows: [
@@ -111,11 +121,14 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-04",
       name: "Aufgabenvereinigung",
       def: "Eine Komponente bekommt einen zusätzlichen Job zugewiesen, der zuvor nicht vorgesehen war.",
+      pitfall:
+        "Nicht verwechseln mit reinem Bündeln mehrerer Funktionen nebeneinander wie bei einem Schweizer Taschenmesser oder einer Multifunktionsuhr (jede Funktion bleibt dort für sich allein). Die gewählte Komponente muss eine ECHTE zusätzliche Aufgabe übernehmen. Es gibt 3 Varianten: (a) eine externe Komponente (Kunde, Partner, Umgebung) übernimmt eine Aufgabe, die dein Produkt sonst selbst erledigt; (b) eine interne Komponente bekommt eine komplett neue Zusatzaufgabe; (c) eine interne Komponente übernimmt die Funktion einer externen Komponente (\"stiehlt\" ihr die Aufgabe). Wechsle zwischen allen 3 Varianten, nicht nur der naheliegendsten.",
       example: {
         name: "Smartphone als Taschenlampe",
         rows: [["Zusatzjob", "Kamera-LED übernimmt die Beleuchtungsfunktion"]],
       },
       fields: [
+        { key: "origin", label: "Ist die Komponente intern (Teil deines Produkts) oder extern (Kunde, Partner, Umgebung)?", type: "input" },
         { key: "component", label: "Welche vorhandene Komponente wählst du aus?", type: "input" },
         { key: "job", label: "Welchen zusätzlichen Job übernimmt sie?", type: "textarea" },
       ],
@@ -125,6 +138,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-05",
       name: "Eigenschaftsabhängigkeit",
       def: "Ein Produkt weist eine Korrelation zwischen zwei Produkteigenschaften oder zwischen einer Produkteigenschaft und der Umgebung auf. Während sich eine Sache verändert, verändert sich auch eine andere.",
+      pitfall:
+        "Mindestens eine der beiden Eigenschaften muss unter Kontrolle des Produkts/Herstellers stehen (z.B. eine Produkteigenschaft). Eine Abhängigkeit zwischen zwei rein externen, unkontrollierbaren Faktoren (z.B. Wetter und Tageszeit) ist nicht herstellbar und daher ungültig.",
       example: {
         name: "Scheibenwischer passen ihre Geschwindigkeit an den Regen an",
         rows: [["Abhängigkeit", "Regenmenge ↔ Wischtempo"]],
@@ -142,6 +157,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-01",
       name: "Subtraction",
       def: "You remove a core component of a product or service — something that previously seemed essential.",
+      pitfall:
+        "Don't confuse this with simply removing a troublesome or bad part (that's just changing the recipe, not real Subtraction). It must be a genuinely essential component, and the suggestion must describe a NEW benefit, not just an improvement or a cheaper stripped-down variant (that would be unbundling).",
       example: {
         name: "Self-service gas station without a cashier",
         rows: [["Removed", "The cashier — considered essential to making a sale"]],
@@ -156,6 +173,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-02",
       name: "Division",
       def: "You take a component and split it along a physical or functional line. Then you reorganize it back into the product.",
+      pitfall:
+        "The split parts must actually be rearranged — in space (moved to a different location) or in time (only appears at certain times instead of continuously). Splitting something apart conceptually without an actual rearrangement doesn't count.",
       example: {
         name: "Electric toothbrush with a replaceable head",
         rows: [
@@ -173,6 +192,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-03",
       name: "Multiplication",
       def: "Many innovative products take a component, copy it, and change the copy in an unexpected way.",
+      pitfall:
+        "An unchanged copy is not Multiplication, just more of the same (e.g. 10 blades on a razor with no change accomplishes nothing). The copy must differ from the original in at least one attribute (color, location, strength, timing, ...). Also not simply adding a new, unrelated feature.",
       example: {
         name: "Multi-blade razor",
         rows: [
@@ -190,11 +211,14 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-04",
       name: "Task Unification",
       def: "A component is assigned an additional job it wasn't originally meant to do.",
+      pitfall:
+        "Don't confuse this with simply bundling several functions side by side, like a Swiss Army knife or a multi-function watch (each function still only does its own original job there). The chosen component must take on a REAL additional job. There are 3 variants: (a) an external component (customer, partner, environment) takes over a task your product would otherwise do itself; (b) an internal component gets a completely new extra job; (c) an internal component takes over the function of an external component (\"steals\" its job). Alternate between all 3 variants, not just the most obvious one.",
       example: {
         name: "Smartphone as a flashlight",
         rows: [["Extra job", "Camera LED takes over the lighting function"]],
       },
       fields: [
+        { key: "origin", label: "Is the component internal (part of your product) or external (customer, partner, environment)?", type: "input" },
         { key: "component", label: "Which existing component do you pick?", type: "input" },
         { key: "job", label: "What additional job does it take on?", type: "textarea" },
       ],
@@ -204,6 +228,8 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       num: "T-05",
       name: "Attribute Dependency",
       def: "A product shows a correlation between two product attributes, or between a product attribute and its environment. As one thing changes, another changes with it.",
+      pitfall:
+        "At least one of the two attributes must be under the product's/maker's control (e.g. a product attribute). A dependency between two purely external, uncontrollable factors (e.g. weather and time of day) can't actually be built and is therefore invalid.",
       example: {
         name: "Windshield wipers adjust their speed to the rain",
         rows: [["Dependency", "Rainfall ↔ wiper speed"]],
