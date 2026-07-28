@@ -119,20 +119,26 @@ Tatsächliche Lösung: Kondensierte Suppe mit stark reduziertem Wasseranteil in 
       name: "Division",
       def: "Du nimmst eine Komponente und teilst sie entlang einer physischen oder funktionalen Linie. Anschließend reorganisierst du sie zurück in das Produkt.",
       pitfall:
-        "Die geteilten Teile müssen wirklich neu angeordnet werden — in Raum (an einen anderen Ort verlegt) oder in Zeit (erscheint nur zeitweise statt durchgehend). Reines gedankliches Trennen ohne Neuanordnung zählt nicht.",
+        "Es gibt DREI Varianten (nicht nur Zerschneiden!): (1) FUNKTIONAL — eine ganze, UNZERSCHNITTENE Komponente wird an einen anderen Ort verlegt oder erscheint nur noch zu einem anderen Zeitpunkt im Ablauf (z.B. ein Prozessschritt wird vom Ende an den Anfang verschoben — kein Schnitt nötig!). (2) PHYSISCH — die Komponente wird entlang einer physischen Linie tatsächlich zerschnitten und die Teile neu angeordnet. (3) PRESERVING — die Komponente wird in mehrere gleichartige kleinere Einheiten geteilt, die je für sich die Eigenschaften des Ganzen behalten. WICHTIG: Bei funktionaler Division MUSS nichts zerschnitten werden — wenn eine Komponente (z.B. ein Schritt in einem Ablauf) einfach komplett an eine andere Position in Raum oder Zeit verschoben wird, ist das bereits vollständige Division. Die verschobenen/geteilten Teile müssen aber wirklich neu angeordnet werden — reines gedankliches Trennen ohne tatsächliche Neuanordnung (in Raum ODER Zeit) zählt nicht. Mische die 3 Varianten in deinen 3 Vorschlägen, wenn es zum Produkt passt.",
       fewShotExamples: [
         `Fall: Les Paul – Mehrspuraufnahme
 Ausgangslage: Bei traditionellen Musikaufnahmen mussten alle Musiker gleichzeitig möglichst fehlerfrei spielen. Ein einzelner Fehler machte die gesamte Aufnahme unbrauchbar.
 Komponenten intern: Magnetband, Aufnahmegerät, Aufnahme-/Wiedergabekopf, Instrumentalspur, Gesangsspur, Mischprozess, Lautstärkeregelung.
 Komponenten extern (Closed World): Musiker, Sänger, Produzent, Tonstudio, Instrumente, Publikum.
-SIT-Eingriff: Die gemeinsame Gesamtaufnahme funktional und physisch in mehrere kleinere Tonspuren teilen; Teile zu unterschiedlichen Zeitpunkten aufnehmen (Division in der Zeit) und anschließend zusammenführen.
+SIT-Eingriff: PRESERVING + zeitliche Division — die gemeinsame Gesamtaufnahme funktional in mehrere kleinere, gleichartige Tonspuren teilen; Teile zu unterschiedlichen Zeitpunkten aufnehmen und anschließend zusammenführen.
 Tatsächliche Lösung: Ein zusätzlicher Aufnahmekopf nahm Instrumente und Gesang schrittweise übereinander auf. Einzelne Teile konnten unabhängig wiederholt, korrigiert, gemischt und mit Effekten versehen werden. Grundlage der modernen Mehrspurproduktion.`,
         `Fall: AXA-Versicherungsantrag
 Ausgangslage: Versicherungsanträge wurden in starrer, historisch gewachsener Reihenfolge ausgefüllt. Viele Formulare waren unvollständig oder fehlerhaft und mussten nachbearbeitet werden.
 Komponenten intern: Formular, Seiten, einzelne Datenfelder, Kundendaten, Produktdaten, Gesundheitsfragen, Unterschriften, Prüfschritte, Formularreihenfolge.
 Komponenten extern (Closed World): Kunde, Versicherungsberater, Backoffice, Regulierungsbehörden, bereits vorhandene Datenquellen.
-SIT-Eingriff: Das Formular funktional in einzelne Felder/Blöcke teilen; Blöcke nach Gesprächsablauf, Datenquelle, zuständiger Person und geeignetem Zeitpunkt neu anordnen (Division nach Ort/Verantwortlichkeit UND Zeit).
+SIT-Eingriff: FUNKTIONALE Division — das Formular in einzelne Felder/Blöcke teilen; Blöcke nach Gesprächsablauf, Datenquelle, zuständiger Person und geeignetem Zeitpunkt neu anordnen (Division nach Ort/Verantwortlichkeit UND Zeit).
 Tatsächliche Lösung: Bestimmte Felder wurden vorbefüllt, andere vom jeweils am besten geeigneten Beteiligten bearbeitet; farbige Overlays zeigten dem Berater nur die relevanten Formularbereiche. Ergebnis: rund 20% weniger fehlerhafte/unvollständige Anträge.`,
+        `Fall: Kühlschrank mit ausgelagertem Kompressor (Beispiel für FUNKTIONALE Division OHNE Schnitt)
+Ausgangslage: Der Kompressor erzeugt Vibration, Wärme und Lärm direkt im Wohnbereich, wo der Kühlschrank steht.
+Komponenten intern: Kühlschrankgehäuse, Kühlaggregat/Kompressor, Kühlschlange, Tür, Innenfächer, Stromkabel.
+Komponenten extern (Closed World): Küche, Wand, Außenbereich/Keller, Nutzer, Stromnetz.
+SIT-Eingriff: FUNKTIONALE Division — der Kompressor wird NICHT zerschnitten, sondern als GANZE, unveränderte Komponente an einen anderen Ort verlegt (aus der Küche nach draußen/in den Keller), nur noch über die Kühlschlange verbunden.
+Tatsächliche Lösung: Der Kompressor wird räumlich vom Kühlschrank getrennt und außerhalb des Wohnbereichs platziert. Ergebnis: weniger Lärm/Vibration/Wärme in der Küche, bei gleicher Kühlleistung.`,
       ],
       example: {
         name: "Elektrische Zahnbürste mit Wechselkopf",
@@ -142,8 +148,17 @@ Tatsächliche Lösung: Bestimmte Felder wurden vorbefüllt, andere vom jeweils a
         ],
       },
       fields: [
-        { key: "line", label: "Entlang welcher Linie teilst du eine Komponente?", type: "input" },
-        { key: "reorg", label: "Wie ordnest du die Teile neu an?", type: "textarea" },
+        {
+          key: "mode",
+          label: "Welche Variante: funktional (Komponente unzerschnitten verlagern), physisch (entlang einer Linie zerschneiden) oder preserving (in gleichartige kleinere Einheiten teilen)?",
+          type: "input",
+        },
+        {
+          key: "line",
+          label: "Welche Komponente betrifft es — und entlang welcher Linie teilst du sie (falls ein Schnitt nötig ist)?",
+          type: "input",
+        },
+        { key: "reorg", label: "Wie/wohin ordnest du sie neu an (Ort und/oder Zeitpunkt)?", type: "textarea" },
       ],
     },
     {
@@ -295,20 +310,26 @@ Actual solution: condensed soup with a heavily reduced water content in a smalle
       name: "Division",
       def: "You take a component and split it along a physical or functional line. Then you reorganize it back into the product.",
       pitfall:
-        "The split parts must actually be rearranged — in space (moved to a different location) or in time (only appears at certain times instead of continuously). Splitting something apart conceptually without an actual rearrangement doesn't count.",
+        "There are THREE variants (not just cutting!): (1) FUNCTIONAL — a whole, UNCUT component is moved to a different location, or only appears at a different point in the process (e.g. a process step moves from the end to the beginning — no cut needed!). (2) PHYSICAL — the component is actually cut along a physical line and the parts rearranged. (3) PRESERVING — the component is divided into several similar smaller units, each still carrying the properties of the whole. IMPORTANT: functional division does NOT require cutting anything — if a component (e.g. a step in a process) is simply moved wholesale to a different position in space or time, that already counts as complete Division. But the moved/split parts must actually be rearranged — conceptually separating something without an actual rearrangement (in space OR time) doesn't count. Mix the 3 variants across your 3 suggestions when it fits the product.",
       fewShotExamples: [
         `Case: Les Paul — multitrack recording
 Situation: In traditional music recording, all musicians had to play together, ideally without mistakes. One error could ruin the entire take.
 Internal components: magnetic tape, recording device, record/playback head, instrumental track, vocal track, mixing process, volume control.
 External components (Closed World): musicians, singer, producer, recording studio, instruments, audience.
-SIT move: split the single combined recording functionally and physically into several smaller tracks; record the parts at different times (division in time) and merge them afterward.
+SIT move: PRESERVING + temporal division — split the single combined recording functionally into several smaller, similar tracks; record the parts at different times and merge them afterward.
 Actual solution: an extra recording head let Les Paul record instruments and vocals layered on top of each other over time. Individual parts could be redone, corrected, mixed and processed with effects independently. Became the foundation of modern multitrack production.`,
         `Case: AXA insurance application form
 Situation: Insurance applications were filled out in a rigid, historically grown order. Many forms were incomplete or wrong and needed rework.
 Internal components: form, pages, individual data fields, customer data, product data, health questions, signatures, review steps, form ordering.
 External components (Closed World): customer, insurance advisor, back office, regulators, existing data sources.
-SIT move: split the form functionally into individual fields/blocks; rearrange the blocks by conversation flow, data source, responsible person, and the best moment to fill them in (division by place/responsibility AND time).
+SIT move: FUNCTIONAL division — split the form into individual fields/blocks; rearrange the blocks by conversation flow, data source, responsible person, and the best moment to fill them in (division by place/responsibility AND time).
 Actual solution: some fields were pre-filled, others handled by whoever was best suited; colored overlays showed the advisor only the form sections relevant to that product. Result: roughly 20% fewer incomplete/incorrect applications.`,
+        `Case: Refrigerator with an externalized compressor (example of FUNCTIONAL Division WITHOUT cutting)
+Situation: The compressor generates vibration, heat and noise right in the living space where the fridge stands.
+Internal components: fridge housing, cooling unit/compressor, cooling coil, door, interior shelves, power cable.
+External components (Closed World): kitchen, wall, outdoor area/basement, user, power grid.
+SIT move: FUNCTIONAL division — the compressor is NOT cut apart, it's moved as a WHOLE, unchanged component to a different location (out of the kitchen, to the outside or the basement), connected only via the cooling coil.
+Actual solution: the compressor is spatially separated from the fridge and placed outside the living space. Result: less noise/vibration/heat in the kitchen, same cooling performance.`,
       ],
       example: {
         name: "Electric toothbrush with a replaceable head",
@@ -318,8 +339,17 @@ Actual solution: some fields were pre-filled, others handled by whoever was best
         ],
       },
       fields: [
-        { key: "line", label: "Along what line do you split a component?", type: "input" },
-        { key: "reorg", label: "How do you reorganize the parts?", type: "textarea" },
+        {
+          key: "mode",
+          label: "Which variant: functional (relocate a whole, uncut component), physical (cut along a line), or preserving (split into similar smaller units)?",
+          type: "input",
+        },
+        {
+          key: "line",
+          label: "Which component does this affect — and along what line do you split it (if a cut is needed)?",
+          type: "input",
+        },
+        { key: "reorg", label: "How/where do you rearrange it (location and/or timing)?", type: "textarea" },
       ],
     },
     {
