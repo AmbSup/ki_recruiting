@@ -30,12 +30,16 @@ export type SitTool = {
   fields: SitField[];
 };
 
+export type SitProofItem = { brand: string; method: string; score: string; quote: string };
+
 export type SitUi = {
   eyebrowTag: string;
   eyebrowLabel: string;
   title: string;
   lede: string;
   bookCredit: string;
+  proofTitle: string;
+  proofItems: SitProofItem[];
   sharedSectionTitle: string;
   sharedProductLabel: string;
   sharedProblemLabel: string;
@@ -475,6 +479,30 @@ export const SIT_UI: Record<Lang, SitUi> = {
     lede:
       "Innovation ist kein Zufallstreffer. Diese fünf Denkoperationen zerlegen ein bestehendes Produkt in seine Komponenten und wenden eine feste Regel darauf an — subtrahieren, teilen, vervielfachen, verschmelzen, verknüpfen. Produkt einmal eintragen, alle 5 Werkzeuge generieren lassen.",
     bookCredit: 'Nach der Systematic-Inventive-Thinking-Methode aus „Inside the Box" von Drew Boyd und Jacob Goldenberg.',
+    proofTitle: "Bewährt an echten Innovationsfällen",
+    proofItems: [
+      {
+        brand: "Sony Walkman",
+        method: "Subtraction · T-01",
+        score: "9/10",
+        quote:
+          "Traf beide Kernelemente der echten Lösung: Aufnahmefunktion streichen, Lautsprecher durch Kopfhörer ersetzen.",
+      },
+      {
+        brand: "Apple App Store",
+        method: "Task Unification · T-04",
+        score: "10/10",
+        quote:
+          '„Unabhängige Programmierer entwickeln Anwendungen für den offiziellen App Store" — nahezu wortgleich mit Apples realer Strategie.',
+      },
+      {
+        brand: "Gillette TRAC II",
+        method: "Multiplication · T-03",
+        score: "9/10",
+        quote:
+          "Beschrieb eigenständig, wie die hintere Klinge Haare erfasst, die durch die vordere Klinge positioniert wurden — der reale Wirkmechanismus des Patents.",
+      },
+    ],
     sharedSectionTitle: "Dein Fall",
     sharedProductLabel: "Dein Produkt oder Service",
     sharedProblemLabel: "Was ist aktuell das Problem oder die Ausgangslage?",
@@ -515,6 +543,29 @@ export const SIT_UI: Record<Lang, SitUi> = {
     lede:
       "Innovation isn't a lucky break. These five thinking operations break an existing product down into its components and apply one fixed rule — subtract, split, multiply, merge, link. Enter your product once, generate all 5 tools.",
     bookCredit: 'Based on the Systematic Inventive Thinking method from "Inside the Box" by Drew Boyd and Jacob Goldenberg.',
+    proofTitle: "Proven against real innovation cases",
+    proofItems: [
+      {
+        brand: "Sony Walkman",
+        method: "Subtraction · T-01",
+        score: "9/10",
+        quote: "Found both core elements of the real solution: drop the recording function, replace the speaker with headphones.",
+      },
+      {
+        brand: "Apple App Store",
+        method: "Task Unification · T-04",
+        score: "10/10",
+        quote:
+          '"Independent developers build apps for the official App Store" — nearly word-for-word Apple\'s real strategy.',
+      },
+      {
+        brand: "Gillette TRAC II",
+        method: "Multiplication · T-03",
+        score: "9/10",
+        quote:
+          "Independently described how the trailing blade catches hair positioned by the leading blade — the patent's actual mechanism.",
+      },
+    ],
     sharedSectionTitle: "Your Case",
     sharedProductLabel: "Your product or service",
     sharedProblemLabel: "What's the current problem or starting situation?",

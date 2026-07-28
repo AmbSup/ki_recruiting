@@ -115,6 +115,74 @@
   margin: 10px 0 0;
 }
 
+.proof {
+  margin-bottom: 40px;
+}
+
+.proofTitle {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  margin: 0 0 12px;
+}
+
+.proofItems {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.proofItem {
+  background: var(--paper);
+  border: 1px solid var(--border-soft);
+  border-radius: 3px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.proofItemHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.proofBrand {
+  font-weight: 700;
+  font-size: 0.9375rem;
+  color: var(--ink);
+}
+
+.proofScore {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 3px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.proofMethod {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-faint);
+}
+
+.proofQuote {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  margin: 4px 0 0;
+  line-height: 1.5;
+}
+
 .toolbench {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

@@ -232,6 +232,22 @@ export function SitTool({ lang }: { lang: Lang }) {
           <p className={styles.credit}>{ui.bookCredit}</p>
         </header>
 
+        <div className={styles.proof}>
+          <p className={styles.proofTitle}>{ui.proofTitle}</p>
+          <div className={styles.proofItems}>
+            {ui.proofItems.map((item) => (
+              <div className={styles.proofItem} key={item.brand}>
+                <div className={styles.proofItemHead}>
+                  <span className={styles.proofBrand}>{item.brand}</span>
+                  <span className={styles.proofScore}>{item.score}</span>
+                </div>
+                <span className={styles.proofMethod}>{item.method}</span>
+                <p className={styles.proofQuote}>{item.quote}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className={styles.toolbench}>
           {tools.map((tool) => {
             const Diagram = SIT_DIAGRAM_BY_ID[tool.id];
