@@ -107,6 +107,14 @@
   margin: 0;
 }
 
+.credit {
+  max-width: 62ch;
+  color: var(--ink-faint);
+  font-size: 0.8125rem;
+  font-style: italic;
+  margin: 10px 0 0;
+}
+
 .toolbench {
   display: grid;
   grid-template-columns: repeat(5, 1fr);

@@ -35,6 +35,7 @@ export type SitUi = {
   eyebrowLabel: string;
   title: string;
   lede: string;
+  bookCredit: string;
   sharedProductLabel: string;
   sharedComponentsLabel: string;
   generateAllLabel: string;
@@ -457,6 +458,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     title: "5 Werkzeuge für systematisch innovatives Denken",
     lede:
       "Innovation ist kein Zufallstreffer. Diese fünf Denkoperationen zerlegen ein bestehendes Produkt in seine Komponenten und wenden eine feste Regel darauf an — subtrahieren, teilen, vervielfachen, verschmelzen, verknüpfen. Produkt einmal eintragen, alle 5 Werkzeuge generieren lassen.",
+    bookCredit: 'Nach der Systematic-Inventive-Thinking-Methode aus „Inside the Box" von Drew Boyd und Jacob Goldenberg.',
     sharedProductLabel: "Dein Produkt oder Service",
     sharedComponentsLabel: "Woraus besteht es? (Komponenten)",
     generateAllLabel: "Alle 5 Vorschläge generieren",
@@ -492,6 +494,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     title: "5 Tools for Systematically Innovative Thinking",
     lede:
       "Innovation isn't a lucky break. These five thinking operations break an existing product down into its components and apply one fixed rule — subtract, split, multiply, merge, link. Enter your product once, generate all 5 tools.",
+    bookCredit: 'Based on the Systematic Inventive Thinking method from "Inside the Box" by Drew Boyd and Jacob Goldenberg.',
     sharedProductLabel: "Your product or service",
     sharedComponentsLabel: "What is it made of? (components)",
     generateAllLabel: "Generate all 5 suggestions",

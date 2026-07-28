@@ -194,6 +194,7 @@ export function SitTool({ lang }: { lang: Lang }) {
           </p>
           <h1 className={styles.title}>{ui.title}</h1>
           <p className={styles.lede}>{ui.lede}</p>
+          <p className={styles.credit}>{ui.bookCredit}</p>
         </header>
 
         <div className={styles.toolbench}>
