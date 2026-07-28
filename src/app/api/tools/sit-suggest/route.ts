@@ -3,7 +3,9 @@ import { completeLLM } from "@/services/llm/client";
 import { SIT_TOOLS, type Lang } from "@/app/(marketing)/_lib/sit-tools-data";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+// Zwei sequentielle LLM-Calls (Draft + Review) statt einem — 30s reichte im
+// Worst Case (langsamer Azure-Call + Cold Start) knapp nicht.
+export const maxDuration = 45;
 export const dynamic = "force-dynamic";
 
 // Public, unauthenticated Endpoint für das Innovations-Werkzeuge-Tool
@@ -21,7 +23,13 @@ export const dynamic = "force-dynamic";
 
 const MAX_PRODUCT_LEN = 160;
 const MAX_COMPONENTS_LEN = 500;
-const SUGGESTION_COUNT = 3;
+// Erst mehr Kandidaten entwerfen als am Ende gezeigt werden, dann in einem
+// zweiten LLM-Call kritisch nach Mehrwert filtern (DRAFT_COUNT -> SUGGESTION_COUNT).
+// Reiner Prompt-Trick ("denk erst nach") reicht bei einem kleinen/schnellen
+// Modell im JSON-Mode nicht zuverlässig — das Modell hat keinen sichtbaren
+// Scratchpad-Raum, wenn die Antwort strikt nur das finale JSON sein darf.
+const DRAFT_COUNT = 7;
+const SUGGESTION_COUNT = 5;
 const RATE_LIMIT_PER_HOUR = 20;
 const RATE_WINDOW_MS = 60 * 60 * 1000;
 
@@ -53,8 +61,8 @@ const COPY = {
   de: {
     intro: (name: string, def: string, example: string) =>
       `Du hilfst dabei, die Kreativitätsmethode "${name}" (Systematic Inventive Thinking) auf ein konkretes Produkt anzuwenden.\n\nMethode: ${def}\nBekanntes Beispiel: ${example}`,
-    task: (product: string, componentsLine: string) =>
-      `Produkt/Service: ${product}${componentsLine}\n\nGeneriere genau ${SUGGESTION_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
+    draftTask: (product: string, componentsLine: string) =>
+      `Produkt/Service: ${product}${componentsLine}\n\nGeneriere genau ${DRAFT_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
     componentsPrefix: "Vorhandene Komponenten",
     jsonNote:
       'Antworte NUR mit einem validen JSON-Objekt der Form {"suggestions": [...]}, kein Markdown, keine Erklärung davor oder danach.',
@@ -64,12 +72,17 @@ const COPY = {
     pitfallPrefix: "Häufiger Fallstrick, den du unbedingt vermeiden musst",
     fewShotIntro:
       "Zwei echte Fälle, wie diese Methode in der Praxis tatsächlich angewendet wurde (Ausgangslage → SIT-Eingriff → tatsächliche Lösung). Nutze sie NICHT als Vorlage zum Kopieren, sondern als Referenz dafür, wie konkret und spezifisch eine gute Lösung sein muss:",
+    reviewIntro: (name: string) =>
+      `Du bist jetzt ein kritischer Prüfer für ${DRAFT_COUNT} Kandidaten-Vorschläge zur Methode "${name}". Die Kandidaten stehen unten als JSON.`,
+    reviewTask:
+      `Bewerte jeden Kandidaten kritisch nach 3 Kriterien: (1) Verletzt er den oben genannten Fallstrick? (2) Ist er nur eine generische Plattitüde statt einer konkreten, spezifischen Idee? (3) Ist er inhaltlich zu ähnlich zu einem anderen, bereits gewählten Kandidaten? Wähle die ${SUGGESTION_COUNT} STÄRKSTEN und UNTERSCHIEDLICHSTEN Kandidaten aus. Gib die gewählten Kandidaten UNVERÄNDERT zurück (exakt derselbe Text in jedem Feld wie im Original-Kandidaten, nichts umschreiben oder neu erfinden) — wähle nur aus, generiere nichts Neues.`,
+    candidatesLabel: "Kandidaten",
   },
   en: {
     intro: (name: string, def: string, example: string) =>
       `You help apply the creativity method "${name}" (Systematic Inventive Thinking) to a concrete product.\n\nMethod: ${def}\nKnown example: ${example}`,
-    task: (product: string, componentsLine: string) =>
-      `Product/service: ${product}${componentsLine}\n\nGenerate exactly ${SUGGESTION_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
+    draftTask: (product: string, componentsLine: string) =>
+      `Product/service: ${product}${componentsLine}\n\nGenerate exactly ${DRAFT_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
     componentsPrefix: "Existing components",
     jsonNote:
       'Respond ONLY with a valid JSON object of the shape {"suggestions": [...]}, no markdown, no explanation before or after.',
@@ -79,6 +92,11 @@ const COPY = {
     pitfallPrefix: "Common pitfall you must avoid",
     fewShotIntro:
       "Two real cases showing how this method was actually applied in practice (situation → SIT move → actual solution). Do NOT use them as a template to copy — use them as a reference for how concrete and specific a good solution needs to be:",
+    reviewIntro: (name: string) =>
+      `You are now a critical reviewer for ${DRAFT_COUNT} candidate suggestions for the method "${name}". The candidates are listed below as JSON.`,
+    reviewTask:
+      `Critically evaluate each candidate against 3 criteria: (1) Does it violate the pitfall named above? (2) Is it just a generic platitude instead of a concrete, specific idea? (3) Is it too similar in substance to another candidate you've already picked? Select the ${SUGGESTION_COUNT} STRONGEST and MOST DISTINCT candidates. Return the chosen candidates UNCHANGED (exact same text in every field as in the original candidate, don't rewrite or invent anything new) — only select, don't generate anything new.`,
+    candidatesLabel: "Candidates",
   },
 } as const;
 
@@ -120,40 +138,69 @@ export async function POST(req: NextRequest) {
   const fewShotLine = tool.fewShotExamples.length
     ? `\n\n${copy.fewShotIntro}\n\n${tool.fewShotExamples.join("\n\n---\n\n")}`
     : "";
-  const system = `${copy.intro(tool.name, tool.def, exampleText)}${pitfallLine}${fewShotLine}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
+  const schemaBlock = `${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}`;
+  const draftSystem = `${copy.intro(tool.name, tool.def, exampleText)}${pitfallLine}${fewShotLine}\n\n${schemaBlock}${groundingLine}\n\n${copy.jsonNote}`;
   const componentsLine = components ? `\n${copy.componentsPrefix}: ${components}` : "";
-  const user = copy.task(product, componentsLine);
+  const draftUser = copy.draftTask(product, componentsLine);
 
-  let text: string;
-  try {
-    text = await completeLLM({
-      tier: "small",
-      system,
-      user,
-      maxTokens: 700,
-      jsonMode: true,
-    });
-  } catch (e) {
-    console.error("[sit-suggest] LLM error:", e);
-    return NextResponse.json({ error: "llm_error" }, { status: 502 });
-  }
-
-  let suggestions: Record<string, string>[];
-  try {
+  const toolFields = tool.fields;
+  function parseSuggestions(text: string, limit: number): Record<string, string>[] {
     const parsed: unknown = JSON.parse(text);
     const arr = Array.isArray(parsed) ? parsed : (parsed as { suggestions?: unknown })?.suggestions;
     if (!Array.isArray(arr)) throw new Error("not_an_array");
-    suggestions = arr.slice(0, SUGGESTION_COUNT).map((item) => {
+    return arr.slice(0, limit).map((item) => {
       const record = (item ?? {}) as Record<string, unknown>;
       const out: Record<string, string> = {};
-      for (const f of tool.fields) out[f.key] = String(record[f.key] ?? "").trim();
+      for (const f of toolFields) out[f.key] = String(record[f.key] ?? "").trim();
       out.why = String(record.why ?? "").trim();
       return out;
     });
+  }
+
+  let draftText: string;
+  try {
+    draftText = await completeLLM({
+      tier: "small",
+      system: draftSystem,
+      user: draftUser,
+      maxTokens: 1700,
+      jsonMode: true,
+    });
   } catch (e) {
-    console.error("[sit-suggest] parse error:", e, text);
+    console.error("[sit-suggest] draft LLM error:", e);
+    return NextResponse.json({ error: "llm_error" }, { status: 502 });
+  }
+
+  let drafts: Record<string, string>[];
+  try {
+    drafts = parseSuggestions(draftText, DRAFT_COUNT);
+  } catch (e) {
+    console.error("[sit-suggest] draft parse error:", e, draftText);
     return NextResponse.json({ error: "parse_error" }, { status: 502 });
   }
 
-  return NextResponse.json({ suggestions });
+  // Zweiter Call: kritisch nach Mehrwert filtern statt einfach die ersten
+  // SUGGESTION_COUNT zu nehmen. Schlägt der Review-Call fehl, liefern wir
+  // trotzdem die ungefilterten Drafts aus (besser als ein Fehler für den
+  // Nutzer) statt den ganzen Request scheitern zu lassen.
+  const reviewSystem = `${copy.reviewIntro(tool.name)}${pitfallLine}\n\n${copy.reviewTask}\n\n${schemaBlock}\n\n${copy.jsonNote}`;
+  const reviewUser = `${copy.candidatesLabel}:\n${JSON.stringify(drafts)}`;
+
+  try {
+    const reviewText = await completeLLM({
+      tier: "small",
+      system: reviewSystem,
+      user: reviewUser,
+      maxTokens: 1300,
+      jsonMode: true,
+    });
+    const reviewed = parseSuggestions(reviewText, SUGGESTION_COUNT);
+    if (reviewed.length > 0) {
+      return NextResponse.json({ suggestions: reviewed });
+    }
+  } catch (e) {
+    console.error("[sit-suggest] review call failed, falling back to drafts:", e);
+  }
+
+  return NextResponse.json({ suggestions: drafts.slice(0, SUGGESTION_COUNT) });
 }
