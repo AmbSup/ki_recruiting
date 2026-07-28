@@ -41,6 +41,7 @@ export type SitUi = {
   sharedProblemLabel: string;
   sharedInternalComponentsLabel: string;
   sharedExternalComponentsLabel: string;
+  sharedVariablesLabel: string;
   generateAllLabel: string;
   generateAllLoadingLabel: string;
   exampleLabel: string;
@@ -171,7 +172,7 @@ Tatsächliche Lösung: Der Kompressor wird räumlich vom Kühlschrank getrennt u
       name: "Multiplikation",
       def: "Viele innovative Produkte nehmen eine Komponente, kopieren sie und verändern sie auf eine nicht erwartungsgemäße Art.",
       pitfall:
-        "Eine unveränderte Kopie ist keine Multiplikation, nur mehr vom Gleichen (z.B. 10 Klingen an einem Rasierer ohne Veränderung bringt nichts). Die Kopie muss in mindestens einem Attribut (Farbe, Ort, Stärke, Zeitpunkt, ...) anders sein als das Original. Auch kein simples Hinzufügen eines neuen, unabhängigen Features.",
+        "Eine unveränderte Kopie ist keine Multiplikation, nur mehr vom Gleichen (z.B. 10 Klingen an einem Rasierer ohne Veränderung bringt nichts). Die Kopie muss in mindestens einem Attribut (Farbe, Ort, Stärke, Zeitpunkt, ...) anders sein als das Original. Auch kein simples Hinzufügen eines neuen, unabhängigen Features. WICHTIG: Falls eine Liste von Variablen/Attributen mitgegeben wurde, bevorzuge GENAU DIESE als Variationsdimension für die Kopien (z.B. wenn \"Durchmesser, Position, Strömungsrichtung\" genannt sind, variiere die Kopien entlang dieser konkreten Attribute statt dir eine andere, generische Dimension auszudenken) — das trifft die tatsächliche Lösung deutlich öfter als eine frei erfundene Variation.",
       fewShotExamples: [
         `Fall: Sears/Willis Tower – gebündelte Röhren
 Ausgangslage: Ein sehr hoher Wolkenkratzer benötigte eine tragfähige, windstabile Konstruktion. Eine einzelne große Gebäuderöhre hätte Grundriss und mögliche Höhe eingeschränkt.
@@ -241,7 +242,7 @@ Tatsächliche Lösung: Möbel werden flach verpackt und unmontiert verkauft; der
       name: "Eigenschaftsabhängigkeit",
       def: "Ein Produkt weist eine Korrelation zwischen zwei Produkteigenschaften oder zwischen einer Produkteigenschaft und der Umgebung auf. Während sich eine Sache verändert, verändert sich auch eine andere.",
       pitfall:
-        "Mindestens eine der beiden Eigenschaften muss unter Kontrolle des Produkts/Herstellers stehen (z.B. eine Produkteigenschaft). Eine Abhängigkeit zwischen zwei rein externen, unkontrollierbaren Faktoren (z.B. Wetter und Tageszeit) ist nicht herstellbar und daher ungültig.",
+        "Mindestens eine der beiden Eigenschaften muss unter Kontrolle des Produkts/Herstellers stehen (z.B. eine Produkteigenschaft). Eine Abhängigkeit zwischen zwei rein externen, unkontrollierbaren Faktoren (z.B. Wetter und Tageszeit) ist nicht herstellbar und daher ungültig. MATRIX-DENKEN (laut Buch, Figure 6.8): Denk dir eine Tabelle — Spalten sind Produkteigenschaften (aus den internen Komponenten/Variablen ableitbar, z.B. Viskosität, Farbe, Menge eines Wirkstoffs), Zeilen sind Umgebungs-/Nutzungsfaktoren (aus externen Komponenten/Variablen, z.B. Menge einer Ausscheidung, Alter, Hautempfindlichkeit). Geh mehrere Zellen dieser gedachten Matrix durch: Existiert diese Abhängigkeit in vergleichbaren Produkten bereits offensichtlich (\"Modus 1\" — z.B. \"mehr Wirkstoff wirkt stärker\" ist meist schon Standard)? Dann ist das NICHT innovativ genug. Suche stattdessen gezielt \"Zero-Mode\"-Paare — Kombinationen, bei denen aktuell KEINE Abhängigkeit besteht, obwohl sie technisch herstellbar wäre — genau dort liegt der eigentliche Innovationswert. WICHTIG zur FORM der Abhängigkeit: Beschreibe im rule-Feld nicht nur DASS und in welche Richtung sich etwas mitverändert, sondern WIE genau — z.B. proportional/graduell (\"steigt A leicht, steigt B leicht mit\"), Schwellenwert-basiert (\"ab einem bestimmten Wert von A schaltet B um\") oder als verblüffende EXAKTE 1:1-Kopplung (\"B entspricht direkt dem Zahlenwert von A\", wie ein Preis, der exakt der Temperatur entspricht). Die exakte 1:1-Kopplung ist oft die überraschendste und wirkungsvollste Variante — zieh sie in Betracht, wenn es zum Fall passt, statt automatisch nur proportional zu denken.",
       fewShotExamples: [
         `Fall: Púr-Babyflasche
 Ausgangslage: Zu heiße Milch kann den Mund eines Babys verbrennen. Besonders nachts können müde Eltern die Temperatur einer in der Mikrowelle erwärmten Flasche schwer beurteilen.
@@ -368,7 +369,7 @@ Actual solution: the compressor is spatially separated from the fridge and place
       name: "Multiplication",
       def: "Many innovative products take a component, copy it, and change the copy in an unexpected way.",
       pitfall:
-        "An unchanged copy is not Multiplication, just more of the same (e.g. 10 blades on a razor with no change accomplishes nothing). The copy must differ from the original in at least one attribute (color, location, strength, timing, ...). Also not simply adding a new, unrelated feature.",
+        "An unchanged copy is not Multiplication, just more of the same (e.g. 10 blades on a razor with no change accomplishes nothing). The copy must differ from the original in at least one attribute (color, location, strength, timing, ...). Also not simply adding a new, unrelated feature. IMPORTANT: if a list of variables/attributes was given, prefer EXACTLY THOSE as the variation dimension for the copies (e.g. if \"diameter, position, flow direction\" are named, vary the copies along those concrete attributes instead of inventing a different, generic dimension) — this matches the actual solution far more often than a freely invented variation.",
       fewShotExamples: [
         `Case: Sears/Willis Tower — bundled tubes
 Situation: A very tall skyscraper needed a structure that could carry loads and resist wind forces. A single large building tube would have limited floor-plan design and achievable height.
@@ -438,7 +439,7 @@ Actual solution: furniture is sold flat-packed and unassembled; the customer tra
       name: "Attribute Dependency",
       def: "A product shows a correlation between two product attributes, or between a product attribute and its environment. As one thing changes, another changes with it.",
       pitfall:
-        "At least one of the two attributes must be under the product's/maker's control (e.g. a product attribute). A dependency between two purely external, uncontrollable factors (e.g. weather and time of day) can't actually be built and is therefore invalid.",
+        "At least one of the two attributes must be under the product's/maker's control (e.g. a product attribute). A dependency between two purely external, uncontrollable factors (e.g. weather and time of day) can't actually be built and is therefore invalid. MATRIX THINKING (per the book, Figure 6.8): picture a table — columns are product attributes (derivable from internal components/variables, e.g. viscosity, color, amount of active substance), rows are environmental/usage factors (from external components/variables, e.g. amount of excretion, age, skin sensitivity). Mentally scan several cells of this table: does this dependency already obviously exist in comparable products (\"mode 1\" — e.g. \"more active substance works stronger\" is usually already standard)? Then it's NOT innovative enough. Instead, specifically look for \"zero-mode\" pairs — combinations where NO dependency currently exists, even though one could technically be built — that's where the real innovation value lies. IMPORTANT on the FORM of the dependency: in the rule field, describe not just THAT and in which direction something co-varies, but HOW exactly — e.g. proportional/gradual (\"as A rises slightly, B rises slightly too\"), threshold-based (\"once A crosses a certain value, B switches\"), or a striking EXACT 1:1 coupling (\"B directly equals the numeric value of A\", like a price that exactly matches the temperature). The exact 1:1 coupling is often the most surprising and effective variant — consider it when it fits the case, instead of defaulting to proportional only.",
       fewShotExamples: [
         `Case: Púr baby bottle
 Situation: Milk that's too hot can burn a baby's mouth. Especially at night, tired parents struggle to judge the temperature of a bottle warmed in the microwave.
@@ -479,6 +480,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     sharedProblemLabel: "Was ist aktuell das Problem oder die Ausgangslage?",
     sharedInternalComponentsLabel: "Interne Komponenten (Teile deines Produkts)",
     sharedExternalComponentsLabel: "Externe Komponenten (Closed World: Umgebung, Nutzer, Partner, …)",
+    sharedVariablesLabel: "Variablen/Attribute (was könnte sich verändern? z. B. Menge, Position, Zeitpunkt, Temperatur, Preis, …)",
     generateAllLabel: "Alle 5 Vorschläge generieren",
     generateAllLoadingLabel: "KI generiert alle 5 Werkzeuge …",
     exampleLabel: "Beispiel",
@@ -518,6 +520,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     sharedProblemLabel: "What's the current problem or starting situation?",
     sharedInternalComponentsLabel: "Internal components (parts of your product)",
     sharedExternalComponentsLabel: "External components (Closed World: environment, users, partners, …)",
+    sharedVariablesLabel: "Variables/attributes (what could change? e.g. amount, position, timing, temperature, price, …)",
     generateAllLabel: "Generate all 5 suggestions",
     generateAllLoadingLabel: "AI is generating all 5 tools …",
     exampleLabel: "Example",

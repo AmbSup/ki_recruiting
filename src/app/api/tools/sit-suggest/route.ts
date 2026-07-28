@@ -25,6 +25,7 @@ export const dynamic = "force-dynamic";
 const MAX_PRODUCT_LEN = 160;
 const MAX_PROBLEM_LEN = 300;
 const MAX_COMPONENTS_LEN = 300;
+const MAX_VARIABLES_LEN = 300;
 // Erst mehr Kandidaten entwerfen als am Ende gezeigt werden, dann in einem
 // zweiten LLM-Call kritisch nach Mehrwert filtern (DRAFT_COUNT -> SUGGESTION_COUNT).
 // Reiner Prompt-Trick ("denk erst nach") reicht bei einem kleinen/schnellen
@@ -59,6 +60,7 @@ type SuggestBody = {
   problem?: string;
   internalComponents?: string;
   externalComponents?: string;
+  variables?: string;
 };
 
 const COPY = {
@@ -70,6 +72,7 @@ const COPY = {
     problemPrefix: "Problem/Ausgangslage",
     internalComponentsPrefix: "Interne Komponenten",
     externalComponentsPrefix: "Externe Komponenten (Closed World)",
+    variablesPrefix: "Variablen/Attribute",
     jsonNote:
       'Antworte NUR mit einem validen JSON-Objekt der Form {"suggestions": [...]}, kein Markdown, keine Erklärung davor oder danach.',
     schemaIntro: (fieldSchema: string) => `Jedes Objekt im Suggestions-Array braucht genau diese Felder (${fieldSchema}):`,
@@ -92,6 +95,7 @@ const COPY = {
     problemPrefix: "Problem/starting situation",
     internalComponentsPrefix: "Internal components",
     externalComponentsPrefix: "External components (Closed World)",
+    variablesPrefix: "Variables/attributes",
     jsonNote:
       'Respond ONLY with a valid JSON object of the shape {"suggestions": [...]}, no markdown, no explanation before or after.',
     schemaIntro: (fieldSchema: string) => `Each object in the suggestions array needs exactly these fields (${fieldSchema}):`,
@@ -134,6 +138,7 @@ export async function POST(req: NextRequest) {
   const problem = (body.problem ?? "").trim().slice(0, MAX_PROBLEM_LEN);
   const internalComponents = (body.internalComponents ?? "").trim().slice(0, MAX_COMPONENTS_LEN);
   const externalComponents = (body.externalComponents ?? "").trim().slice(0, MAX_COMPONENTS_LEN);
+  const variables = (body.variables ?? "").trim().slice(0, MAX_VARIABLES_LEN);
   const hasComponents = Boolean(internalComponents || externalComponents);
 
   const copy = COPY[lang];
@@ -154,7 +159,8 @@ export async function POST(req: NextRequest) {
   const problemLine = problem ? `\n${copy.problemPrefix}: ${problem}` : "";
   const internalLine = internalComponents ? `\n${copy.internalComponentsPrefix}: ${internalComponents}` : "";
   const externalLine = externalComponents ? `\n${copy.externalComponentsPrefix}: ${externalComponents}` : "";
-  const draftUser = copy.draftTask(product, `${problemLine}${internalLine}${externalLine}`);
+  const variablesLine = variables ? `\n${copy.variablesPrefix}: ${variables}` : "";
+  const draftUser = copy.draftTask(product, `${problemLine}${internalLine}${externalLine}${variablesLine}`);
 
   const toolFields = tool.fields;
   function parseSuggestions(text: string, limit: number): Record<string, string>[] {

@@ -6,21 +6,30 @@ import { SIT_DIAGRAM_BY_ID } from "./sit-diagrams";
 import styles from "./sit-tool.module.css";
 
 type FieldValues = Record<string, string>;
-type Shared = { product: string; problem: string; internalComponents: string; externalComponents: string };
+type Shared = {
+  product: string;
+  problem: string;
+  internalComponents: string;
+  externalComponents: string;
+  variables: string;
+};
 type Answers = Record<string, FieldValues>;
 type AiStatus = "idle" | "loading" | "error" | "rate_limited";
 
 const PRODUCT_MAX_LEN = 160;
 const PROBLEM_MAX_LEN = 300;
 const COMPONENTS_MAX_LEN = 300;
+const VARIABLES_MAX_LEN = 300;
 
+// v4: Variablen/Attribute als eigenes Feld ergänzt (siehe SIT-Testreihe —
+// Multiplication und Attribute Dependency treffen deutlich öfter, wenn die
+// im Fall genannten Variablen wie "Durchmesser, Position, Strömungsrichtung"
+// explizit als Kandidaten mitgegeben werden statt frei erfunden zu werden).
 // v3: Produkt/Komponenten-Duo wurde durch Produkt + Problem + interne/externe
-// Komponenten ersetzt (siehe SIT-Testreihe — die KI trifft die historische
-// Lösung deutlich öfter, wenn Problem und Closed-World-Komponenten getrennt
-// vom reinen Produktnamen erfasst werden). Alte v2-Daten sind damit
-// strukturell inkompatibel; kein Migrationscode, Nutzer starten neu.
+// Komponenten ersetzt. Beide Male strukturell inkompatibel zur Vorversion;
+// kein Migrationscode, Nutzer starten neu.
 function storageKey(lang: Lang) {
-  return `sit-tools-v3-${lang}`;
+  return `sit-tools-v4-${lang}`;
 }
 
 function isFilled(values: FieldValues | undefined): boolean {
@@ -37,6 +46,7 @@ export function SitTool({ lang }: { lang: Lang }) {
     problem: "",
     internalComponents: "",
     externalComponents: "",
+    variables: "",
   });
   const [answers, setAnswers] = useState<Answers>({});
   const [loaded, setLoaded] = useState(false);
@@ -104,7 +114,7 @@ export function SitTool({ lang }: { lang: Lang }) {
 
   function handleReset() {
     if (!window.confirm(ui.confirmResetText)) return;
-    setShared({ product: "", problem: "", internalComponents: "", externalComponents: "" });
+    setShared({ product: "", problem: "", internalComponents: "", externalComponents: "", variables: "" });
     setAnswers({});
     setSuggestions({});
     setGenStatus({});
@@ -123,6 +133,7 @@ export function SitTool({ lang }: { lang: Lang }) {
           problem: shared.problem,
           internalComponents: shared.internalComponents,
           externalComponents: shared.externalComponents,
+          variables: shared.variables,
         }),
       });
       if (res.status === 429) {
@@ -175,6 +186,7 @@ export function SitTool({ lang }: { lang: Lang }) {
       lines.push(`${ui.sharedInternalComponentsLabel}: ${shared.internalComponents.trim()}`);
     if (shared.externalComponents.trim())
       lines.push(`${ui.sharedExternalComponentsLabel}: ${shared.externalComponents.trim()}`);
+    if (shared.variables.trim()) lines.push(`${ui.sharedVariablesLabel}: ${shared.variables.trim()}`);
     lines.push("");
     filled.forEach((tool) => {
       const values = answers[tool.id] || {};
@@ -278,6 +290,15 @@ export function SitTool({ lang }: { lang: Lang }) {
                 maxLength={COMPONENTS_MAX_LEN}
                 value={shared.externalComponents}
                 onChange={(e) => handleSharedChange("externalComponents", e.target.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="sit-shared-variables">{ui.sharedVariablesLabel}</label>
+              <textarea
+                id="sit-shared-variables"
+                maxLength={VARIABLES_MAX_LEN}
+                value={shared.variables}
+                onChange={(e) => handleSharedChange("variables", e.target.value)}
               />
             </div>
             <p className={`${styles.saveHint} ${savedHint ? styles.saveHintShow : ""}`}>
@@ -445,7 +466,8 @@ export function SitTool({ lang }: { lang: Lang }) {
               {(shared.product.trim() ||
                 shared.problem.trim() ||
                 shared.internalComponents.trim() ||
-                shared.externalComponents.trim()) && (
+                shared.externalComponents.trim() ||
+                shared.variables.trim()) && (
                 <div className={styles.sheetItem}>
                   <span className={styles.tag}>—</span>
                   <div className={styles.sheetBody}>
@@ -472,6 +494,12 @@ export function SitTool({ lang }: { lang: Lang }) {
                         <Fragment>
                           <dt>{ui.sharedExternalComponentsLabel}</dt>
                           <dd>{shared.externalComponents}</dd>
+                        </Fragment>
+                      )}
+                      {shared.variables.trim() && (
+                        <Fragment>
+                          <dt>{ui.sharedVariablesLabel}</dt>
+                          <dd>{shared.variables}</dd>
                         </Fragment>
                       )}
                     </dl>
