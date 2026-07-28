@@ -66,7 +66,7 @@ const COPY = {
     intro: (name: string, def: string, example: string) =>
       `Du hilfst dabei, die Kreativitätsmethode "${name}" (Systematic Inventive Thinking) auf ein konkretes Produkt anzuwenden.\n\nMethode: ${def}\nBekanntes Beispiel: ${example}`,
     draftTask: (product: string, contextLines: string) =>
-      `Produkt/Service: ${product}${contextLines}\n\nGeneriere genau ${DRAFT_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
+      `Produkt/Service: ${product}${contextLines}\n\nGeneriere genau ${DRAFT_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei konkret und spezifisch — vage Plattitüden ohne echten Mechanismus zählen nicht. WICHTIG: Das schließt ausdrücklich die naheliegendste, direkteste Anwendung der Methode auf das genannte Problem mit ein, solange sie konkret beschrieben ist — naheliegend ist NICHT dasselbe wie generisch, und die einfachste Lösung ist oft die richtige. Erfinde nicht künstlich Umwege, nur um "originell" zu wirken. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
     problemPrefix: "Problem/Ausgangslage",
     internalComponentsPrefix: "Interne Komponenten",
     externalComponentsPrefix: "Externe Komponenten (Closed World)",
@@ -81,14 +81,14 @@ const COPY = {
     reviewIntro: (name: string) =>
       `Du bist jetzt ein kritischer Prüfer für ${DRAFT_COUNT} Kandidaten-Vorschläge zur Methode "${name}". Die Kandidaten stehen unten als JSON.`,
     reviewTask:
-      `Bewerte jeden Kandidaten kritisch nach 3 Kriterien: (1) Verletzt er den oben genannten Fallstrick? (2) Ist er nur eine generische Plattitüde statt einer konkreten, spezifischen Idee? (3) Ist er inhaltlich zu ähnlich zu einem anderen, bereits gewählten Kandidaten? Wähle die ${SUGGESTION_COUNT} STÄRKSTEN und UNTERSCHIEDLICHSTEN Kandidaten aus. Gib die gewählten Kandidaten UNVERÄNDERT zurück (exakt derselbe Text in jedem Feld wie im Original-Kandidaten, nichts umschreiben oder neu erfinden) — wähle nur aus, generiere nichts Neues.`,
+      `Bewerte jeden Kandidaten kritisch nach 3 Kriterien: (1) Verletzt er den oben genannten Fallstrick? (2) Ist er vage und unspezifisch, OHNE einen konkreten Mechanismus zu nennen (das ist eine Plattitüde)? ACHTUNG: Die naheliegendste/offensichtlichste Anwendung der Methode ist NICHT automatisch eine Plattitüde — verwirf einen Kandidaten niemals nur, weil er naheliegend wirkt; entscheidend ist allein, ob er konkret und spezifisch ist. (3) Ist er inhaltlich zu ähnlich zu einem anderen, bereits gewählten Kandidaten? Wähle die ${SUGGESTION_COUNT} STÄRKSTEN und UNTERSCHIEDLICHSTEN Kandidaten aus. Gib die gewählten Kandidaten UNVERÄNDERT zurück (exakt derselbe Text in jedem Feld wie im Original-Kandidaten, nichts umschreiben oder neu erfinden) — wähle nur aus, generiere nichts Neues.`,
     candidatesLabel: "Kandidaten",
   },
   en: {
     intro: (name: string, def: string, example: string) =>
       `You help apply the creativity method "${name}" (Systematic Inventive Thinking) to a concrete product.\n\nMethod: ${def}\nKnown example: ${example}`,
     draftTask: (product: string, contextLines: string) =>
-      `Product/service: ${product}${contextLines}\n\nGenerate exactly ${DRAFT_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
+      `Product/service: ${product}${contextLines}\n\nGenerate exactly ${DRAFT_COUNT} concrete, distinct applications of this method to this product. Be concrete and specific — vague platitudes with no real mechanism don't count. IMPORTANT: this explicitly includes the most obvious, most direct application of the method to the stated problem, as long as it's described concretely — obvious is NOT the same as generic, and the simplest solution is often the right one. Don't invent artificial detours just to seem "original". Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
     problemPrefix: "Problem/starting situation",
     internalComponentsPrefix: "Internal components",
     externalComponentsPrefix: "External components (Closed World)",
@@ -103,7 +103,7 @@ const COPY = {
     reviewIntro: (name: string) =>
       `You are now a critical reviewer for ${DRAFT_COUNT} candidate suggestions for the method "${name}". The candidates are listed below as JSON.`,
     reviewTask:
-      `Critically evaluate each candidate against 3 criteria: (1) Does it violate the pitfall named above? (2) Is it just a generic platitude instead of a concrete, specific idea? (3) Is it too similar in substance to another candidate you've already picked? Select the ${SUGGESTION_COUNT} STRONGEST and MOST DISTINCT candidates. Return the chosen candidates UNCHANGED (exact same text in every field as in the original candidate, don't rewrite or invent anything new) — only select, don't generate anything new.`,
+      `Critically evaluate each candidate against 3 criteria: (1) Does it violate the pitfall named above? (2) Is it vague and unspecific, with NO concrete mechanism named (that's a platitude)? WARNING: the most obvious/direct application of the method is NOT automatically a platitude — never discard a candidate just because it seems obvious; what matters is only whether it's concrete and specific. (3) Is it too similar in substance to another candidate you've already picked? Select the ${SUGGESTION_COUNT} STRONGEST and MOST DISTINCT candidates. Return the chosen candidates UNCHANGED (exact same text in every field as in the original candidate, don't rewrite or invent anything new) — only select, don't generate anything new.`,
     candidatesLabel: "Candidates",
   },
 } as const;
