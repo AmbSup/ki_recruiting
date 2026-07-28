@@ -479,7 +479,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     lede:
       "Innovation ist kein Zufallstreffer. Diese fünf Denkoperationen zerlegen ein bestehendes Produkt in seine Komponenten und wenden eine feste Regel darauf an — subtrahieren, teilen, vervielfachen, verschmelzen, verknüpfen. Produkt einmal eintragen, alle 5 Werkzeuge generieren lassen.",
     bookCredit: 'Nach der Systematic-Inventive-Thinking-Methode aus „Inside the Box" von Drew Boyd und Jacob Goldenberg.',
-    proofTitle: "Bewährt an echten Innovationsfällen",
+    proofTitle: "Validiert an echten Innovationsfällen — nicht nur Theorie",
     proofItems: [
       {
         brand: "Sony Walkman",
@@ -543,7 +543,7 @@ export const SIT_UI: Record<Lang, SitUi> = {
     lede:
       "Innovation isn't a lucky break. These five thinking operations break an existing product down into its components and apply one fixed rule — subtract, split, multiply, merge, link. Enter your product once, generate all 5 tools.",
     bookCredit: 'Based on the Systematic Inventive Thinking method from "Inside the Box" by Drew Boyd and Jacob Goldenberg.',
-    proofTitle: "Proven against real innovation cases",
+    proofTitle: "Validated against real innovation cases — not just theory",
     proofItems: [
       {
         brand: "Sony Walkman",

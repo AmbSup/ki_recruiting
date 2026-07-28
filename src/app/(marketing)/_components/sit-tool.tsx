@@ -221,31 +221,33 @@ export function SitTool({ lang }: { lang: Lang }) {
         <span className={`${styles.reg} ${styles.regBl}`} />
         <span className={`${styles.reg} ${styles.regBr}`} />
 
-        <header className={styles.masthead}>
-          <p className={styles.eyebrow}>
-            <span>{ui.eyebrowTag}</span>
-            <span className={styles.eyebrowRule} />
-            <span>{ui.eyebrowLabel}</span>
-          </p>
-          <h1 className={styles.title}>{ui.title}</h1>
-          <p className={styles.lede}>{ui.lede}</p>
-          <p className={styles.credit}>{ui.bookCredit}</p>
-        </header>
+        <div className={styles.mastheadRow}>
+          <header className={styles.masthead}>
+            <p className={styles.eyebrow}>
+              <span>{ui.eyebrowTag}</span>
+              <span className={styles.eyebrowRule} />
+              <span>{ui.eyebrowLabel}</span>
+            </p>
+            <h1 className={styles.title}>{ui.title}</h1>
+            <p className={styles.lede}>{ui.lede}</p>
+            <p className={styles.credit}>{ui.bookCredit}</p>
+          </header>
 
-        <div className={styles.proof}>
-          <p className={styles.proofTitle}>{ui.proofTitle}</p>
-          <div className={styles.proofItems}>
-            {ui.proofItems.map((item) => (
-              <div className={styles.proofItem} key={item.brand}>
-                <div className={styles.proofItemHead}>
-                  <span className={styles.proofBrand}>{item.brand}</span>
-                  <span className={styles.proofScore}>{item.score}</span>
+          <aside className={styles.proof}>
+            <p className={styles.proofTitle}>{ui.proofTitle}</p>
+            <div className={styles.proofItems}>
+              {ui.proofItems.map((item) => (
+                <div className={styles.proofItem} key={item.brand}>
+                  <div className={styles.proofItemHead}>
+                    <span className={styles.proofBrand}>{item.brand}</span>
+                    <span className={styles.proofScore}>{item.score}</span>
+                  </div>
+                  <span className={styles.proofMethod}>{item.method}</span>
+                  <p className={styles.proofQuote}>{item.quote}</p>
                 </div>
-                <span className={styles.proofMethod}>{item.method}</span>
-                <p className={styles.proofQuote}>{item.quote}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </aside>
         </div>
 
         <div className={styles.toolbench}>
