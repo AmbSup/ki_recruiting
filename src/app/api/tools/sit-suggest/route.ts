@@ -9,10 +9,11 @@ export const maxDuration = 45;
 export const dynamic = "force-dynamic";
 
 // Public, unauthenticated Endpoint für das Innovations-Werkzeuge-Tool
-// (/innovations-werkzeuge). Produkt + Komponenten werden EINMAL oben auf
-// der Seite eingegeben und für alle 5 Werkzeuge als Kontext mitgeschickt —
-// jeder Tool-Call generiert nur noch seine eigenen Output-Felder (removed/
-// effect, line/reorg, ...), alles davon ist KI-Output.
+// (/innovations-werkzeuge). Produkt + Problem/Ausgangslage + interne/externe
+// Komponenten werden EINMAL oben auf der Seite eingegeben und für alle 5
+// Werkzeuge als Kontext mitgeschickt — jeder Tool-Call generiert nur noch
+// seine eigenen Output-Felder (removed/effect, line/reorg, ...), alles
+// davon ist KI-Output.
 //
 // Kein Login vorhanden (Marketing-Tool) → kein DB-Rate-Limit wie bei
 // /api/showcase/feedback (bräuchte eine neue Tabelle). Stattdessen: harte
@@ -22,7 +23,8 @@ export const dynamic = "force-dynamic";
 // Multi-Instance, aber bremst naive Scripted-Abuse-Versuche ab).
 
 const MAX_PRODUCT_LEN = 160;
-const MAX_COMPONENTS_LEN = 500;
+const MAX_PROBLEM_LEN = 300;
+const MAX_COMPONENTS_LEN = 300;
 // Erst mehr Kandidaten entwerfen als am Ende gezeigt werden, dann in einem
 // zweiten LLM-Call kritisch nach Mehrwert filtern (DRAFT_COUNT -> SUGGESTION_COUNT).
 // Reiner Prompt-Trick ("denk erst nach") reicht bei einem kleinen/schnellen
@@ -54,21 +56,25 @@ type SuggestBody = {
   lang?: string;
   toolId?: string;
   product?: string;
-  components?: string;
+  problem?: string;
+  internalComponents?: string;
+  externalComponents?: string;
 };
 
 const COPY = {
   de: {
     intro: (name: string, def: string, example: string) =>
       `Du hilfst dabei, die Kreativitätsmethode "${name}" (Systematic Inventive Thinking) auf ein konkretes Produkt anzuwenden.\n\nMethode: ${def}\nBekanntes Beispiel: ${example}`,
-    draftTask: (product: string, componentsLine: string) =>
-      `Produkt/Service: ${product}${componentsLine}\n\nGeneriere genau ${DRAFT_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
-    componentsPrefix: "Vorhandene Komponenten",
+    draftTask: (product: string, contextLines: string) =>
+      `Produkt/Service: ${product}${contextLines}\n\nGeneriere genau ${DRAFT_COUNT} konkrete, unterschiedliche Anwendungen dieser Methode auf dieses Produkt. Sei spezifisch und ungewöhnlich, keine generischen Plattitüden. Jeder Vorschlag braucht zusätzlich eine kurze Begründung, warum das für Nutzer oder das Geschäft wertvoll sein könnte.`,
+    problemPrefix: "Problem/Ausgangslage",
+    internalComponentsPrefix: "Interne Komponenten",
+    externalComponentsPrefix: "Externe Komponenten (Closed World)",
     jsonNote:
       'Antworte NUR mit einem validen JSON-Objekt der Form {"suggestions": [...]}, kein Markdown, keine Erklärung davor oder danach.',
     schemaIntro: (fieldSchema: string) => `Jedes Objekt im Suggestions-Array braucht genau diese Felder (${fieldSchema}):`,
     groundingNote:
-      "Halte dich STRIKT an die oben angegebene Komponentenliste. Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
+      "Halte dich STRIKT an die oben angegebenen Komponentenlisten (intern UND extern). Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
     pitfallPrefix: "Häufiger Fallstrick, den du unbedingt vermeiden musst",
     fewShotIntro:
       "Zwei echte Fälle, wie diese Methode in der Praxis tatsächlich angewendet wurde (Ausgangslage → SIT-Eingriff → tatsächliche Lösung). Nutze sie NICHT als Vorlage zum Kopieren, sondern als Referenz dafür, wie konkret und spezifisch eine gute Lösung sein muss:",
@@ -81,14 +87,16 @@ const COPY = {
   en: {
     intro: (name: string, def: string, example: string) =>
       `You help apply the creativity method "${name}" (Systematic Inventive Thinking) to a concrete product.\n\nMethod: ${def}\nKnown example: ${example}`,
-    draftTask: (product: string, componentsLine: string) =>
-      `Product/service: ${product}${componentsLine}\n\nGenerate exactly ${DRAFT_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
-    componentsPrefix: "Existing components",
+    draftTask: (product: string, contextLines: string) =>
+      `Product/service: ${product}${contextLines}\n\nGenerate exactly ${DRAFT_COUNT} concrete, distinct applications of this method to this product. Be specific and unexpected, no generic platitudes. Each suggestion also needs a short rationale for why it could be valuable to users or the business.`,
+    problemPrefix: "Problem/starting situation",
+    internalComponentsPrefix: "Internal components",
+    externalComponentsPrefix: "External components (Closed World)",
     jsonNote:
       'Respond ONLY with a valid JSON object of the shape {"suggestions": [...]}, no markdown, no explanation before or after.',
     schemaIntro: (fieldSchema: string) => `Each object in the suggestions array needs exactly these fields (${fieldSchema}):`,
     groundingNote:
-      "Stick STRICTLY to the components list given above. Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
+      "Stick STRICTLY to the components lists given above (internal AND external). Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
     pitfallPrefix: "Common pitfall you must avoid",
     fewShotIntro:
       "Two real cases showing how this method was actually applied in practice (situation → SIT move → actual solution). Do NOT use them as a template to copy — use them as a reference for how concrete and specific a good solution needs to be:",
@@ -123,7 +131,10 @@ export async function POST(req: NextRequest) {
   if (!product) {
     return NextResponse.json({ error: "product_required" }, { status: 400 });
   }
-  const components = (body.components ?? "").trim().slice(0, MAX_COMPONENTS_LEN);
+  const problem = (body.problem ?? "").trim().slice(0, MAX_PROBLEM_LEN);
+  const internalComponents = (body.internalComponents ?? "").trim().slice(0, MAX_COMPONENTS_LEN);
+  const externalComponents = (body.externalComponents ?? "").trim().slice(0, MAX_COMPONENTS_LEN);
+  const hasComponents = Boolean(internalComponents || externalComponents);
 
   const copy = COPY[lang];
   const exampleText = `${tool.example.name} — ${tool.example.rows.map(([k, v]) => `${k}: ${v}`).join("; ")}`;
@@ -133,15 +144,17 @@ export async function POST(req: NextRequest) {
     .concat([`- "why": ${lang === "de" ? "1-2 Sätze, warum das wertvoll sein könnte" : "1-2 sentences on why this could be valuable"}`])
     .join("\n");
 
-  const groundingLine = components ? `\n\n${copy.groundingNote}` : "";
+  const groundingLine = hasComponents ? `\n\n${copy.groundingNote}` : "";
   const pitfallLine = `\n\n${copy.pitfallPrefix}: ${tool.pitfall}`;
   const fewShotLine = tool.fewShotExamples.length
     ? `\n\n${copy.fewShotIntro}\n\n${tool.fewShotExamples.join("\n\n---\n\n")}`
     : "";
   const schemaBlock = `${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}`;
   const draftSystem = `${copy.intro(tool.name, tool.def, exampleText)}${pitfallLine}${fewShotLine}\n\n${schemaBlock}${groundingLine}\n\n${copy.jsonNote}`;
-  const componentsLine = components ? `\n${copy.componentsPrefix}: ${components}` : "";
-  const draftUser = copy.draftTask(product, componentsLine);
+  const problemLine = problem ? `\n${copy.problemPrefix}: ${problem}` : "";
+  const internalLine = internalComponents ? `\n${copy.internalComponentsPrefix}: ${internalComponents}` : "";
+  const externalLine = externalComponents ? `\n${copy.externalComponentsPrefix}: ${externalComponents}` : "";
+  const draftUser = copy.draftTask(product, `${problemLine}${internalLine}${externalLine}`);
 
   const toolFields = tool.fields;
   function parseSuggestions(text: string, limit: number): Record<string, string>[] {

@@ -36,8 +36,11 @@ export type SitUi = {
   title: string;
   lede: string;
   bookCredit: string;
+  sharedSectionTitle: string;
   sharedProductLabel: string;
-  sharedComponentsLabel: string;
+  sharedProblemLabel: string;
+  sharedInternalComponentsLabel: string;
+  sharedExternalComponentsLabel: string;
   generateAllLabel: string;
   generateAllLoadingLabel: string;
   exampleLabel: string;
@@ -471,8 +474,11 @@ export const SIT_UI: Record<Lang, SitUi> = {
     lede:
       "Innovation ist kein Zufallstreffer. Diese fünf Denkoperationen zerlegen ein bestehendes Produkt in seine Komponenten und wenden eine feste Regel darauf an — subtrahieren, teilen, vervielfachen, verschmelzen, verknüpfen. Produkt einmal eintragen, alle 5 Werkzeuge generieren lassen.",
     bookCredit: 'Nach der Systematic-Inventive-Thinking-Methode aus „Inside the Box" von Drew Boyd und Jacob Goldenberg.',
+    sharedSectionTitle: "Dein Fall",
     sharedProductLabel: "Dein Produkt oder Service",
-    sharedComponentsLabel: "Woraus besteht es? (Komponenten)",
+    sharedProblemLabel: "Was ist aktuell das Problem oder die Ausgangslage?",
+    sharedInternalComponentsLabel: "Interne Komponenten (Teile deines Produkts)",
+    sharedExternalComponentsLabel: "Externe Komponenten (Closed World: Umgebung, Nutzer, Partner, …)",
     generateAllLabel: "Alle 5 Vorschläge generieren",
     generateAllLoadingLabel: "KI generiert alle 5 Werkzeuge …",
     exampleLabel: "Beispiel",
@@ -507,8 +513,11 @@ export const SIT_UI: Record<Lang, SitUi> = {
     lede:
       "Innovation isn't a lucky break. These five thinking operations break an existing product down into its components and apply one fixed rule — subtract, split, multiply, merge, link. Enter your product once, generate all 5 tools.",
     bookCredit: 'Based on the Systematic Inventive Thinking method from "Inside the Box" by Drew Boyd and Jacob Goldenberg.',
+    sharedSectionTitle: "Your Case",
     sharedProductLabel: "Your product or service",
-    sharedComponentsLabel: "What is it made of? (components)",
+    sharedProblemLabel: "What's the current problem or starting situation?",
+    sharedInternalComponentsLabel: "Internal components (parts of your product)",
+    sharedExternalComponentsLabel: "External components (Closed World: environment, users, partners, …)",
     generateAllLabel: "Generate all 5 suggestions",
     generateAllLoadingLabel: "AI is generating all 5 tools …",
     exampleLabel: "Example",

@@ -6,14 +6,21 @@ import { SIT_DIAGRAM_BY_ID } from "./sit-diagrams";
 import styles from "./sit-tool.module.css";
 
 type FieldValues = Record<string, string>;
-type Shared = { product: string; components: string };
+type Shared = { product: string; problem: string; internalComponents: string; externalComponents: string };
 type Answers = Record<string, FieldValues>;
 type AiStatus = "idle" | "loading" | "error" | "rate_limited";
 
 const PRODUCT_MAX_LEN = 160;
+const PROBLEM_MAX_LEN = 300;
+const COMPONENTS_MAX_LEN = 300;
 
+// v3: Produkt/Komponenten-Duo wurde durch Produkt + Problem + interne/externe
+// Komponenten ersetzt (siehe SIT-Testreihe — die KI trifft die historische
+// Lösung deutlich öfter, wenn Problem und Closed-World-Komponenten getrennt
+// vom reinen Produktnamen erfasst werden). Alte v2-Daten sind damit
+// strukturell inkompatibel; kein Migrationscode, Nutzer starten neu.
 function storageKey(lang: Lang) {
-  return `sit-tools-v2-${lang}`;
+  return `sit-tools-v3-${lang}`;
 }
 
 function isFilled(values: FieldValues | undefined): boolean {
@@ -25,7 +32,12 @@ export function SitTool({ lang }: { lang: Lang }) {
   const tools = SIT_TOOLS[lang];
   const ui = SIT_UI[lang];
 
-  const [shared, setShared] = useState<Shared>({ product: "", components: "" });
+  const [shared, setShared] = useState<Shared>({
+    product: "",
+    problem: "",
+    internalComponents: "",
+    externalComponents: "",
+  });
   const [answers, setAnswers] = useState<Answers>({});
   const [loaded, setLoaded] = useState(false);
   const [savedHint, setSavedHint] = useState<string | null>(null);
@@ -92,7 +104,7 @@ export function SitTool({ lang }: { lang: Lang }) {
 
   function handleReset() {
     if (!window.confirm(ui.confirmResetText)) return;
-    setShared({ product: "", components: "" });
+    setShared({ product: "", problem: "", internalComponents: "", externalComponents: "" });
     setAnswers({});
     setSuggestions({});
     setGenStatus({});
@@ -104,7 +116,14 @@ export function SitTool({ lang }: { lang: Lang }) {
       const res = await fetch("/api/tools/sit-suggest", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ lang, toolId, product, components: shared.components }),
+        body: JSON.stringify({
+          lang,
+          toolId,
+          product,
+          problem: shared.problem,
+          internalComponents: shared.internalComponents,
+          externalComponents: shared.externalComponents,
+        }),
       });
       if (res.status === 429) {
         setGenStatus((prev) => ({ ...prev, [toolId]: "rate_limited" }));
@@ -151,7 +170,11 @@ export function SitTool({ lang }: { lang: Lang }) {
     if (!shared.product.trim() && filled.length === 0) return ui.emptyText;
     const lines = [ui.exportHeader, ""];
     if (shared.product.trim()) lines.push(`${ui.sharedProductLabel}: ${shared.product.trim()}`);
-    if (shared.components.trim()) lines.push(`${ui.sharedComponentsLabel}: ${shared.components.trim()}`);
+    if (shared.problem.trim()) lines.push(`${ui.sharedProblemLabel}: ${shared.problem.trim()}`);
+    if (shared.internalComponents.trim())
+      lines.push(`${ui.sharedInternalComponentsLabel}: ${shared.internalComponents.trim()}`);
+    if (shared.externalComponents.trim())
+      lines.push(`${ui.sharedExternalComponentsLabel}: ${shared.externalComponents.trim()}`);
     lines.push("");
     filled.forEach((tool) => {
       const values = answers[tool.id] || {};
@@ -216,7 +239,7 @@ export function SitTool({ lang }: { lang: Lang }) {
 
         <div className={styles.detail}>
           <div className={styles.detailHead}>
-            <h2>{ui.sharedProductLabel}</h2>
+            <h2>{ui.sharedSectionTitle}</h2>
           </div>
           <form className={styles.worksheet} autoComplete="off" onSubmit={(e) => e.preventDefault()}>
             <div className={styles.field}>
@@ -231,11 +254,30 @@ export function SitTool({ lang }: { lang: Lang }) {
               />
             </div>
             <div className={styles.field}>
-              <label htmlFor="sit-shared-components">{ui.sharedComponentsLabel}</label>
+              <label htmlFor="sit-shared-problem">{ui.sharedProblemLabel}</label>
               <textarea
-                id="sit-shared-components"
-                value={shared.components}
-                onChange={(e) => handleSharedChange("components", e.target.value)}
+                id="sit-shared-problem"
+                maxLength={PROBLEM_MAX_LEN}
+                value={shared.problem}
+                onChange={(e) => handleSharedChange("problem", e.target.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="sit-shared-internal">{ui.sharedInternalComponentsLabel}</label>
+              <textarea
+                id="sit-shared-internal"
+                maxLength={COMPONENTS_MAX_LEN}
+                value={shared.internalComponents}
+                onChange={(e) => handleSharedChange("internalComponents", e.target.value)}
+              />
+            </div>
+            <div className={styles.field}>
+              <label htmlFor="sit-shared-external">{ui.sharedExternalComponentsLabel}</label>
+              <textarea
+                id="sit-shared-external"
+                maxLength={COMPONENTS_MAX_LEN}
+                value={shared.externalComponents}
+                onChange={(e) => handleSharedChange("externalComponents", e.target.value)}
               />
             </div>
             <p className={`${styles.saveHint} ${savedHint ? styles.saveHintShow : ""}`}>
@@ -400,7 +442,10 @@ export function SitTool({ lang }: { lang: Lang }) {
             <p className={styles.empty}>{ui.emptyText}</p>
           ) : (
             <div className={styles.sheet}>
-              {(shared.product.trim() || shared.components.trim()) && (
+              {(shared.product.trim() ||
+                shared.problem.trim() ||
+                shared.internalComponents.trim() ||
+                shared.externalComponents.trim()) && (
                 <div className={styles.sheetItem}>
                   <span className={styles.tag}>—</span>
                   <div className={styles.sheetBody}>
@@ -411,10 +456,22 @@ export function SitTool({ lang }: { lang: Lang }) {
                           <dd>{shared.product}</dd>
                         </Fragment>
                       )}
-                      {shared.components.trim() && (
+                      {shared.problem.trim() && (
                         <Fragment>
-                          <dt>{ui.sharedComponentsLabel}</dt>
-                          <dd>{shared.components}</dd>
+                          <dt>{ui.sharedProblemLabel}</dt>
+                          <dd>{shared.problem}</dd>
+                        </Fragment>
+                      )}
+                      {shared.internalComponents.trim() && (
+                        <Fragment>
+                          <dt>{ui.sharedInternalComponentsLabel}</dt>
+                          <dd>{shared.internalComponents}</dd>
+                        </Fragment>
+                      )}
+                      {shared.externalComponents.trim() && (
+                        <Fragment>
+                          <dt>{ui.sharedExternalComponentsLabel}</dt>
+                          <dd>{shared.externalComponents}</dd>
                         </Fragment>
                       )}
                     </dl>
