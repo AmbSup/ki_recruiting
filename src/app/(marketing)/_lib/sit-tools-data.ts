@@ -73,30 +73,41 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       name: "Subtraktion",
       def: "Man streicht eine Kernkomponente eines Produktes oder Services – etwas, das zuvor als essenziell galt.",
       pitfall:
-        "Nicht verwechseln mit simplem Entfernen eines störenden/schlechten Teils (das ist nur eine Rezeptur-Änderung, keine echte Subtraktion). Es muss eine wirklich essenzielle Komponente sein, und der Vorschlag muss einen NEUEN Nutzen beschreiben, keine bloße Verbesserung oder billigere Variante (das wäre nur Unbundling). WICHTIG: Nachdem du die Komponente entfernt hast, prüfe die mitgegebene Komponentenliste (intern UND extern) danach, ob eine davon die freiwerdende Funktion übernehmen kann — intern ODER extern, je nachdem was inhaltlich passt (keine pauschale Präferenz für extern), aber niemals die gestrichene Komponente selbst. Genau dieser Replacement-Schritt liefert oft den eigentlichen Wert der Lösung. Generiere die 3 Vorschläge so, dass sie unterschiedliche Komponenten aus der Liste als Ersatz nutzen (nicht immer dieselbe).",
+        "Nicht verwechseln mit simplem Entfernen eines störenden/schlechten Teils (das ist nur eine Rezeptur-Änderung, keine echte Subtraktion). Es muss eine wirklich essenzielle Komponente sein, und der Vorschlag muss einen NEUEN Nutzen beschreiben, keine bloße Verbesserung oder billigere Variante (das wäre nur Unbundling). Es gibt ZWEI Varianten: (1) VOLLE Subtraktion — eine Komponente wird komplett gestrichen. (2) PARTIELLE Subtraktion — eine Eigenschaft/Funktion einer Komponente wird nicht komplett entfernt, sondern nur drastisch reduziert oder abgeschwächt (z.B. eine Nachrichtenlänge, Menge oder Anzahl radikal verkleinern statt die Komponente ganz zu streichen). Mische beide Varianten in deinen 3 Vorschlägen, wenn es zum Produkt passt — verwende nicht immer nur volle Subtraktion. WICHTIG zum Ersatz: Prüfe nach dem Streichen/Reduzieren die mitgegebene Komponentenliste (intern UND extern) danach, ob eine davon die freiwerdende Funktion übernehmen kann — intern ODER extern, je nachdem was inhaltlich passt (keine pauschale Präferenz für extern), aber niemals die gestrichene Komponente selbst. Das ist oft der eigentliche Wert der Lösung. ABER: \"Kein Ersatz nötig\" ist ebenfalls eine valide, manchmal sogar bessere Antwort — vor allem bei partieller Subtraktion, oder wenn genau das Fehlen von etwas (Auswahl, Funktion, Information) selbst zum Reiz wird (z.B. weniger Kontrolle als überraschendes, unterhaltsames Erlebnis). Erzwinge NICHT in jedem der 3 Vorschläge einen Ersatz. Generiere die 3 Vorschläge so, dass sie unterschiedliche Komponenten/Eigenschaften betreffen (nicht immer dieselbe).",
       fewShotExamples: [
         `Fall: SEDASYS-Anästhesiesystem
 Ausgangslage: Ein nahezu fertiges Sedierungsgerät war komplex, schwer und teuer; Backup-Batterie und Bildschirm galten als unverzichtbar.
 Komponenten intern: Gerät, Bildschirm, Tastatur, Gehäuse, CPU, Stromversorgung, Backup-Batterie, Dosiersteuerung, Sensorik, Kopfhörer, Handball/Taster.
 Komponenten extern (Closed World): Patient, Arzt, OP-Team, Hauptmonitor des OPs, Defibrillator, Krankenhausstromnetz, gesetzliche Anforderungen.
-SIT-Eingriff: Backup-Batterie und Bildschirm gedanklich entfernen; deren Funktionen durch bereits vorhandene Ressourcen im OP übernehmen lassen.
+SIT-Eingriff: VOLLE Subtraktion — Backup-Batterie und Bildschirm gedanklich komplett entfernen; deren Funktionen durch bereits vorhandene Ressourcen im OP übernehmen lassen.
 Tatsächliche Lösung: Notstromversorgung über die Backup-Batterie des vorhandenen Defibrillators; Patientendaten auf dem zentralen OP-Monitor. Ergebnis: leichteres, günstigeres, weniger komplexes, potenziell intelligenter wirkendes System.`,
         `Fall: Philips Slimline DVD-Player
 Ausgangslage: Frühe DVD-Player übernahmen die große, komplizierte Form von Videorekordern mit zahlreichen Fronttasten und großer LCD-Anzeige.
 Komponenten intern: Gehäuse, Fronttasten, LCD-Anzeige, Disc-Laufwerk, Elektronik, Anschlüsse, Stromversorgung, Fernbedienung.
 Komponenten extern (Closed World): Fernseher, Fernsehbildschirm, Nutzer, Wohnzimmer, Regal, Stromnetz.
-SIT-Eingriff: Fronttasten und LCD-Anzeige entfernen; Bedienfunktionen auf die (bereits vorhandene, aber interne) Fernbedienung und die Informationsanzeige auf den (externen) Fernseher verlagern.
+SIT-Eingriff: VOLLE Subtraktion — Fronttasten und LCD-Anzeige komplett entfernen; Bedienfunktionen auf die (bereits vorhandene, aber interne) Fernbedienung und die Informationsanzeige auf den (externen) Fernseher verlagern.
 Tatsächliche Lösung: Die Fernbedienung übernahm die Bedienung, der Fernseher zeigte Status-/Steuerinfos. Ergebnis: ein besonders dünner, weniger einschüchternder, einfacher wirkender DVD-Player ("Slimline"), mit Designauszeichnung ausgezeichnet.`,
+        `Fall: Kondensierte Dosensuppe (Beispiel für PARTIELLE Subtraktion)
+Ausgangslage: Fertigsuppe mit vollem Wasseranteil ist schwer, nimmt viel Volumen ein und verursacht hohe Transport-/Lagerkosten.
+Komponenten intern: Suppenbasis, Wasseranteil, Gewürze, Dose.
+Komponenten extern (Closed World): Küche, Kochtopf, Wasserhahn, Verbraucher, Transport- und Lagerlogistik.
+SIT-Eingriff: PARTIELLE Subtraktion — die Komponente "Wasseranteil" wird nicht komplett gestrichen (das wäre volle Subtraktion und würde Trockensuppe ergeben), sondern nur drastisch reduziert.
+Tatsächliche Lösung: Kondensierte Suppe mit stark reduziertem Wasseranteil in kleinerer Dose. Ergebnis: deutlich kleinere Verpackung, längere Haltbarkeit, geringere Transport-/Lagerkosten — der Verbraucher ergänzt das fehlende Wasser selbst beim Erhitzen.`,
       ],
       example: {
         name: "Self-Service-Tankstelle ohne Kassierer",
         rows: [["Gestrichen", "Der Kassierer – galt als essenziell für den Verkauf"]],
       },
       fields: [
-        { key: "removed", label: "Welche Komponente streichst du?", type: "input" },
+        {
+          key: "mode",
+          label: "Volle oder partielle Subtraktion? (ganze Komponente streichen ODER nur eine Eigenschaft/Funktion einer Komponente drastisch reduzieren)",
+          type: "input",
+        },
+        { key: "removed", label: "Welche Komponente (bzw. welche Eigenschaft/Funktion davon) betrifft es?", type: "input" },
         {
           key: "replacement",
-          label: "Welche vorhandene Komponente aus der Closed World (intern oder extern) übernimmt die freigewordene Funktion?",
+          label: "Welche vorhandene Komponente aus der Closed World (intern oder extern) übernimmt die freigewordene Funktion — oder ist kein Ersatz nötig?",
           type: "input",
         },
         { key: "effect", label: "Was passiert dadurch — für wen wird es besser oder anders?", type: "textarea" },
@@ -238,30 +249,41 @@ Tatsächliche Lösung: Inneres Wachs schmilzt schneller und bildet eine Vertiefu
       name: "Subtraction",
       def: "You remove a core component of a product or service — something that previously seemed essential.",
       pitfall:
-        "Don't confuse this with simply removing a troublesome or bad part (that's just changing the recipe, not real Subtraction). It must be a genuinely essential component, and the suggestion must describe a NEW benefit, not just an improvement or a cheaper stripped-down variant (that would be unbundling). IMPORTANT: after removing the component, check the given component list (internal AND external) for one that could take over the freed-up function — internal OR external, whichever fits the case (no blanket preference for external), but never the removed component itself. This replacement step is often where the real value of the solution comes from. Generate the 3 suggestions so they use different components from the list as the replacement (not always the same one).",
+        "Don't confuse this with simply removing a troublesome or bad part (that's just changing the recipe, not real Subtraction). It must be a genuinely essential component, and the suggestion must describe a NEW benefit, not just an improvement or a cheaper stripped-down variant (that would be unbundling). There are TWO variants: (1) FULL Subtraction — a component is removed entirely. (2) PARTIAL Subtraction — a feature/function of a component isn't removed entirely, just drastically reduced or diminished (e.g. radically shrink a message length, quantity, or amount instead of removing the whole component). Mix both variants across your 3 suggestions when it fits the product — don't default to only full removal. IMPORTANT on replacement: after removing/reducing, check the given component list (internal AND external) for one that could take over the freed-up function — internal OR external, whichever fits the case (no blanket preference for external), but never the removed component itself. This is often where the real value of the solution comes from. BUT: \"No replacement needed\" is also a valid, sometimes better answer — especially for partial subtraction, or when the absence of something (choice, function, information) itself becomes the appeal (e.g. less control as a surprising, entertaining experience). Do NOT force a replacement into every one of the 3 suggestions. Generate the 3 suggestions so they touch different components/attributes (not always the same one).",
       fewShotExamples: [
         `Case: SEDASYS anesthesia system
 Situation: A nearly finished sedation device was complex, heavy and expensive; the backup battery and screen were considered indispensable.
 Internal components: device, screen, keyboard, housing, CPU, power supply, backup battery, dosage control, sensors, headphones, hand-trigger/button.
 External components (Closed World): patient, doctor, OR team, main OR monitor, defibrillator, hospital power grid, regulatory requirements.
-SIT move: mentally remove the backup battery and screen; let already-present OR resources take over their functions.
+SIT move: FULL Subtraction — mentally remove the backup battery and screen entirely; let already-present OR resources take over their functions.
 Actual solution: emergency power came from the existing defibrillator's backup battery; patient data was shown on the central OR monitor. Result: a lighter, cheaper, less complex, potentially smarter-seeming system.`,
         `Case: Philips Slimline DVD player
 Situation: Early DVD players copied the bulky, complicated shape of VCRs, with lots of front buttons and a large LCD display.
 Internal components: housing, front buttons, LCD display, disc drive, electronics, connectors, power supply, remote control.
 External components (Closed World): TV, TV screen, user, living room, shelf, power outlet.
-SIT move: remove the front buttons and LCD display; shift control functions to the (already-present but internal) remote control and status display to the (external) TV.
+SIT move: FULL Subtraction — remove the front buttons and LCD display entirely; shift control functions to the (already-present but internal) remote control and status display to the (external) TV.
 Actual solution: the remote took over the controls, the TV showed status/control info. Result: a remarkably thin, less intimidating, simpler-looking DVD player ("Slimline"), which won a design award.`,
+        `Case: Condensed canned soup (example of PARTIAL Subtraction)
+Situation: Ready-made soup with its full water content is heavy, takes up a lot of volume, and drives up transport/storage cost.
+Internal components: soup base, water content, spices, can.
+External components (Closed World): kitchen, cooking pot, tap water, consumer, transport and storage logistics.
+SIT move: PARTIAL Subtraction — the "water content" component isn't removed entirely (that would be Full Subtraction and would give you powdered instant soup), just drastically reduced.
+Actual solution: condensed soup with a heavily reduced water content in a smaller can. Result: a much smaller package, longer shelf life, lower transport/storage cost — the consumer adds the missing water back themselves when heating it up.`,
       ],
       example: {
         name: "Self-service gas station without a cashier",
         rows: [["Removed", "The cashier — considered essential to making a sale"]],
       },
       fields: [
-        { key: "removed", label: "Which component do you remove?", type: "input" },
+        {
+          key: "mode",
+          label: "Full or partial Subtraction? (remove a whole component OR just drastically reduce a feature/function of one)",
+          type: "input",
+        },
+        { key: "removed", label: "Which component (or which feature/function of one) does this affect?", type: "input" },
         {
           key: "replacement",
-          label: "Which existing component from the Closed World (internal or external) takes over the freed-up function?",
+          label: "Which existing component from the Closed World (internal or external) takes over the freed-up function — or is no replacement needed?",
           type: "input",
         },
         { key: "effect", label: "What happens as a result — who benefits, or what changes?", type: "textarea" },
