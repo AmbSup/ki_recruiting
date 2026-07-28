@@ -68,13 +68,18 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       name: "Subtraktion",
       def: "Man streicht eine Kernkomponente eines Produktes oder Services – etwas, das zuvor als essenziell galt.",
       pitfall:
-        "Nicht verwechseln mit simplem Entfernen eines störenden/schlechten Teils (das ist nur eine Rezeptur-Änderung, keine echte Subtraktion). Es muss eine wirklich essenzielle Komponente sein, und der Vorschlag muss einen NEUEN Nutzen beschreiben, keine bloße Verbesserung oder billigere Variante (das wäre nur Unbundling).",
+        "Nicht verwechseln mit simplem Entfernen eines störenden/schlechten Teils (das ist nur eine Rezeptur-Änderung, keine echte Subtraktion). Es muss eine wirklich essenzielle Komponente sein, und der Vorschlag muss einen NEUEN Nutzen beschreiben, keine bloße Verbesserung oder billigere Variante (das wäre nur Unbundling). WICHTIG: Nachdem du die Komponente entfernt hast, prüfe die mitgegebene Komponentenliste (intern UND extern) danach, ob eine davon die freiwerdende Funktion übernehmen kann — bevorzugt eine EXTERNE Komponente aus der Umgebung/Closed-World (nicht die gestrichene Komponente selbst). Genau dieser Replacement-Schritt liefert oft den eigentlichen Wert der Lösung.",
       example: {
         name: "Self-Service-Tankstelle ohne Kassierer",
         rows: [["Gestrichen", "Der Kassierer – galt als essenziell für den Verkauf"]],
       },
       fields: [
         { key: "removed", label: "Welche Komponente streichst du?", type: "input" },
+        {
+          key: "replacement",
+          label: "Welche vorhandene Komponente (bevorzugt extern, aus der Closed World) übernimmt die freigewordene Funktion?",
+          type: "input",
+        },
         { key: "effect", label: "Was passiert dadurch — für wen wird es besser oder anders?", type: "textarea" },
       ],
     },
@@ -158,13 +163,18 @@ export const SIT_TOOLS: Record<Lang, SitTool[]> = {
       name: "Subtraction",
       def: "You remove a core component of a product or service — something that previously seemed essential.",
       pitfall:
-        "Don't confuse this with simply removing a troublesome or bad part (that's just changing the recipe, not real Subtraction). It must be a genuinely essential component, and the suggestion must describe a NEW benefit, not just an improvement or a cheaper stripped-down variant (that would be unbundling).",
+        "Don't confuse this with simply removing a troublesome or bad part (that's just changing the recipe, not real Subtraction). It must be a genuinely essential component, and the suggestion must describe a NEW benefit, not just an improvement or a cheaper stripped-down variant (that would be unbundling). IMPORTANT: after removing the component, check the given component list (internal AND external) for one that could take over the freed-up function — prefer an EXTERNAL component from the environment/Closed World (not the removed component itself). This replacement step is often where the real value of the solution comes from.",
       example: {
         name: "Self-service gas station without a cashier",
         rows: [["Removed", "The cashier — considered essential to making a sale"]],
       },
       fields: [
         { key: "removed", label: "Which component do you remove?", type: "input" },
+        {
+          key: "replacement",
+          label: "Which existing component (preferably external, from the Closed World) takes over the freed-up function?",
+          type: "input",
+        },
         { key: "effect", label: "What happens as a result — who benefits, or what changes?", type: "textarea" },
       ],
     },
