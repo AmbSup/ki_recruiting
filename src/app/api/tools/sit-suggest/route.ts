@@ -62,6 +62,8 @@ const COPY = {
     groundingNote:
       "Halte dich STRIKT an die oben angegebene Komponentenliste. Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
     pitfallPrefix: "Häufiger Fallstrick, den du unbedingt vermeiden musst",
+    fewShotIntro:
+      "Zwei echte Fälle, wie diese Methode in der Praxis tatsächlich angewendet wurde (Ausgangslage → SIT-Eingriff → tatsächliche Lösung). Nutze sie NICHT als Vorlage zum Kopieren, sondern als Referenz dafür, wie konkret und spezifisch eine gute Lösung sein muss:",
   },
   en: {
     intro: (name: string, def: string, example: string) =>
@@ -75,6 +77,8 @@ const COPY = {
     groundingNote:
       "Stick STRICTLY to the components list given above. Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
     pitfallPrefix: "Common pitfall you must avoid",
+    fewShotIntro:
+      "Two real cases showing how this method was actually applied in practice (situation → SIT move → actual solution). Do NOT use them as a template to copy — use them as a reference for how concrete and specific a good solution needs to be:",
   },
 } as const;
 
@@ -113,7 +117,10 @@ export async function POST(req: NextRequest) {
 
   const groundingLine = components ? `\n\n${copy.groundingNote}` : "";
   const pitfallLine = `\n\n${copy.pitfallPrefix}: ${tool.pitfall}`;
-  const system = `${copy.intro(tool.name, tool.def, exampleText)}${pitfallLine}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
+  const fewShotLine = tool.fewShotExamples.length
+    ? `\n\n${copy.fewShotIntro}\n\n${tool.fewShotExamples.join("\n\n---\n\n")}`
+    : "";
+  const system = `${copy.intro(tool.name, tool.def, exampleText)}${pitfallLine}${fewShotLine}\n\n${copy.schemaIntro(fieldSchema)}\n${fieldDescriptions}${groundingLine}\n\n${copy.jsonNote}`;
   const componentsLine = components ? `\n${copy.componentsPrefix}: ${components}` : "";
   const user = copy.task(product, componentsLine);
 
