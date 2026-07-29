@@ -77,7 +77,7 @@ const COPY = {
       'Antworte NUR mit einem validen JSON-Objekt der Form {"suggestions": [...]}, kein Markdown, keine Erklärung davor oder danach.',
     schemaIntro: (fieldSchema: string) => `Jedes Objekt im Suggestions-Array braucht genau diese Felder (${fieldSchema}):`,
     groundingNote:
-      "Halte dich STRIKT an die oben angegebenen Komponentenlisten (intern UND extern). Erfinde keine Komponenten, Teile oder Details, die dort nicht genannt sind — wähle unter den genannten aus.",
+      'Halte dich GRUNDSÄTZLICH an die oben angegebenen Komponentenlisten (intern UND extern) — wähle bevorzugt unter den genannten aus. AUSNAHME: Nur wenn eine Lösung zwingend eine allgemein bekannte, real existierende Komponente braucht, die in der Liste fehlt (z.B. ein fachlich bekannter Standardbestandteil dieser Art von Produkt/System), darfst du sie zusätzlich nennen — aber NUR, wenn du sie explizit als Annahme kennzeichnest, z.B. "(nicht in der gegebenen Liste, aber als bekannter Bestandteil angenommen: X)". Erfinde NIEMALS frei ausgedachte, unrealistische oder rein spekulative Komponenten oder Details — das bleibt strikt verboten. Nutze diese Ausnahme sparsam, nur wenn es für eine korrekte, realistische Lösung wirklich nötig ist.',
     pitfallPrefix: "Häufiger Fallstrick, den du unbedingt vermeiden musst",
     fewShotIntro:
       "Zwei echte Fälle, wie diese Methode in der Praxis tatsächlich angewendet wurde (Ausgangslage → SIT-Eingriff → tatsächliche Lösung). Nutze sie NICHT als Vorlage zum Kopieren, sondern als Referenz dafür, wie konkret und spezifisch eine gute Lösung sein muss:",
@@ -100,7 +100,7 @@ const COPY = {
       'Respond ONLY with a valid JSON object of the shape {"suggestions": [...]}, no markdown, no explanation before or after.',
     schemaIntro: (fieldSchema: string) => `Each object in the suggestions array needs exactly these fields (${fieldSchema}):`,
     groundingNote:
-      "Stick STRICTLY to the components lists given above (internal AND external). Do not invent components, parts, or details that aren't mentioned there — choose among the ones given.",
+      'AS A RULE, stick to the components lists given above (internal AND external) — prefer choosing among the ones given. EXCEPTION: only if a solution genuinely requires a well-known, real-world component that\'s missing from the list (e.g. a standard part of this type of product/system that\'s common domain knowledge), you may name it in addition — but ONLY if you explicitly flag it as an assumption, e.g. "(not in the given list, but assumed as a known component: X)". NEVER invent freely made-up, unrealistic, or purely speculative components or details — that stays strictly forbidden. Use this exception sparingly, only when it\'s genuinely necessary for a correct, realistic solution.',
     pitfallPrefix: "Common pitfall you must avoid",
     fewShotIntro:
       "Two real cases showing how this method was actually applied in practice (situation → SIT move → actual solution). Do NOT use them as a template to copy — use them as a reference for how concrete and specific a good solution needs to be:",
