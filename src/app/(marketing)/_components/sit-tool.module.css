@@ -554,6 +554,65 @@
   padding: 18px 0;
 }
 
+.combineRow {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.combineMinNotice {
+  margin-top: 16px;
+  font-size: 0.8125rem;
+  color: var(--ink-faint);
+  font-style: italic;
+}
+
+.combineCard {
+  margin-top: 16px;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent);
+  border-radius: 3px;
+  padding: 16px 18px;
+}
+
+.combineCardNegative {
+  margin-top: 16px;
+  background: var(--paper-sunken);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 16px 18px;
+}
+
+.combineCardTitle {
+  font-weight: 700;
+  font-size: 1.0625rem;
+  color: var(--ink);
+  margin: 0 0 8px;
+}
+
+.combineCardSummary {
+  font-size: 0.9375rem;
+  color: var(--ink-soft);
+  margin: 0 0 10px;
+  line-height: 1.55;
+}
+
+.combineCardSynergy {
+  font-size: 0.875rem;
+  color: var(--ink-soft);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.combineSynergyLabel {
+  font-weight: 700;
+  color: var(--accent);
+}
+
 .footerNote {
   margin-top: 48px;
   padding-top: 18px;

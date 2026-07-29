@@ -57,6 +57,12 @@ export function SitTool({ lang }: { lang: Lang }) {
   const [suggestions, setSuggestions] = useState<Record<string, Record<string, string>[]>>({});
   const [bulkLoading, setBulkLoading] = useState(false);
   const [globalNotice, setGlobalNotice] = useState(false);
+  const [combineStatus, setCombineStatus] = useState<"idle" | "loading" | "error">("idle");
+  const [combineResult, setCombineResult] = useState<
+    | { combinable: true; title: string; summary: string; synergy: string }
+    | { combinable: false; reason: string }
+    | null
+  >(null);
   const hintTimer = useRef<number | null>(null);
   const productInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -119,6 +125,8 @@ export function SitTool({ lang }: { lang: Lang }) {
     setAnswers({});
     setSuggestions({});
     setGenStatus({});
+    setCombineStatus("idle");
+    setCombineResult(null);
   }
 
   async function generateForTool(toolId: string, product: string) {
@@ -175,6 +183,32 @@ export function SitTool({ lang }: { lang: Lang }) {
       }
       return { ...prev, [toolId]: next };
     });
+    setCombineResult(null);
+  }
+
+  async function handleCombine() {
+    setCombineStatus("loading");
+    setCombineResult(null);
+    try {
+      const res = await fetch("/api/tools/sit-combine", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lang,
+          product: shared.product,
+          problem: shared.problem,
+          answers,
+        }),
+      });
+      if (!res.ok) throw new Error(String(res.status));
+      const data = (await res.json()) as
+        | { combinable: true; title: string; summary: string; synergy: string }
+        | { combinable: false; reason: string };
+      setCombineResult(data);
+      setCombineStatus("idle");
+    } catch {
+      setCombineStatus("error");
+    }
   }
 
   function buildExportText(): string {
@@ -559,6 +593,38 @@ export function SitTool({ lang }: { lang: Lang }) {
               })}
             </div>
           )}
+
+          {filledTools.length >= 2 && (
+            <div className={styles.combineRow}>
+              <button
+                type="button"
+                className={`${styles.btn} ${styles.btnPrimary}`}
+                onClick={handleCombine}
+                disabled={combineStatus === "loading"}
+              >
+                {combineStatus === "loading" ? ui.combineLoadingLabel : ui.combineButtonLabel}
+              </button>
+              {combineStatus === "error" && <span className={styles.aiNotice}>{ui.combineErrorLabel}</span>}
+            </div>
+          )}
+          {filledTools.length === 1 && <p className={styles.combineMinNotice}>{ui.combineMinNotice}</p>}
+
+          {combineResult &&
+            (combineResult.combinable ? (
+              <div className={styles.combineCard}>
+                <p className={styles.combineCardTitle}>{combineResult.title}</p>
+                <p className={styles.combineCardSummary}>{combineResult.summary}</p>
+                <p className={styles.combineCardSynergy}>
+                  <span className={styles.combineSynergyLabel}>{ui.combineSynergyLabel}: </span>
+                  {combineResult.synergy}
+                </p>
+              </div>
+            ) : (
+              <div className={styles.combineCardNegative}>
+                <p className={styles.combineCardTitle}>{ui.combineNotCombinableTitle}</p>
+                <p className={styles.combineCardSummary}>{combineResult.reason}</p>
+              </div>
+            ))}
         </section>
 
         <footer className={styles.footerNote}>{ui.footerNote}</footer>

@@ -72,6 +72,12 @@ export type SitUi = {
   aiSuggestionsHeading: string;
   aiSuggestionLabel: (n: number) => string;
   yourPickHeading: string;
+  combineButtonLabel: string;
+  combineLoadingLabel: string;
+  combineErrorLabel: string;
+  combineMinNotice: string;
+  combineSynergyLabel: string;
+  combineNotCombinableTitle: string;
 };
 
 export const SIT_TOOLS: Record<Lang, SitTool[]> = {
@@ -535,6 +541,12 @@ export const SIT_UI: Record<Lang, SitUi> = {
     aiSuggestionsHeading: "KI-Vorschläge",
     aiSuggestionLabel: (n) => `Vorschlag ${n}`,
     yourPickHeading: "Deine Auswahl",
+    combineButtonLabel: "Zu Gesamtlösung kombinieren",
+    combineLoadingLabel: "KI prüft Kombinierbarkeit …",
+    combineErrorLabel: "Kombination konnte nicht geprüft werden — nochmal versuchen.",
+    combineMinNotice: "Übernimm mindestens 2 Vorschläge aus unterschiedlichen Werkzeugen, um sie zu kombinieren.",
+    combineSynergyLabel: "Warum das zusammen stärker ist",
+    combineNotCombinableTitle: "Keine sinnvolle Kombination gefunden",
   },
   en: {
     eyebrowTag: "T-01–T-05",
@@ -598,5 +610,11 @@ export const SIT_UI: Record<Lang, SitUi> = {
     aiSuggestionsHeading: "AI suggestions",
     aiSuggestionLabel: (n) => `Suggestion ${n}`,
     yourPickHeading: "Your pick",
+    combineButtonLabel: "Combine into an overall solution",
+    combineLoadingLabel: "AI is checking combinability …",
+    combineErrorLabel: "Couldn't check the combination — try again.",
+    combineMinNotice: "Apply at least 2 suggestions from different tools to combine them.",
+    combineSynergyLabel: "Why it's stronger combined",
+    combineNotCombinableTitle: "No meaningful combination found",
   },
 };
