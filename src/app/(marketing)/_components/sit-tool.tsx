@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { SIT_TOOLS, SIT_UI, type Lang } from "../_lib/sit-tools-data";
 import { SIT_DIAGRAM_BY_ID } from "./sit-diagrams";
 import styles from "./sit-tool.module.css";
@@ -233,21 +234,32 @@ export function SitTool({ lang }: { lang: Lang }) {
             <p className={styles.credit}>{ui.bookCredit}</p>
           </header>
 
-          <aside className={styles.proof}>
-            <p className={styles.proofTitle}>{ui.proofTitle}</p>
-            <div className={styles.proofItems}>
-              {ui.proofItems.map((item) => (
-                <div className={styles.proofItem} key={item.brand}>
-                  <div className={styles.proofItemHead}>
-                    <span className={styles.proofBrand}>{item.brand}</span>
-                    <span className={styles.proofScore}>{item.score}</span>
-                  </div>
-                  <span className={styles.proofMethod}>{item.method}</span>
-                  <p className={styles.proofQuote}>{item.quote}</p>
+          <div className={styles.mastheadImage}>
+            <Image
+              src="/marketing/child-with-idea-lightbulb.jpg"
+              alt=""
+              fill
+              sizes="(max-width: 860px) 100vw, 360px"
+              style={{ objectFit: "cover" }}
+              priority
+            />
+          </div>
+        </div>
+
+        <div className={styles.proof}>
+          <p className={styles.proofTitle}>{ui.proofTitle}</p>
+          <div className={styles.proofItems}>
+            {ui.proofItems.map((item) => (
+              <div className={styles.proofItem} key={item.brand}>
+                <div className={styles.proofItemHead}>
+                  <span className={styles.proofBrand}>{item.brand}</span>
+                  <span className={styles.proofScore}>{item.score}</span>
                 </div>
-              ))}
-            </div>
-          </aside>
+                <span className={styles.proofMethod}>{item.method}</span>
+                <p className={styles.proofQuote}>{item.quote}</p>
+              </div>
+            ))}
+          </div>
         </div>
 
         <div className={styles.toolbench}>

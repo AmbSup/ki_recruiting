@@ -68,9 +68,9 @@
   display: grid;
   grid-template-columns: 1fr minmax(280px, 360px);
   gap: 36px;
-  border-bottom: 1px solid var(--border);
   padding-bottom: 28px;
-  margin-bottom: 40px;
+  margin-bottom: 32px;
+  align-items: start;
 }
 @media (max-width: 860px) {
   .mastheadRow {
@@ -81,6 +81,15 @@
 
 .masthead {
   min-width: 0;
+}
+
+.mastheadImage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
 }
 
 .eyebrow {
@@ -130,6 +139,10 @@
 
 .proof {
   min-width: 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 24px 0;
+  margin-bottom: 32px;
 }
 
 .proofTitle {
@@ -139,13 +152,18 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  margin: 0 0 12px;
+  margin: 0 0 16px;
 }
 
 .proofItems {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+@media (max-width: 860px) {
+  .proofItems {
+    grid-template-columns: 1fr;
+  }
 }
 
 .proofItem {
