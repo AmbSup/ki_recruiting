@@ -1,5 +1,6 @@
 import {
   loadPageEvents,
+  loadPageEventsMulti,
   loadAllFunnelViewEvents,
   computeDailyVisits,
   countUniqueVisitors,
@@ -10,15 +11,19 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function WebsiteAnalyticsPage() {
-  const [wissenEvents, kmuEvents, funnelEvents] = await Promise.all([
+  const [wissenEvents, kmuEvents, innovationsEvents, pilotEvents, funnelEvents] = await Promise.all([
     loadPageEvents("wissen"),
     loadPageEvents("kmu"),
+    loadPageEventsMulti(["innovations-werkzeuge", "en/innovations-werkzeuge"]),
+    loadPageEventsMulti(["pilot-30-tage", "en/pilot-30-tage"]),
     loadAllFunnelViewEvents(),
   ]);
 
   const cards = [
     { label: "Wissensmanagement", path: "/wissen", accent: "#7b555c", events: wissenEvents },
     { label: "KMU-Lösungen", path: "/kmu", accent: "#B45309", events: kmuEvents },
+    { label: "Innovations-Werkzeuge", path: "/innovations-werkzeuge", accent: "#c6491f", events: innovationsEvents },
+    { label: "Pilot 30 Tage", path: "/pilot-30-tage", accent: "#0f766e", events: pilotEvents },
     { label: "Funnels (alle, aggregiert)", path: "/[slug]", accent: "#1f2937", events: funnelEvents },
   ];
 

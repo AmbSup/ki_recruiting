@@ -11,7 +11,14 @@ export const runtime = "nodejs";
 
 const COOKIE_NAME = "_fv";
 const COOKIE_MAX_AGE_DAYS = 30;
-const ALLOWED_SLUGS = ["wissen", "kmu"];
+const ALLOWED_SLUGS = [
+  "wissen",
+  "kmu",
+  "innovations-werkzeuge",
+  "pilot-30-tage",
+  "en/innovations-werkzeuge",
+  "en/pilot-30-tage",
+];
 
 type Body = {
   page_slug?: string;

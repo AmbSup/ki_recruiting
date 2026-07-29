@@ -12,15 +12,21 @@ export type VisitRow = { created_at: string; visitor_id: string };
 // ─── Loader: page_events für einen Slug im Window ────────────────────────────
 
 export async function loadPageEvents(slug: string): Promise<VisitRow[]> {
+  return loadPageEventsMulti([slug]);
+}
+
+// Für Seiten mit separatem DE/EN-Slug (z.B. "innovations-werkzeuge" +
+// "en/innovations-werkzeuge") — aggregiert beide unter einer Karte.
+export async function loadPageEventsMulti(slugs: string[]): Promise<VisitRow[]> {
   const supabase = createAdminClient();
   const { data, error } = await supabase
     .from("page_events")
     .select("created_at, visitor_id")
-    .eq("page_slug", slug)
+    .in("page_slug", slugs)
     .gte("created_at", SINCE())
     .order("created_at", { ascending: true });
   if (error) {
-    console.error("[page-analytics] loadPageEvents:", error.message);
+    console.error("[page-analytics] loadPageEventsMulti:", error.message);
     return [];
   }
   return (data ?? []) as VisitRow[];
