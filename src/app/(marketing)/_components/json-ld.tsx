@@ -11,11 +11,31 @@ export function OrganizationJsonLd() {
     "@context": "https://schema.org",
     "@graph": [
       {
-        "@type": "Organization",
+        // Doppel-Typ Organization + ProfessionalService: gleiche Entity
+        // (ein @id), aber ProfessionalService gibt Google die NAP-Signale
+        // (telephone/address/areaServed), die für den Local-Pack/Maps-Abgleich
+        // mit dem Google Business Profile gebraucht werden. Adresse bewusst
+        // nur auf Orts-Ebene (kein streetAddress) — Neuronic Automation läuft
+        // im GBP als Service-Area-Business ohne öffentliche Straßenadresse;
+        // Telefonnummer muss exakt mit dem GBP-Eintrag matchen (NAP-Konsistenz).
+        "@type": ["Organization", "ProfessionalService"],
         "@id": `${BASE_URL}/#organization`,
         name: "Neuronic Automation",
         url: "https://neuronic-automation.ai",
         logo: `${BASE_URL}/branding/neuronic-logo.png`,
+        image: `${BASE_URL}/branding/neuronic-logo.png`,
+        telephone: "+43 677 63165057",
+        email: "office@neuronic-automation.ai",
+        address: {
+          "@type": "PostalAddress",
+          addressLocality: "Wien",
+          addressCountry: "AT",
+        },
+        areaServed: [
+          { "@type": "Country", name: "Österreich" },
+          { "@type": "City", name: "Wien" },
+        ],
+        sameAs: ["https://www.linkedin.com/company/neuronic-automation/"],
       },
       {
         "@type": "WebSite",

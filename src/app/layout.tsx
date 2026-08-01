@@ -63,6 +63,19 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${manrope.variable} ${newsreader.variable} ${syne.variable} ${inter.variable} ${playfair.variable} ${montserrat.variable} ${bebas.variable}`}>
       <head>
+        {/* Cookiebot MUSS das allererste Script im <head> sein (Anbieter-
+            Vorgabe + offizielles Next.js-Beispiel für Consent-Tools) und läuft
+            mit strategy="beforeInteractive", damit es vor allen anderen
+            Third-Party-Scripts aktiv ist. GA4 + Leadsy weiter unten sind per
+            data-cookieconsent an die Cookiebot-Kategorien gekoppelt (type=
+            "text/plain" macht sie inert, bis Cookiebot sie nach Einwilligung
+            selbst auf "text/javascript" umschreibt). */}
+        <Script
+          id="Cookiebot"
+          src="https://consent.cookiebot.com/uc.js"
+          data-cbid="746dfbc6-3f6a-4b92-a5cf-e32668d8f015"
+          strategy="beforeInteractive"
+        />
         {/* Root-Layout ist statisch (kein headers()-Zugriff, sonst verliert
             die ganze App SSG). /en/* korrigiert lang synchron vor First
             Paint — hreflang-Tags (siehe page-Metadata) sind ohnehin das
@@ -81,9 +94,14 @@ export default function RootLayout({
         {/* Leadsy / Instantly Website-Visitor-Tag. Trackt Besucher-Sessions
             und identifiziert Company-Level-Leads (US-Traffic-only laut Anbieter,
             EU-Sessions werden aggregiert aber nicht identifiziert). Async +
-            afterInteractive damit's die First-Contentful-Paint nicht bremst. */}
+            afterInteractive damit's die First-Contentful-Paint nicht bremst.
+            type="text/plain" + data-cookieconsent="marketing" macht das Tag
+            für Cookiebot blockierbar — läuft erst nach Consent-Freigabe für
+            die Marketing-Kategorie. */}
         <Script
           id="vtag-ai-js"
+          type="text/plain"
+          data-cookieconsent="marketing"
           src="https://r2.leadsy.ai/tag.js"
           strategy="afterInteractive"
           data-pid="1viSQxvKRdJXwowVK"

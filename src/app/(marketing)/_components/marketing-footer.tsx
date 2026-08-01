@@ -15,6 +15,8 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
   const toolsHref = lang === "de" ? "/innovations-werkzeuge" : "/en/innovations-werkzeuge";
   const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const email = t(lang, "footer.contact.email");
+  const phone = t(lang, "footer.contact.phone");
+  const phoneHref = `tel:${phone.replace(/\s+/g, "")}`;
 
   return (
     <footer className="border-t border-slate-100 bg-white/50 mt-24">
@@ -148,6 +150,11 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
                   className="text-slate-600 hover:text-slate-900 break-all"
                 >
                   {email}
+                </a>
+              </li>
+              <li>
+                <a href={phoneHref} className="text-slate-600 hover:text-slate-900">
+                  {phone}
                 </a>
               </li>
               <li>
