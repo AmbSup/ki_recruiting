@@ -146,7 +146,7 @@ export const dict: Record<Lang, Dict> = {
       },
     },
     sales: {
-      eyebrow: "Für Vertriebsleiter, CMOs, Agentur-Owner",
+      eyebrow: "KI Sales Automatisierung für Vertriebsleiter, CMOs & Agentur-Owner",
       headline: "Schließe mehr Deals ab —",
       headline_accent: "indem du jeden Lead in 30 Sekunden anrufst.",
       sub:
@@ -233,7 +233,7 @@ export const dict: Record<Lang, Dict> = {
       },
     },
     recruiting: {
-      eyebrow: "Für HR-Leiter, Talent Acquisition, Personalvermittler",
+      eyebrow: "KI Recruiting Software für HR-Leiter, Talent Acquisition & Personalvermittler",
       headline: "Gewinne die besten Talente —",
       headline_accent: "bevor die Konkurrenz sie erreicht.",
       sub:
@@ -330,7 +330,7 @@ export const dict: Record<Lang, Dict> = {
       },
     },
     kmu: {
-      eyebrow: "Softwarelösungen für KMUs",
+      eyebrow: "KI-Automatisierung für KMUs",
       headline: "Dein Betrieb läuft.",
       headline_accent: "Der Rest darum kostet Zeit.",
       sub:
@@ -1372,7 +1372,7 @@ export const dict: Record<Lang, Dict> = {
       },
     },
     sales: {
-      eyebrow: "For heads of sales, CMOs, agency owners",
+      eyebrow: "AI Sales Automation for heads of sales, CMOs & agency owners",
       headline: "Close more deals —",
       headline_accent: "by calling every lead in 30 seconds.",
       sub:
@@ -1459,7 +1459,7 @@ export const dict: Record<Lang, Dict> = {
       },
     },
     recruiting: {
-      eyebrow: "For HR leads, talent acquisition, recruitment agencies",
+      eyebrow: "AI Recruiting Software for HR leads, talent acquisition & recruitment agencies",
       headline: "Win the best talent —",
       headline_accent: "before the competition reaches them.",
       sub:
@@ -1556,7 +1556,7 @@ export const dict: Record<Lang, Dict> = {
       },
     },
     kmu: {
-      eyebrow: "Software solutions for SMBs",
+      eyebrow: "AI Automation for SMBs",
       headline: "Your business runs.",
       headline_accent: "Everything around it costs time.",
       sub:
