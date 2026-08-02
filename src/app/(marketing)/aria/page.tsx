@@ -69,6 +69,11 @@ export default function AriaPage() {
               primaryCtaKey="aria.primary_cta"
               primaryHref={DEMO_URL}
               accentColor={ACCENT}
+              photo={{
+                src: "/marketing/Aria.jpg",
+                alt: "KI-Datenvisualisierungen neben einem biometrisch gescannten Auge — Sinnbild für Unternehmensintelligenz mit ARIA",
+                priority: true,
+              }}
             />
           </div>
         </div>
