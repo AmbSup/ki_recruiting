@@ -13,6 +13,7 @@ export type RetentionResult = {
   cutoff_iso: string;
   sales_leads_erased: number;
   applicants_erased: number;
+  orphan_cv_uploads_erased: number;
   details: ErasureSummary[];
   errors: string[];
 };
@@ -39,9 +40,33 @@ export async function runRetentionPurge(supabase: AdminClient, months: number): 
     cutoff_iso: cutoffIso,
     sales_leads_erased: 0,
     applicants_erased: 0,
+    orphan_cv_uploads_erased: 0,
     details: [],
     errors: [],
   };
+
+  // Public CV uploads happen before application creation. Remove reservations
+  // that were never claimed after one hour, including their private objects.
+  const pendingCutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { data: orphanUploads, error: orphanQueryError } = await supabase
+    .from("pending_cv_uploads")
+    .select("id, storage_path")
+    .is("claimed_at", null)
+    .lt("created_at", pendingCutoff)
+    .limit(100);
+  if (orphanQueryError) result.errors.push(`pending_cv_uploads query: ${orphanQueryError.message}`);
+  if (orphanUploads?.length) {
+    const paths = orphanUploads.map((upload) => upload.storage_path);
+    const { error: storageError } = await supabase.storage.from("cvs").remove(paths);
+    if (storageError) {
+      result.errors.push(`pending CV storage cleanup: ${storageError.message}`);
+    } else {
+      const { error: deleteError } = await supabase.from("pending_cv_uploads")
+        .delete().in("id", orphanUploads.map((upload) => upload.id));
+      if (deleteError) result.errors.push(`pending_cv_uploads delete: ${deleteError.message}`);
+      else result.orphan_cv_uploads_erased = orphanUploads.length;
+    }
+  }
 
   // ─── Sales-Leads: updated_at älter als cutoff ────────────────────────────
   const { data: oldLeads, error: leadErr } = await supabase

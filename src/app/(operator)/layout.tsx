@@ -22,7 +22,7 @@ export default async function OperatorLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="min-h-screen bg-surface">
       {/* Grid Background */}
       <div className="fixed inset-0 grid-pattern pointer-events-none z-0" />
 
@@ -30,7 +30,7 @@ export default async function OperatorLayout({
       <Sidebar />
 
       {/* Main Content */}
-      <main className="flex-1 ml-64 relative z-10 min-h-screen">
+      <main className="relative z-10 min-h-screen lg:ml-64">
         {children}
       </main>
     </div>

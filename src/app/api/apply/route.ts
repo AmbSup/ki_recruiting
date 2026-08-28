@@ -5,6 +5,7 @@ import { normalizePhone, isHardOptOutStatus } from "@/lib/phone";
 import { generateTextHaiku } from "@/services/claude/client";
 import { extractPreferenceTags } from "@/lib/sales/funnel-tags";
 import type { Json } from "@/types/database";
+import { analyzeApplicationCv } from "@/services/cv-analysis";
 
 export const maxDuration = 60;
 
@@ -180,7 +181,6 @@ export async function POST(req: NextRequest) {
     } = body;
     // Normalize phone: replace leading 00 with + (e.g. 004367... → +4367...)
     const phone = body.phone ? String(body.phone).replace(/^00/, "+") : body.phone;
-    const test_mode = body.test_mode === true;
     // KI-Anruf-Einwilligung (zweite Pflicht-Checkbox am contact_form-Block).
     // Vom funnel-player gesendet als body.ai_consent_given (boolean).
     const ai_consent_given = body.ai_consent_given === true;
@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
     }
     // DSGVO: Ohne dokumentierte Einwilligung kein Speichern + kein Call.
     // Gilt für beide Pipelines. Test-Mode (Operator-Tests) ausgenommen.
-    if (!consent_given && !test_mode) {
+    if (!consent_given) {
       return NextResponse.json(
         { error: "Einwilligung fehlt — bitte Datenschutz-Checkbox bestätigen." },
         { status: 422 },
@@ -210,10 +210,16 @@ export async function POST(req: NextRequest) {
     try {
       const { data: f } = await supabase
         .from("funnels")
-        .select("name")
+        .select("name, status, job_id, sales_program_id")
         .eq("id", funnel_id)
         .single();
-      if (f?.name) funnelName = f.name;
+      if (!f || f.status !== "active") {
+        return NextResponse.json({ error: "Aktiver Funnel nicht gefunden" }, { status: 404 });
+      }
+      if (f.job_id !== (job_id ?? null) || f.sales_program_id !== (sales_program_id ?? null)) {
+        return NextResponse.json({ error: "Funnel-Ziel stimmt nicht mit der Anfrage ueberein" }, { status: 422 });
+      }
+      funnelName = f.name;
     } catch { /* ignore — Notification soll Submit nicht blockieren */ }
 
     // ─── Sales-Branch ────────────────────────────────────────────────────────
@@ -228,7 +234,6 @@ export async function POST(req: NextRequest) {
         rawPhone: phone,
         answers,
         origin: req.nextUrl.origin,
-        test_mode,
       });
       // Notification (fire-and-forget via after — survival auf Vercel).
       // Auch bei test_mode aktiv, damit der Operator beim Testen sieht ob
@@ -246,6 +251,17 @@ export async function POST(req: NextRequest) {
 
     // ─── Recruiting-Branch (unverändert) ─────────────────────────────────────
     // 1. Always create a new applicant — same email can apply multiple times with different names
+    let pendingUploadId: string | null = null;
+    if (cv_url) {
+      const cvPath = typeof cv_url === "string" ? cv_url.match(/^\/api\/cvs\/(.+)$/)?.[1] : null;
+      if (!cvPath) return NextResponse.json({ error: "Ungueltige CV-Referenz" }, { status: 422 });
+      const { data: pendingUpload } = await supabase.from("pending_cv_uploads")
+        .select("id").eq("storage_path", cvPath).eq("funnel_id", funnel_id)
+        .is("claimed_at", null).maybeSingle();
+      if (!pendingUpload) return NextResponse.json({ error: "CV-Upload ist ungueltig oder bereits verwendet" }, { status: 422 });
+      pendingUploadId = pendingUpload.id;
+    }
+
     const { data: newApplicant, error: insertErr } = await supabase
       .from("applicants")
       .insert({
@@ -267,6 +283,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: insertErr?.message ?? "Bewerber konnte nicht gespeichert werden" }, { status: 500 });
     }
     const applicantId = newApplicant.id;
+    if (pendingUploadId) {
+      await supabase.from("pending_cv_uploads")
+        .update({ claimed_at: new Date().toISOString() })
+        .eq("id", pendingUploadId).is("claimed_at", null);
+    }
 
     // 2a. Funnel-Pages laden, um value→label zu resolven. Antworten werden als
     // Item-Labels gespeichert, nicht als Roh-Values. Sales-Branch macht das
@@ -325,6 +346,10 @@ export async function POST(req: NextRequest) {
       phone: phone || "",
       side: "recruiting",
     }));
+    after(async () => {
+      const result = await analyzeApplicationCv(applicationId);
+      if (!result.ok) console.error("[apply] CV analysis failed:", result.error);
+    });
 
     // Return application_id so client can trigger CV analysis in a separate request
     return NextResponse.json({ success: true, application_id: applicationId });
@@ -351,9 +376,8 @@ async function handleSalesSubmission(args: {
   rawPhone: string | null;
   answers: Record<string, unknown> | undefined;
   origin: string;
-  test_mode: boolean;
 }): Promise<NextResponse> {
-  const { supabase, funnel_id, sales_program_id, name, email, rawPhone, answers, origin, test_mode } = args;
+  const { supabase, funnel_id, sales_program_id, name, email, rawPhone, answers, origin } = args;
 
   const normalizedPhone = normalizePhone(rawPhone);
   if (!normalizedPhone) {
@@ -363,7 +387,6 @@ async function handleSalesSubmission(args: {
   // never matches an existing row → fresh INSERT every submission. The suffix breaks E.164
   // format on purpose so accidental dialing fails loudly. We also force source="test" and
   // skip auto-dial below.
-  const phoneToUse = test_mode ? `${normalizedPhone}-test-${Date.now().toString(36)}` : normalizedPhone;
 
   // Program + funnel_pages parallel laden
   const [{ data: program, error: programErr }, { data: pagesRaw }] = await Promise.all([
@@ -383,9 +406,7 @@ async function handleSalesSubmission(args: {
   }
 
   // Existing Lead? (Skip lookup in test mode — phone suffix makes collision impossible)
-  const { data: existing } = test_mode
-    ? { data: null }
-    : await supabase
+  const { data: existing } = await supabase
         .from("sales_leads")
         .select("id, status, funnel_responses, custom_fields")
         .eq("sales_program_id", sales_program_id)
@@ -497,12 +518,12 @@ async function handleSalesSubmission(args: {
     .from("sales_leads")
     .insert({
       sales_program_id,
-      phone: phoneToUse,
+      phone: normalizedPhone,
       first_name: firstName || null,
       last_name: lastName,
       full_name: name,
       email: email || null,
-      source: test_mode ? "test" : "funnel",
+      source: "funnel",
       source_ref: funnel_id,
       funnel_responses: (answers ?? {}) as Json,
       custom_fields: funnelCustomFields as Json,
@@ -559,13 +580,13 @@ async function handleSalesSubmission(args: {
   // "not_interested"-Status im Weg stehen (siehe phoneToUse-Suffix +
   // existing=null oben). Nur die Program-Config kann Dialing abstellen.
   if (program.auto_dial) {
-    void triggerSalesCall(origin, created.id);
+    after(() => triggerSalesCall(origin, created.id));
   }
 
   return NextResponse.json({
     success: true,
     sales_lead_id: created.id,
-    action: test_mode ? "test_created" : "created",
+    action: "created",
   });
 }
 

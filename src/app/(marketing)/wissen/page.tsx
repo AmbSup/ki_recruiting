@@ -13,6 +13,7 @@ import { ColorBlock } from "../_components/color-block";
 import { WissenGraphIllustration } from "../_components/wissen-graph-illustration";
 import { WissenSearchIllustration } from "../_components/wissen-search-illustration";
 import { PageViewBeacon } from "../_components/page-view-beacon";
+import { ProductPath } from "../_components/product-path";
 
 // Tertiary-Ton aus dem Claude-Design-System (globals.css) — eigenständige,
 // aber zur warmen Rust/Cream-Palette passende Farbe für Wissensmanagement-
@@ -46,7 +47,7 @@ export default function WissenPage() {
   const lang = "de" as const;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#fbfaf8]">
       <PageViewBeacon slug="wissen" />
       <MarketingNav lang={lang} />
       <main>
@@ -75,6 +76,8 @@ export default function WissenPage() {
                 slogan: t(lang, "wissen.hero_photo_slogan"),
                 priority: true,
               }}
+              proofItems={["RAG + GraphRAG", "Antworten mit Quellen", "Bestehende Systeme anbinden"]}
+              showEyebrow={false}
             />
           </div>
         </div>
@@ -90,6 +93,16 @@ export default function WissenPage() {
         </section>
 
         <PainList lang={lang} sectionKey="wissen.pain" accentColor={ACCENT} />
+        <ProductPath
+          accentColor={ACCENT}
+          heading="Vom Datenchaos zur belastbaren Antwort"
+          intro="Das System ersetzt deine Ablagen nicht. Es verbindet sie, versteht ihre Inhalte und macht vorhandenes Wissen in natürlicher Sprache nutzbar."
+          steps={[
+            { title: "Quellen sicher anbinden", body: "Google Drive, SharePoint, E-Mail, ATS oder CRM bleiben die fachlichen Quellen. Zugriffe und Dokumentgrenzen werden beim Import respektiert." },
+            { title: "Inhalte und Beziehungen verstehen", body: "RAG erschließt Bedeutung; GraphRAG verbindet Personen, Projekte, Firmen und Themen über einzelne Dokumente hinaus." },
+            { title: "Antwort inklusive Herkunft liefern", body: "Mitarbeitende fragen in normaler Sprache und erhalten eine konkrete Antwort mit nachvollziehbaren Quellen statt einer langen Trefferliste." },
+          ]}
+        />
         <MetricCard
           lang={lang}
           labelKey="wissen.metric.label"

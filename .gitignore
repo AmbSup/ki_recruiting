@@ -54,6 +54,9 @@ next-env.d.ts
 /.claude/
 /.agents/
 
+# Impeccable code-review tool local state/cache
+/.impeccable/
+
 # Local plan/skill files
 skills-lock.json
 

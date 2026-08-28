@@ -1,66 +1,58 @@
-const stages = [
-  { key: "new",            label: "Neu",           color: "bg-outline-variant",       count: 14 },
-  { key: "cv_analyzed",    label: "CV analysiert",  color: "bg-tertiary-container",    count: 9 },
-  { key: "call_scheduled", label: "Call geplant",   color: "bg-primary-container",     count: 6 },
-  { key: "call_completed", label: "Call fertig",    color: "bg-primary/30",            count: 5 },
-  { key: "evaluated",      label: "Bewertet",       color: "bg-primary/60",            count: 4 },
-  { key: "presented",      label: "Freigegeben",    color: "bg-primary",               count: 3 },
-  { key: "accepted",       label: "Akzeptiert",     color: "bg-primary-dim",           count: 2 },
-  { key: "rejected",       label: "Abgelehnt",      color: "bg-error-container/50",    count: 7 },
+import Link from "next/link";
+
+const stageColors = [
+  "bg-outline-variant",
+  "bg-tertiary-container",
+  "bg-primary-container",
+  "bg-primary-fixed-dim",
+  "bg-primary/60",
+  "bg-primary",
+  "bg-primary-dim",
+  "bg-error-container/70",
 ];
 
-export function PipelineOverview() {
-  const total = stages.reduce((s, st) => s + st.count, 0);
+export function PipelineOverview({ stages }: { stages: Array<{ key: string; label: string; count: number }> }) {
+  const total = stages.reduce((sum, stage) => sum + stage.count, 0);
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl p-6 shadow-[0_12px_32px_-4px_rgba(45,52,51,0.06)] h-full">
-      <div className="flex items-center justify-between mb-6">
+    <section aria-labelledby="pipeline-heading" className="min-w-0 rounded-xl bg-surface-container-lowest p-5 shadow-[0_12px_32px_-8px_rgba(45,52,51,0.08)] sm:p-6">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <span className="font-label text-xs font-bold uppercase tracking-widest text-outline">
-            Bewerber-Pipeline
-          </span>
-          <div className="font-headline text-2xl text-on-surface mt-1">{total} Bewerber</div>
+          <h2 id="pipeline-heading" className="font-body text-base font-bold text-on-surface">Bewerber-Pipeline</h2>
+          <p className="mt-1 font-label text-xs text-outline">{total} Bewerber in allen Phasen</p>
         </div>
-        <a
-          href="/applicants"
-          className="text-xs font-label font-bold uppercase tracking-widest text-primary hover:underline"
-        >
+        <Link href="/applicants" className="inline-flex min-h-11 items-center gap-1 font-label text-xs font-bold text-primary underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
           Alle ansehen
-        </a>
+          <span className="material-symbols-outlined text-sm" aria-hidden="true">arrow_forward</span>
+        </Link>
       </div>
 
-      {/* Pipeline Bar */}
-      <div className="flex h-3 rounded-full overflow-hidden mb-6 gap-0.5">
-        {total === 0 ? (
-          <div className="flex-1 bg-outline-variant/20 rounded-full" />
-        ) : (
-          stages.map((stage) =>
-            stage.count > 0 ? (
-              <div
-                key={stage.key}
-                className={`${stage.color} transition-all`}
-                style={{ width: `${(stage.count / total) * 100}%` }}
-                title={`${stage.label}: ${stage.count}`}
-              />
-            ) : null
-          )
-        )}
-      </div>
-
-      {/* Stage List */}
-      <div className="space-y-2">
-        {stages.map((stage) => (
-          <div key={stage.key} className="flex items-center justify-between py-1.5 group">
-            <div className="flex items-center gap-3">
-              <div className={`w-2.5 h-2.5 rounded-full ${stage.color}`} />
-              <span className="font-label text-xs font-semibold text-on-surface-variant group-hover:text-on-surface transition-colors">
-                {stage.label}
-              </span>
-            </div>
-            <span className="font-headline text-lg text-on-surface">{stage.count}</span>
+      {total === 0 ? (
+        <div className="mt-8 rounded-lg bg-surface-container-low px-5 py-8 text-center">
+          <span className="material-symbols-outlined text-3xl text-outline-variant" aria-hidden="true">group_add</span>
+          <p className="mt-2 font-label text-sm font-bold text-on-surface">Noch keine Bewerber</p>
+          <p className="mt-1 font-body text-sm text-on-surface-variant">Neue Bewerbungen erscheinen automatisch in dieser Pipeline.</p>
+        </div>
+      ) : (
+        <>
+          <div className="mt-7 flex h-2 overflow-hidden rounded-full bg-surface-container" aria-hidden="true">
+            {stages.map((stage, index) => stage.count > 0 && (
+              <span key={stage.key} className={stageColors[index]} style={{ width: `${(stage.count / total) * 100}%` }} />
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+          <div className="mt-6 grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-4">
+            {stages.map((stage, index) => (
+              <Link key={stage.key} href={`/applicants?stage=${stage.key}`} className="group flex min-h-11 items-center justify-between gap-3 rounded-lg px-2 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${stageColors[index]}`} aria-hidden="true" />
+                  <span className="truncate font-label text-xs text-on-surface-variant group-hover:text-on-surface">{stage.label}</span>
+                </span>
+                <strong className="font-headline text-lg font-medium tabular-nums text-on-surface">{stage.count}</strong>
+              </Link>
+            ))}
+          </div>
+        </>
+      )}
+    </section>
   );
 }

@@ -105,6 +105,10 @@ export async function POST(req: NextRequest) {
   if (!lead.consent_given) {
     return NextResponse.json({ error: "Kein dokumentiertes Opt-In — Call blockiert" }, { status: 403 });
   }
+  const aiConsent = lead.custom_fields?.ai_consent as { given?: unknown } | undefined;
+  if (aiConsent?.given !== true) {
+    return NextResponse.json({ error: "Keine dokumentierte KI-Anruf-Einwilligung â€” Call blockiert" }, { status: 403 });
+  }
 
   // Status-Lock + Stale-Cleanup pro Status mit eigenem Cutoff.
   // Vorher nur `initiated` cleanen — `ringing`/`in_progress` blieben ewig
@@ -424,7 +428,7 @@ export async function POST(req: NextRequest) {
   // Unique-Constraint gebrochen wird und jeder Test-Submit einen frischen Lead
   // gibt. Vapi wiederum verlangt strikte E.164 im customer.number-Feld —
   // ansonsten `Vapi API error: Bad request - please check your parameters`.
-  const vapiCustomerNumber = (lead.phone ?? "").replace(/-test-[a-z0-9]+$/i, "");
+  const vapiCustomerNumber = lead.phone ?? "";
 
   // Vapi soll auto-hangup wenn der Bot eine Verabschiedungsphrase spricht.
   // Ohne das hängt der Call in Silence bis Vapi's silence_timeout greift

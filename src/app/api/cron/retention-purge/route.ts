@@ -17,8 +17,7 @@ async function handle(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "CRON_SECRET nicht konfiguriert" }, { status: 500 });
   }
   const authHeader = req.headers.get("authorization");
-  const querySecret = new URL(req.url).searchParams.get("secret");
-  const ok = authHeader === `Bearer ${secret}` || querySecret === secret;
+  const ok = authHeader === `Bearer ${secret}`;
   if (!ok) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -24,5 +24,5 @@ export function dogfoodUrl(
   lang: "de" | "en",
 ): string {
   const slug = DOGFOOD_FUNNELS[vertical][lang];
-  return `/${slug}?test=1`;
+  return `/${slug}`;
 }

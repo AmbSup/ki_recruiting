@@ -50,8 +50,15 @@ export default function CallsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
 
+  useEffect(() => {
+    const requestedStatus = new URLSearchParams(window.location.search).get("status");
+    if (requestedStatus && ["scheduled", "completed", "no_answer", "failed"].includes(requestedStatus)) {
+      const timer = window.setTimeout(() => setStatusFilter(requestedStatus), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
+
   const load = useCallback(async () => {
-    setLoading(true);
     const supabase = createClient();
     const { data } = await supabase
       .from("voice_calls")
@@ -70,7 +77,10 @@ export default function CallsPage() {
     setLoading(false);
   }, []);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(), 0);
+    return () => window.clearTimeout(timer);
+  }, [load]);
 
   const filtered = calls.filter((c) =>
     statusFilter === "all" || c.status === statusFilter

@@ -1385,6 +1385,12 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_cv_uploads: {
+        Row: { claimed_at: string | null; created_at: string; funnel_id: string; id: string; ip_hash: string; storage_path: string }
+        Insert: { claimed_at?: string | null; created_at?: string; funnel_id: string; id?: string; ip_hash: string; storage_path: string }
+        Update: { claimed_at?: string | null; created_at?: string; funnel_id?: string; id?: string; ip_hash?: string; storage_path?: string }
+        Relationships: [{ foreignKeyName: "pending_cv_uploads_funnel_id_fkey"; columns: ["funnel_id"]; isOneToOne: false; referencedRelation: "funnels"; referencedColumns: ["id"] }]
+      }
       profiles: {
         Row: {
           auth_provider: Database["public"]["Enums"]["auth_provider"]
@@ -2110,6 +2116,14 @@ export type Database = {
       get_my_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
+      }
+      reserve_cv_upload: {
+        Args: { p_id: string; p_funnel_id: string; p_storage_path: string; p_ip_hash: string; p_limit?: number }
+        Returns: boolean
+      }
+      reserve_showcase_feedback: {
+        Args: { p_id: string; p_bundle_slug: string; p_audio_storage_path: string; p_duration_seconds: number | null; p_content_type: string; p_size_bytes: number; p_user_agent: string | null; p_ip_hash: string; p_limit?: number }
+        Returns: boolean
       }
     }
     Enums: {

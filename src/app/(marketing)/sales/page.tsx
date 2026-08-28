@@ -46,7 +46,7 @@ export default function SalesPage() {
   const lang = "de" as const;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen bg-[#f8fafc]">
       <MarketingNav lang={lang} />
       <main>
         <Hero
@@ -66,9 +66,10 @@ export default function SalesPage() {
             slogan: t(lang, "sales.hero_photo_slogan"),
             priority: true,
           }}
+          proofItems={["Anruf binnen 30 Sekunden", "24/7 erreichbar", "Termin direkt ins CRM"]}
+          showEyebrow={false}
         />
         <LogoCloud lang={lang} sectionKey="shared.clients" variant="compact" />
-        <PainList lang={lang} sectionKey="sales.pain" accentColor={SALES_COLOR} />
         <MetricCard
           lang={lang}
           labelKey="sales.metric.label"
@@ -77,6 +78,7 @@ export default function SalesPage() {
           noteKey="sales.metric.note"
           color={SALES_COLOR}
         />
+        <PainList lang={lang} sectionKey="sales.pain" accentColor={SALES_COLOR} />
         <HowItWorks lang={lang} sectionKey="sales.how" accentColor={SALES_COLOR} />
         <div id="dogfood">
           <DogfoodCTA lang={lang} variant="sales" accentColor={SALES_COLOR} />

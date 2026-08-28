@@ -110,7 +110,9 @@ create policy "profiles_own_select" on profiles
   for select using (auth.uid() = id);
 
 create policy "profiles_own_update" on profiles
-  for update using (auth.uid() = id);
+  for update to authenticated
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
 
 -- Admin darf alle Profile sehen (via get_my_role – kein self-join)
 create policy "profiles_operator_select" on profiles

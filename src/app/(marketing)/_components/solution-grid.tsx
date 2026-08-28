@@ -46,21 +46,27 @@ export function SolutionGrid({
         </p>
       </div>
 
-      <div className="space-y-12">
-        {categories.map((category) => (
-          <div key={category.label}>
-            <h3 className="flex items-center gap-2 font-body text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
+      <div className="space-y-4">
+        {categories.map((category, categoryIndex) => (
+          <details key={category.label} open={categoryIndex === 0} className="group rounded-2xl border border-slate-200 bg-white px-4 sm:px-6">
+            <summary className="flex min-h-16 cursor-pointer list-none items-center justify-between gap-4 py-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-700">
+              <span className="flex items-center gap-3 font-body text-sm font-bold text-slate-900">
               <span
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                className="h-2 w-2 flex-shrink-0 rounded-full"
                 style={{ backgroundColor: accentColor }}
               />
               {category.label}
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              </span>
+              <span className="flex items-center gap-2 font-label text-xs text-slate-500">
+                {category.items.length} Bausteine
+                <span className="material-symbols-outlined text-lg transition-transform group-open:rotate-180" aria-hidden="true">expand_more</span>
+              </span>
+            </summary>
+            <div className="grid grid-cols-1 gap-4 border-t border-slate-100 py-5 sm:grid-cols-2 lg:grid-cols-3">
               {category.items.map((s) => (
                 <div
                   key={s.problem}
-                  className="rounded-xl bg-white border border-slate-200 p-5 hover:border-slate-300 hover:shadow-sm transition"
+                  className="min-w-0 rounded-xl bg-slate-50/70 p-5 transition-colors hover:bg-slate-50"
                 >
                   <h4 className="font-body font-semibold text-sm text-slate-900 leading-tight mb-2">
                     {s.problem}
@@ -81,7 +87,7 @@ export function SolutionGrid({
                 </div>
               ))}
             </div>
-          </div>
+          </details>
         ))}
       </div>
     </section>

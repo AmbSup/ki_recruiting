@@ -474,7 +474,11 @@ alter table profiles enable row level security;
 create policy "Eigenes Profil lesen" on profiles for select
   using (auth.uid() = id);
 create policy "Eigenes Profil updaten" on profiles for update
-  using (auth.uid() = id);
+  to authenticated
+  using ((select auth.uid()) = id)
+  with check ((select auth.uid()) = id);
+revoke update on table profiles from authenticated;
+grant update (name) on table profiles to authenticated;
 create policy "Operator sieht alle Profile" on profiles for select
   using (exists (select 1 from profiles p where p.id = auth.uid() and p.role in ('admin', 'operator', 'viewer')));
 

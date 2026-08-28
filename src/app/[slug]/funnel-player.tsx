@@ -480,13 +480,7 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
   // source=test. Auto-Dial läuft weiter durch — Sinn des Test-Modes ist ja
   // gerade die Call-Pipeline gegen den eigenen Anschluss zu testen.
   // Erkannt einmal beim Mount; bleibt für die Session aktiv.
-  const [testMode, setTestMode] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get("test") === "1") setTestMode(true);
-    }
-  }, []);
+  const testMode = false;
 
   const currentPage = pages[pageIdx];
 
@@ -644,7 +638,6 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
           answers: { ...answers, ...extraAnswers },
           consent_given: consent,
           ai_consent_given: aiConsent,
-          test_mode: testMode,
         }),
       });
       console.log("[funnel] apply response:", r.status);
@@ -691,14 +684,6 @@ export function FunnelPlayer({ funnel, pages: rawPages }: { funnel: Funnel; page
     }
     fbAppEvent('fb_mobile_complete_registration', null, { fb_registration_method: 'funnel' });
 
-    const applicationId = applyJson?.application_id;
-    if (applicationId) {
-      fetch("/api/cv-analyse", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ application_id: applicationId }),
-      }).catch(() => {/* best-effort */});
-    }
   }
 
   if (!currentPage) {

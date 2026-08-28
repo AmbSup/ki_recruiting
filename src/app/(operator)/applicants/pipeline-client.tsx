@@ -115,9 +115,17 @@ export function PipelineClient() {
   const [view, setView] = useState<"kanban" | "list">("kanban");
   const [companyFilter, setCompanyFilter] = useState("");
   const [jobFilter, setJobFilter] = useState("");
+  const [stageFilter, setStageFilter] = useState<Stage | "">("");
+
+  useEffect(() => {
+    const requestedStage = new URLSearchParams(window.location.search).get("stage") as Stage | null;
+    if (requestedStage && stages.some((stage) => stage.key === requestedStage)) {
+      const timer = window.setTimeout(() => setStageFilter(requestedStage), 0);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
 
   const load = useCallback(async () => {
-    setLoading(true);
     const supabase = createClient();
     const { data, error } = await supabase
       .from("applications")
@@ -133,7 +141,7 @@ export function PipelineClient() {
   }, []);
 
   useEffect(() => {
-    load();
+    const timer = window.setTimeout(() => void load(), 0);
     // Realtime: reload whenever a new application is inserted
     const supabase = createClient();
     const channel = supabase
@@ -144,7 +152,10 @@ export function PipelineClient() {
         () => load()
       )
       .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    return () => {
+      window.clearTimeout(timer);
+      void supabase.removeChannel(channel);
+    };
   }, [load]);
 
   // Derived filter options
@@ -154,7 +165,8 @@ export function PipelineClient() {
     .reduce((acc, a) => { acc.set(a.job.id, a.job.title); return acc; }, new Map<string, string>());
   const filteredApps = applications
     .filter(a => !companyFilter || a.job.company.id === companyFilter)
-    .filter(a => !jobFilter || a.job.id === jobFilter);
+    .filter(a => !jobFilter || a.job.id === jobFilter)
+    .filter(a => !stageFilter || a.pipeline_stage === stageFilter);
   const byStage = (stage: Stage) => filteredApps.filter((a) => a.pipeline_stage === stage);
 
   async function deleteApplication(id: string) {
@@ -237,8 +249,13 @@ export function PipelineClient() {
             <option value="">Alle Jobs</option>
             {[...jobsForFilter.entries()].map(([id, title]) => <option key={id} value={id}>{title}</option>)}
           </select>
-          {(companyFilter || jobFilter) && (
-            <button onClick={() => { setCompanyFilter(""); setJobFilter(""); }}
+          <select value={stageFilter} onChange={(e) => setStageFilter(e.target.value as Stage | "")}
+            className="bg-surface-container-lowest border border-outline-variant/20 rounded-xl px-4 py-2 font-label text-xs text-on-surface focus:outline-none focus:border-primary">
+            <option value="">Alle Phasen</option>
+            {stages.map((stage) => <option key={stage.key} value={stage.key}>{stage.label}</option>)}
+          </select>
+          {(companyFilter || jobFilter || stageFilter) && (
+            <button onClick={() => { setCompanyFilter(""); setJobFilter(""); setStageFilter(""); }}
               className="flex items-center gap-1 font-label text-xs text-outline hover:text-on-surface transition-colors">
               <span className="material-symbols-outlined text-xs">close</span>
               Filter zurücksetzen

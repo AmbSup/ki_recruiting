@@ -1,55 +1,28 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-
-function getGreeting() {
-  const h = new Date().getHours();
-  if (h < 12) return "Guten Morgen";
-  if (h < 18) return "Guten Tag";
-  return "Guten Abend";
-}
-
-function formatDate() {
-  return new Date().toLocaleDateString("de-AT", {
+function formatDate(value: string) {
+  return new Intl.DateTimeFormat("de-AT", {
     weekday: "long",
-    day: "numeric",
+    day: "2-digit",
     month: "long",
     year: "numeric",
-  });
+  }).format(new Date(value));
 }
 
-export function DashboardHeader() {
-  const [email, setEmail] = useState<string | null>(null);
+function formatTime(value: string) {
+  return new Intl.DateTimeFormat("de-AT", { hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+}
 
-  useEffect(() => {
-    const supabase = createClient();
-    supabase.auth.getUser().then(({ data }) => {
-      setEmail(data.user?.email ?? null);
-    });
-  }, []);
-
-  const displayName = email ? email.split("@")[0] : "Dashboard";
-
+export function DashboardHeader({ refreshedAt }: { refreshedAt: string }) {
   return (
-    <div className="mb-12">
-      <p className="font-label text-xs font-bold uppercase tracking-widest text-outline mb-3">
-        Operator Panel · {formatDate()}
+    <header className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        <h1 className="font-headline text-4xl font-medium leading-none text-on-surface sm:text-5xl">Heute im Blick</h1>
+        <p className="mt-2 max-w-2xl font-body text-sm leading-relaxed text-on-surface-variant sm:text-base">
+          Behalten Sie Reaktionszeit, Anrufstatus und offene Entscheidungen im Blick.
+        </p>
+      </div>
+      <p className="font-label text-xs text-outline">
+        {formatDate(refreshedAt)} · aktualisiert um {formatTime(refreshedAt)}
       </p>
-      <h1 className="font-headline text-5xl md:text-6xl italic text-on-surface leading-none mb-4">
-        {getGreeting()},<br />
-        <span className="text-primary">{displayName}</span>
-      </h1>
-      {email && (
-        <p className="font-body text-on-surface-variant text-lg">
-          Eingeloggt als <span className="text-on-surface font-medium">{email}</span>
-        </p>
-      )}
-      {!email && (
-        <p className="font-body text-on-surface-variant text-lg">
-          Übersicht aller aktiven Firmen, Jobs und Bewerber-Pipelines.
-        </p>
-      )}
-    </div>
+    </header>
   );
 }

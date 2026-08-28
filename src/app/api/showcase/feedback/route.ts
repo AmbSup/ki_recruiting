@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { after, NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -93,25 +93,24 @@ export async function POST(req: NextRequest) {
 
   const supabase = createAdminClient();
 
-  // Bundle existiert?
-  const { data: funnel } = await supabase
-    .from("funnels")
-    .select("slug")
-    .eq("slug", bundleSlug)
-    .maybeSingle();
-  if (!funnel) {
-    return NextResponse.json({ error: "Bundle nicht gefunden" }, { status: 404 });
-  }
-
-  // Rate-Limit
   const ipHash = hashIp(clientIp(req));
-  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-  const { count: recentCount } = await supabase
-    .from("showcase_feedback")
-    .select("id", { count: "exact", head: true })
-    .eq("ip_hash", ipHash)
-    .gte("created_at", oneHourAgo);
-  if ((recentCount ?? 0) >= RATE_LIMIT_PER_HOUR) {
+  const id = crypto.randomUUID();
+  const path = `${id}.${extOf(baseMime)}`;
+  const { data: reserved, error: reserveError } = await supabase.rpc("reserve_showcase_feedback", {
+    p_id: id,
+    p_bundle_slug: bundleSlug,
+    p_audio_storage_path: path,
+    p_duration_seconds: durationSec,
+    p_content_type: file.type,
+    p_size_bytes: file.size,
+    p_user_agent: req.headers.get("user-agent")?.slice(0, 500) ?? null,
+    p_ip_hash: ipHash,
+    p_limit: RATE_LIMIT_PER_HOUR,
+  });
+  if (reserveError) {
+    return NextResponse.json({ error: "Feedback-Reservierung fehlgeschlagen" }, { status: 500 });
+  }
+  if (!reserved) {
     return NextResponse.json(
       { error: "Zu viele Feedbacks in der letzten Stunde. Bitte später nochmal." },
       { status: 429 },
@@ -120,39 +119,23 @@ export async function POST(req: NextRequest) {
 
   // Upload — Supabase-Bucket validiert MIME strikt (kein Codec-Suffix),
   // wir senden daher den baseMime statt file.type.
-  const id = crypto.randomUUID();
-  const path = `${id}.${extOf(baseMime)}`;
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: uploadErr } = await supabase.storage
     .from(BUCKET)
     .upload(path, buffer, { contentType: baseMime, upsert: false });
   if (uploadErr) {
+    await supabase.from("showcase_feedback").delete().eq("id", id);
     return NextResponse.json({ error: `Upload fehlgeschlagen: ${uploadErr.message}` }, { status: 500 });
-  }
-
-  const { error: insertErr } = await supabase.from("showcase_feedback").insert({
-    id,
-    bundle_slug: bundleSlug,
-    audio_storage_path: path,
-    duration_seconds: durationSec,
-    content_type: file.type,
-    size_bytes: file.size,
-    user_agent: req.headers.get("user-agent")?.slice(0, 500) ?? null,
-    ip_hash: ipHash,
-  });
-  if (insertErr) {
-    await supabase.storage.from(BUCKET).remove([path]).catch(() => {});
-    return NextResponse.json({ error: `DB-Insert fehlgeschlagen: ${insertErr.message}` }, { status: 500 });
   }
 
   // Fire-and-forget Email-Notification via n8n. n8n-Workflow
   // "Showcase Feedback Notify" hängt am Webhook /webhook/showcase-feedback-notify
   // und sendet eine Email an martinamon@chello.at via SMTP. Block den
   // Response NICHT — Upload ist erfolgreich, Email-Failure soll's nicht killen.
-  notifyN8nEmail({ id, bundleSlug, durationSec, sizeBytes: file.size }).catch((e) => {
+  after(() => notifyN8nEmail({ id, bundleSlug, durationSec, sizeBytes: file.size }).catch((e) => {
     console.error("[showcase/feedback] n8n notify failed:", e);
-  });
+  }));
 
   return NextResponse.json({ success: true, id });
 }
