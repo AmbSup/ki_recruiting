@@ -1205,6 +1205,136 @@ export const dict: Record<Lang, Dict> = {
         cta: "Als Pilot-Partner bewerben →",
       },
     },
+    robot: {
+      eyebrow: "Pilotprojekt Robotik · Automobilzulieferer",
+      headline: "Lackierte Kunststoff-Teile.",
+      headline_accent: "Automatisiert geprüft, zuverlässig nachbearbeitet.",
+      sub:
+        "Stoßfänger, Spoiler, Kotflügel — bei mehreren tausend Teilen pro Tag wird die manuelle Oberflächenprüfung zum Engpass: uneinheitlich bewertet, kaum dokumentiert, ohne Rückverfolgbarkeit. Der Humanoid Surface Quality Worker übernimmt Prüfung und Nacharbeit als flexible Offline-Station.",
+      primary_cta: "Pilot-Rahmen anfragen →",
+      secondary_cta: "Prozess ansehen",
+      metric: {
+        label: "Produktionsgröße",
+        value: "5.500",
+        after: "Stoßfänger / Tag",
+        note: "Zusätzlich Spoiler und Kotflügel im selben Werk — jedes Bauteil braucht heute eine manuelle Sichtprüfung nach der Lackierung.",
+      },
+      pain: {
+        eyebrow: "Ist-Stand",
+        headline: "Was die Qualitätsprüfung heute bremst",
+        items: [
+          {
+            title: "Prüfaufwand bei Großteilen: manuell",
+            body:
+              "Jedes lackierte Bauteil wird von Hand auf Kratzer, Einschlüsse, Lackfehler und Nachbearbeitungsbedarf geprüft — bei mehreren tausend Teilen pro Tag ein Vollzeit-Engpass.",
+          },
+          {
+            title: "Kaum digitale Dokumentation",
+            body:
+              "Prüfergebnisse landen selten strukturiert im System. Was ein Prüfer sieht und entscheidet, bleibt meist ungeschrieben.",
+          },
+          {
+            title: "Fehlende Rückverfolgbarkeit",
+            body:
+              "Ohne lückenlose Doku lässt sich im Reklamationsfall kaum rekonstruieren, wer welches Teil wann wie geprüft und freigegeben hat.",
+          },
+          {
+            title: "Schwankende Bewertung",
+            body:
+              "Was als Fehler zählt, hängt vom Prüfer ab — Tagesform, Erfahrung und Auslastung führen zu inkonsistenten Freigabe-Entscheidungen.",
+          },
+        ],
+      },
+      solution_claim:
+        "Humanoid Surface Quality Worker — flexible Qualitätsprüfung und Nacharbeit lackierter Bauteile.",
+      process: {
+        eyebrow: "Prozess für den Humanoiden Roboter",
+        headline: "Sieben Schritte, ein Bauteil",
+        steps: [
+          {
+            title: "Teil aufnehmen / positionieren",
+            body: "Der Roboter greift das lackierte Bauteil und bringt es in eine definierte Prüfposition.",
+          },
+          {
+            title: "Oberfläche inspizieren",
+            body: "Die kalibrierte Kamera-Einheit scannt die Oberfläche systematisch unter kontrollierter Beleuchtung ab.",
+          },
+          {
+            title: "Fehler lokalisieren",
+            body: "Edge-AI erkennt und lokalisiert Lackfehler, Einschlüsse und Kratzer direkt am Bauteil.",
+          },
+          {
+            title: "Schleifen / polieren / entgraten",
+            body: "Erkannte Stellen werden gezielt nachbearbeitet — ohne den Rest der Oberfläche zu berühren.",
+          },
+          {
+            title: "Erneut prüfen",
+            body: "Ein zweiter Scan bestätigt, dass die Nacharbeit den Fehler behoben hat.",
+          },
+          {
+            title: "Teil ablegen",
+            body: "Freigegebene Bauteile werden sortenrein für den nächsten Produktionsschritt abgelegt.",
+          },
+          {
+            title: "Daten buchen",
+            body: "Prüfergebnis, Fehlerbild und Nacharbeit werden automatisch und lückenlos dokumentiert.",
+          },
+        ],
+      },
+      tech: {
+        eyebrow: "Technologie",
+        headline: "Kalibrierte Inspektionseinheit am Humanoiden",
+        items: [
+          {
+            title: "Industrielle RGB-Kamera",
+            body: "Hochauflösend, potenziell 20 MP+, für feine Lackfehler und kleine Einschlüsse.",
+          },
+          {
+            title: "Verzerrungsarme Optik",
+            body: "Präzise Geometrie über die gesamte Bauteiloberfläche, auch an Kanten und Rundungen.",
+          },
+          {
+            title: "Kontrollierte Beleuchtung",
+            body: "Diffuse und polarisierte LED-Beleuchtung für reproduzierbare, blendfreie Aufnahmen.",
+          },
+          {
+            title: "Edge-AI-Plattform",
+            body: "NVIDIA Jetson oder vergleichbares GPU-System für Fehlererkennung direkt am Roboter.",
+          },
+          {
+            title: "Kalibrierte Inspektionseinheit",
+            body: "Kamera, Optik und Beleuchtung sind als eine Einheit am Humanoiden montiert und aufeinander kalibriert.",
+          },
+        ],
+      },
+      pilot_benefits: {
+        eyebrow: "Pilot als flexible Offline-Prüfung",
+        headline: "Was der Pilot liefert",
+        items: [
+          "Automatisierte, digitale Prüfung jedes Bauteils",
+          "Vollständige Dokumentation von Prüfung und Nacharbeit",
+          "Lückenlose Rückverfolgbarkeit pro Teil",
+          "Mensch übernimmt bei Grenzfällen — kein Blackbox-Ausschuss",
+          "Skalierbar auf weitere Bauteile und Linien",
+        ],
+      },
+      scope: {
+        eyebrow: "Pilot-Umfang",
+        headline: "Wer was beisteuert",
+        items: [
+          "Hardware: kundenseitig",
+          "Software & Entwicklung: anteilig, nach gemeinsamer Definition",
+          "Ziel: belastbarer Entscheidungsrahmen für die Serienfreigabe",
+        ],
+      },
+      final_cta: {
+        eyebrow: "Nächster Schritt",
+        headline: "Entscheidungsrahmen für die Serienfreigabe",
+        sub:
+          "Zeig uns euer Bauteil-Spektrum und eure Taktzeit. Wir skizzieren gemeinsam einen Pilot-Rahmen — inklusive Hardware-Anforderungen und Entwicklungsaufteilung.",
+        cta: "Pilot-Rahmen anfragen →",
+      },
+    },
     footer: {
       tagline: "AI-Funnels für Vertrieb und Recruiting",
       links: {
