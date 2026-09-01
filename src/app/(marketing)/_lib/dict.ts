@@ -1245,6 +1245,9 @@ export const dict: Record<Lang, Dict> = {
           },
         ],
       },
+      solution: {
+        eyebrow: "Lösung",
+      },
       solution_claim:
         "Humanoid Surface Quality Worker — flexible Qualitätsprüfung und Nacharbeit lackierter Bauteile.",
       process: {

@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { t } from "../_lib/t";
+import { BRAND_COLOR } from "../_lib/brand";
 import { MarketingNav } from "../_components/marketing-nav";
 import { Hero } from "../_components/hero";
 import { MetricCard } from "../_components/metric-card";
 import { PainList } from "../_components/pain-list";
-import { ColorBlock } from "../_components/color-block";
 import { HowItWorks } from "../_components/how-it-works";
 import { BenefitGrid } from "../_components/benefit-grid";
 import { Checklist } from "../_components/checklist";
@@ -64,6 +65,12 @@ export default function RobotPage() {
           secondaryCtaKey="robot.secondary_cta"
           secondaryHref="#prozess"
           accentColor={ACCENT}
+          photo={{
+            src: "/marketing/robot-lack-manuell.jpg",
+            alt: "Zwei Mitarbeiter prüfen lackierte Stoßfänger von Hand an der Produktionslinie",
+            slogan: "Heute: manuelle Sichtprüfung, Bauteil für Bauteil.",
+            priority: true,
+          }}
         />
 
         <MetricCard
@@ -77,8 +84,30 @@ export default function RobotPage() {
 
         <PainList lang={lang} sectionKey="robot.pain" accentColor={ACCENT} />
 
-        <section className="mx-auto max-w-6xl px-6 py-8">
-          <ColorBlock variant="primary" text={t(lang, "robot.solution_claim")} />
+        <section className="mx-auto max-w-5xl px-6 py-8">
+          <p
+            className="mb-4 text-center font-label text-[15.6px] font-bold uppercase tracking-widest"
+            style={{ color: BRAND_COLOR }}
+          >
+            {t(lang, "robot.solution.eyebrow")}
+          </p>
+          <div className="relative overflow-hidden rounded-3xl shadow-[0_24px_60px_-28px_rgba(15,23,42,0.42)]">
+            <Image
+              src="/marketing/robots_3.jpg"
+              alt="Zwei humanoide Roboter prüfen und bearbeiten lackierte Stoßfänger an derselben Produktionslinie"
+              width={1200}
+              height={896}
+              className="w-full h-auto object-cover"
+              priority={false}
+            />
+            <div
+              aria-hidden
+              className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent"
+            />
+            <p className="absolute inset-x-0 bottom-6 px-6 text-center font-headline italic text-xl leading-snug text-white drop-shadow-md sm:bottom-8 sm:px-12 sm:text-2xl">
+              {t(lang, "robot.solution_claim")}
+            </p>
+          </div>
         </section>
 
         <div id="prozess">
