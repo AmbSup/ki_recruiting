@@ -66,8 +66,8 @@ export default function RobotPage() {
           secondaryHref="#prozess"
           accentColor={ACCENT}
           photo={{
-            src: "/marketing/robot-lack-manuell.jpg",
-            alt: "Zwei Mitarbeiter prüfen lackierte Stoßfänger von Hand an der Produktionslinie",
+            src: "/marketing/lack_4.jpg",
+            alt: "Zwei Mitarbeiter prüfen und polieren lackierte Stoßfänger von Hand an Prüfstationen",
             slogan: "Heute: manuelle Sichtprüfung, Bauteil für Bauteil.",
             priority: true,
           }}
