@@ -105,9 +105,17 @@ export async function POST(req: NextRequest) {
   if (!lead.consent_given) {
     return NextResponse.json({ error: "Kein dokumentiertes Opt-In — Call blockiert" }, { status: 403 });
   }
+  // Nur blocken wenn der Funnel überhaupt eine explizite KI-Anruf-Checkbox
+  // hatte UND sie nicht bestätigt wurde. Funnels ohne diese Checkbox (die
+  // meisten — siehe CLAUDE.md: EU-AI-Act-Art.-50-Transparenz läuft über den
+  // base-prompt.ts-Header, kein separates Gate nötig) fallen zurück auf das
+  // bereits oben geprüfte allgemeine consent_given. Ohne dieses Fallback
+  // blockierte das Gate JEDEN Lead ohne die Checkbox mit 403 — Auto-Dial war
+  // dadurch für praktisch alle Funnels tot (Bug seit 2026-08-23, kein
+  // sales_calls-Eintrag mehr trotz eingehender Leads).
   const aiConsent = lead.custom_fields?.ai_consent as { given?: unknown } | undefined;
-  if (aiConsent?.given !== true) {
-    return NextResponse.json({ error: "Keine dokumentierte KI-Anruf-Einwilligung â€” Call blockiert" }, { status: 403 });
+  if (aiConsent && aiConsent.given !== true) {
+    return NextResponse.json({ error: "Keine dokumentierte KI-Anruf-Einwilligung — Call blockiert" }, { status: 403 });
   }
 
   // Status-Lock + Stale-Cleanup pro Status mit eigenem Cutoff.
