@@ -135,12 +135,10 @@ export default function VideoPage() {
               </ul>
             </div>
 
-            {/* TODO: echtes Foto ersetzen — Platzhalter für eine Kamerafrau bei Dreharbeiten.
-                Erwarteter Pfad: /public/marketing/kamerafrau-dreharbeiten.webp (Format ~4:5). */}
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-gradient-to-br from-[#0A1A1F] to-[#123842]">
+            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-[#0A1A1F]">
               <Image
-                src="/marketing/kamerafrau-dreharbeiten.webp"
-                alt="Videografin bei Dreharbeiten mit einer Kamera"
+                src="/marketing/two-people-reviewing-storyboard.jpg"
+                alt="Zwei Personen besprechen ein Storyboard neben einer professionellen Filmkamera"
                 fill
                 sizes="(max-width: 1024px) 100vw, 40vw"
                 className="object-cover"
