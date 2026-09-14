@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { Captions, Check, Film, Scissors } from "lucide-react";
-import { MarketingFooter } from "../_components/marketing-footer";
-import { MarketingNav } from "../_components/marketing-nav";
-import { VideoUploadForm } from "./video-upload-form";
+import { Camera, Captions, Check, Clapperboard, Film, Scissors, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Video schneiden lassen",
-  description: "Rohvideos hochladen und professionell für Website, Reels, Shorts und Social Media schneiden lassen.",
+  title: "Videoproduktion & Schnitt",
+  description: "Videoagentur für Firmenvideos, Kameraarbeit, Schnitt und Animationen.",
   alternates: { canonical: "https://app.neuronic-automation.ai/video" },
 };
 
@@ -15,6 +12,13 @@ const benefits = [
   { icon: Scissors, title: "Klarer Schnitt", text: "Aus Rohmaterial wird eine verständliche Geschichte mit sauberem Rhythmus." },
   { icon: Captions, title: "Untertitel & Motion", text: "Texte, Übergänge und Animationen folgen deinem Inhalt und deiner Marke." },
   { icon: Film, title: "Passende Formate", text: "Fertige Videos für Website, LinkedIn, Reels, Shorts oder TikTok." },
+];
+
+const agencyServices = [
+  { icon: Camera, title: "Kameraarbeit", text: "Dreharbeiten vor Ort — Interviews, Produktaufnahmen, Immobilien, Events." },
+  { icon: Clapperboard, title: "Firmenvideos", text: "Imagefilme, Recruiting- und Produktvideos, die zu deiner Marke passen." },
+  { icon: Scissors, title: "Schnitt", text: "Von Rohmaterial zu fertigem Video — sauberer Rhythmus, klare Story." },
+  { icon: Sparkles, title: "Animationen", text: "Motion Graphics, Untertitel und Übergänge, die deinen Inhalt unterstützen." },
 ];
 
 const packageItems = [
@@ -27,53 +31,58 @@ const packageItems = [
 
 const faqs = [
   {
-    question: "Welches Rohmaterial kann ich hochladen?",
-    answer: "Handyvideos, Interviews, Podcasts oder bestehende Aufnahmen im MP4-Format. Nach dem Upload prüfe ich, was sich daraus am besten schneiden lässt.",
+    question: "Welche Art von Videos produziert ihr?",
+    answer: "Firmenvideos, Immobilien- und Produktvideos, Social-Media-Reels und Recruiting-Videos — von der Kameraarbeit vor Ort bis zum fertigen Schnitt.",
+  },
+  {
+    question: "Übernehmt ihr auch die Dreharbeiten?",
+    answer: "Ja. Wir kommen mit der Kamera zu dir — für Interviews, Produktaufnahmen, Immobilien oder Events — oder bearbeiten dein vorhandenes Rohmaterial.",
   },
   {
     question: "Was bedeutet „20 Reels plus Storys“?",
-    answer: "Du erhältst 20 fertige Hochkant-Videos. Ausgewählte Inhalte bereite ich zusätzlich als passende Story-Formate auf.",
+    answer: "Du erhältst 20 fertige Hochkant-Videos. Ausgewählte Inhalte bereiten wir zusätzlich als passende Story-Formate auf.",
   },
   {
     question: "Sind Untertitel und Musik enthalten?",
     answer: "Ja. Schnitt, lesbare Untertitel, passende Musik und dezente Animationen sind im Paket enthalten.",
   },
-  {
-    question: "Wie geht es nach dem Upload weiter?",
-    answer: "Ich prüfe dein Material und melde mich für Stil, Zielgruppe und Timing. Danach erhältst du einen klaren Liefertermin.",
-  },
 ];
+
+const contactHref = "https://cal.com/martin-amon-l2hybo/30min";
 
 export default function VideoPage() {
   return (
     <div className="min-h-screen bg-surface">
-      <MarketingNav lang="de" />
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
+        <a href="#top" className="flex items-center gap-3">
+          <Image src="/branding/neuronic-logo.png" alt="" width={32} height={32} className="rounded" />
+          <span className="font-headline italic text-on-surface">Video und Animationen</span>
+        </a>
+        <nav className="flex items-center gap-6 text-sm font-medium text-on-surface-variant">
+          <a href="#top" className="hover:text-on-surface">Videos</a>
+          <a href="#animationen" className="hover:text-on-surface">Animationen</a>
+        </nav>
+      </header>
       <main>
-        <section id="top" className="mx-auto grid max-w-7xl scroll-mt-24 gap-12 px-6 pb-16 pt-16 lg:grid-cols-[0.86fr_1.14fr] lg:items-start lg:gap-16 lg:pb-24 lg:pt-24">
-          <div className="lg:sticky lg:top-28">
-            <h1 className="max-w-2xl text-balance font-headline text-[clamp(3rem,6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.03em] text-on-surface">
-              Dein Rohmaterial. Professionell geschnitten.
-            </h1>
-            <p className="mt-7 max-w-xl text-lg leading-relaxed text-on-surface-variant">
-              Lade deine Videos direkt hoch. Ich strukturiere, schneide und verfeinere sie für den Kanal, auf dem sie wirken sollen.
-            </p>
+        <section id="top" className="mx-auto max-w-4xl px-6 pb-16 pt-8 lg:pb-24 lg:pt-12">
+          <h1 className="max-w-2xl text-balance font-headline text-[clamp(3rem,6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.03em] text-on-surface">
+            Dein Rohmaterial. Professionell geschnitten.
+          </h1>
+          <p className="mt-7 max-w-xl text-lg leading-relaxed text-on-surface-variant">
+            Kameraarbeit, Schnitt und Animation aus einer Hand — für Firmenvideos, Social Media und alles dazwischen.
+          </p>
 
-            <div className="relative mt-10 aspect-[16/10] overflow-hidden rounded-xl bg-[#0A1A1F]">
-              <Image src="/marketing/video-editing.webp" alt="Professioneller Videoschnitt am Schnittplatz" fill sizes="(max-width: 1024px) 100vw, 42vw" className="object-cover opacity-80" priority />
-              <div className="absolute inset-x-5 bottom-5 rounded-xl bg-white p-4 shadow-[0_12px_30px_rgba(10,26,31,0.2)]">
-                <p className="font-headline text-xl font-semibold text-on-surface">Von lang zu klar.</p>
-                <p className="mt-1 text-sm text-on-surface-variant">Schnitt, Untertitel und Formate aus einer Hand.</p>
-              </div>
+          <div className="relative mt-10 aspect-[16/9] overflow-hidden rounded-xl bg-[#0A1A1F]">
+            <Image src="/marketing/video-editing.webp" alt="Professioneller Videoschnitt am Schnittplatz" fill sizes="(max-width: 1024px) 100vw, 60vw" className="object-cover opacity-80" priority />
+            <div className="absolute inset-x-5 bottom-5 max-w-sm rounded-xl bg-white p-4 shadow-[0_12px_30px_rgba(10,26,31,0.2)]">
+              <p className="font-headline text-xl font-semibold text-on-surface">Von lang zu klar.</p>
+              <p className="mt-1 text-sm text-on-surface-variant">Schnitt, Untertitel und Formate aus einer Hand.</p>
             </div>
           </div>
 
-          <div className="overflow-hidden rounded-xl bg-white shadow-[0_12px_36px_rgba(16,24,32,0.10)]">
-            <div className="border-b border-outline-variant px-6 py-5 sm:px-8">
-              <h2 className="text-2xl font-semibold">Videos hochladen</h2>
-              <p className="mt-2 text-sm text-on-surface-variant">Deine Dateien werden direkt und verschlüsselt in den Projektspeicher übertragen.</p>
-            </div>
-            <VideoUploadForm />
-          </div>
+          <a href={contactHref} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-dim focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+            Projekt besprechen
+          </a>
         </section>
 
         <section className="border-y border-outline-variant bg-surface-container-lowest px-6 py-20 sm:py-28">
@@ -104,6 +113,42 @@ export default function VideoPage() {
           </div>
         </section>
 
+        {/* Allgemeine Videoagentur: Kameraarbeit, Firmenvideos, Schnitt, Animation. */}
+        <section id="animationen" className="scroll-mt-24 border-b border-outline-variant bg-white px-6 py-20 sm:py-28">
+          <div className="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
+            <div>
+              <p className="font-label text-sm font-bold uppercase tracking-widest text-primary">Videoagentur</p>
+              <h2 className="mt-3 text-balance font-headline text-4xl font-semibold leading-tight tracking-[-0.03em] sm:text-5xl">
+                Mehr als Schnitt.
+              </h2>
+              <p className="mt-5 max-w-lg text-lg leading-relaxed text-on-surface-variant">
+                Wir übernehmen dein gesamtes Videoprojekt — von der Kameraarbeit vor Ort über den Schnitt bis zur Animation. Für Firmenvideos, Produktvideos und Social Media.
+              </p>
+              <ul className="mt-8 grid gap-6 sm:grid-cols-2">
+                {agencyServices.map(({ icon: Icon, title, text }) => (
+                  <li key={title}>
+                    <Icon className="mb-3 h-6 w-6 text-primary" aria-hidden="true" />
+                    <p className="font-semibold text-on-surface">{title}</p>
+                    <p className="mt-1 text-sm leading-relaxed text-on-surface-variant">{text}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* TODO: echtes Foto ersetzen — Platzhalter für eine Kamerafrau bei Dreharbeiten.
+                Erwarteter Pfad: /public/marketing/kamerafrau-dreharbeiten.webp (Format ~4:5). */}
+            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl bg-gradient-to-br from-[#0A1A1F] to-[#123842]">
+              <Image
+                src="/marketing/kamerafrau-dreharbeiten.webp"
+                alt="Videografin bei Dreharbeiten mit einer Kamera"
+                fill
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-cover"
+              />
+            </div>
+          </div>
+        </section>
+
         <section className="border-b border-outline-variant bg-white">
           <div className="mx-auto grid max-w-7xl divide-y divide-outline-variant px-6 md:grid-cols-3 md:divide-x md:divide-y-0">
             {benefits.map(({ icon: Icon, title, text }) => (
@@ -123,7 +168,7 @@ export default function VideoPage() {
                 Ein Paket. Ein Monat Content.
               </h2>
               <p className="mt-5 max-w-lg text-lg leading-relaxed text-white/70">
-                Du lieferst das Rohmaterial. Ich mache daraus eine kompakte Serie für deinen Social-Media-Auftritt.
+                Du lieferst das Rohmaterial. Wir machen daraus eine kompakte Serie für deinen Social-Media-Auftritt.
               </p>
             </div>
 
@@ -147,8 +192,8 @@ export default function VideoPage() {
                 ))}
               </ul>
 
-              <a href="#top" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-dim focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
-                Paket anfragen & Videos hochladen
+              <a href={contactHref} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-12 w-full items-center justify-center rounded-xl bg-primary px-6 py-3 font-semibold text-white transition-colors hover:bg-primary-dim focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary">
+                Paket anfragen
               </a>
             </div>
           </div>
@@ -157,7 +202,7 @@ export default function VideoPage() {
         <section className="mx-auto max-w-4xl px-6 py-20 sm:py-28">
           <div className="mb-10 max-w-2xl">
             <h2 className="text-balance font-headline text-4xl font-semibold leading-tight tracking-[-0.03em] sm:text-5xl">Kurz beantwortet.</h2>
-            <p className="mt-4 text-lg leading-relaxed text-on-surface-variant">Die wichtigsten Fragen vor deinem Upload.</p>
+            <p className="mt-4 text-lg leading-relaxed text-on-surface-variant">Die wichtigsten Fragen zu unserer Arbeit.</p>
           </div>
           <div className="divide-y divide-outline-variant border-y border-outline-variant">
             {faqs.map(({ question, answer }) => (
@@ -176,12 +221,30 @@ export default function VideoPage() {
         </section>
 
         <section className="border-t border-outline-variant bg-white px-6 py-20 text-center sm:py-28">
-          <h2 className="text-balance text-4xl font-semibold leading-tight sm:text-5xl">Hochladen. Abstimmen. Fertig.</h2>
-          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-on-surface-variant">Nach dem Upload prüfe ich dein Material und melde mich für Ziel, Format und Stil. Danach startet der Schnitt.</p>
-          <a href="#top" className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-dim">Jetzt Videos hochladen</a>
+          <h2 className="text-balance text-4xl font-semibold leading-tight sm:text-5xl">Lass uns dein Projekt besprechen.</h2>
+          <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-on-surface-variant">Ob Kameraarbeit, Firmenvideo oder Rohmaterial zum Schneiden — schreib uns kurz, worum es geht.</p>
+          <a href={contactHref} target="_blank" rel="noopener noreferrer" className="mt-8 inline-flex min-h-12 items-center rounded-xl bg-primary px-6 py-3 font-semibold text-white hover:bg-primary-dim">Termin vereinbaren</a>
         </section>
       </main>
-      <MarketingFooter lang="de" />
+
+      {/* Footer auf das gesetzlich Notwendige reduziert: nur Datenschutz + Impressum,
+          keine Links zu den anderen Neuronic-Automation-Produkten, kein Kontakt-Link
+          (die CTAs auf der Seite decken das ab). */}
+      <footer className="mt-24 border-t border-slate-100 bg-white/50">
+        <div className="mx-auto max-w-6xl px-6 py-10">
+          <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              <a href="https://www.neuronic-automation.ai/datenschutz" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900">
+                Datenschutz
+              </a>
+              <a href="https://www.neuronic-automation.ai/impressum" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900">
+                Impressum
+              </a>
+            </div>
+            <span className="text-xs text-slate-400">© {new Date().getFullYear()} · Alle Rechte vorbehalten</span>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
