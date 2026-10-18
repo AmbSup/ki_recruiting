@@ -1,15 +1,7 @@
 import type { Metadata } from "next";
-import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
-import { Hero } from "../_components/hero";
-import { LogoCloud } from "../_components/logo-cloud";
-import { SplitFocus } from "../_components/split-focus";
-import { HowItWorks } from "../_components/how-it-works";
-import { DogfoodCTA } from "../_components/dogfood-cta";
-import { ShowcaseTeaser } from "../_components/showcase-teaser";
-import { CTAFooter } from "../_components/cta-footer";
+import { ExpertHome } from "../_components/expert-home";
 import { MarketingFooter } from "../_components/marketing-footer";
-import { StickyCTABar } from "../_components/sticky-cta-bar";
 
 // /home — bewusstes Duplikat von "/" OHNE Auth-Redirect. "/" schickt
 // eingeloggte Operatoren automatisch zu /dashboard; /home bleibt für jeden
@@ -18,9 +10,9 @@ import { StickyCTABar } from "../_components/sticky-cta-bar";
 // Canonical zeigt auf "/", damit Google das nicht als Duplicate Content wertet.
 
 export const metadata: Metadata = {
-  title: "AI Funnel Expert — Der KI-Anruf in 30 Sekunden",
+  title: "Neuronic — KI-Expert:innen & Freelancer für dein KI-Projekt",
   description:
-    "AI-Funnels für Vertrieb und Recruiting. Dein Lead oder Kandidat wird binnen 30 Sekunden vollautomatisch zurückgerufen. 24/7.",
+    "KI-Strategie, AI Act, GenAI, KI-Agenten, Automatisierung, Machine Learning und Trainings: Neuronic vermittelt erfahrene KI-Freelancer aus Österreich, Deutschland und der Schweiz.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/",
     languages: {
@@ -33,15 +25,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     url: "https://app.neuronic-automation.ai/home",
-    title: "AI Funnel Expert — Der KI-Anruf in 30 Sekunden",
+    title: "Neuronic — KI-Expert:innen & Freelancer für dein KI-Projekt",
     description:
-      "AI-Funnels für Vertrieb und Recruiting. Dein Lead oder Kandidat wird binnen 30 Sekunden vollautomatisch zurückgerufen. 24/7.",
+      "KI-Strategie, AI Act, GenAI, KI-Agenten, Automatisierung, Machine Learning und Trainings: Neuronic vermittelt erfahrene KI-Freelancer aus Österreich, Deutschland und der Schweiz.",
   },
   twitter: {
     card: "summary",
-    title: "AI Funnel Expert — Der KI-Anruf in 30 Sekunden",
+    title: "Neuronic — KI-Expert:innen & Freelancer für dein KI-Projekt",
     description:
-      "AI-Funnels für Vertrieb und Recruiting. Dein Lead oder Kandidat wird binnen 30 Sekunden vollautomatisch zurückgerufen. 24/7.",
+      "KI-Strategie, AI Act, GenAI, KI-Agenten, Automatisierung, Machine Learning und Trainings: Neuronic vermittelt erfahrene KI-Freelancer aus Österreich, Deutschland und der Schweiz.",
   },
 };
 
@@ -52,35 +44,9 @@ export default function HomeAliasPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <MarketingNav lang={lang} />
       <main>
-        <Hero
-          lang={lang}
-          eyebrowKey="home.eyebrow"
-          headlineKey="home.headline"
-          headlineAccentKey="home.headline_accent"
-          subKey="home.sub"
-          primaryCtaKey="home.primary_cta"
-          primaryHref="#dogfood"
-          secondaryCtaKey="home.secondary_cta"
-          secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
-          photo={{
-            src: "/marketing/home-hero.jpg",
-            alt: "Frau nimmt lächelnd einen Anruf auf dem Handy entgegen",
-            slogan: t(lang, "home.hero_photo_slogan"),
-            priority: true,
-          }}
-        />
-        <LogoCloud lang={lang} sectionKey="shared.clients" />
-        <LogoCloud lang={lang} sectionKey="shared.competence" />
-        <SplitFocus lang={lang} />
-        <ShowcaseTeaser lang={lang} />
-        <HowItWorks lang={lang} sectionKey="home.how_it_works" />
-        <div id="dogfood">
-          <DogfoodCTA lang={lang} variant="home" />
-        </div>
-        <CTAFooter lang={lang} sectionKey="home.final_cta" />
+        <ExpertHome lang={lang} />
       </main>
       <MarketingFooter lang={lang} />
-      <StickyCTABar lang={lang} variant="home" />
     </div>
   );
 }

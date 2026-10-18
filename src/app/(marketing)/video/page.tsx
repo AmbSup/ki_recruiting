@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { MarketingNav } from "../_components/marketing-nav";
+import { MarketingFooter } from "../_components/marketing-footer";
 import { Camera, Captions, Check, Clapperboard, Film, Scissors, Sparkles } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -53,16 +55,7 @@ const contactHref = "https://cal.com/martin-amon-l2hybo/30min";
 export default function VideoPage() {
   return (
     <div className="min-h-screen bg-surface">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6">
-        <a href="#top" className="flex items-center gap-3">
-          <Image src="/branding/neuronic-logo.png" alt="" width={32} height={32} className="rounded" />
-          <span className="font-headline italic text-on-surface">Video und Animationen</span>
-        </a>
-        <nav className="flex items-center gap-6 text-sm font-medium text-on-surface-variant">
-          <a href="#top" className="hover:text-on-surface">Videos</a>
-          <a href="#animationen" className="hover:text-on-surface">Animationen</a>
-        </nav>
-      </header>
+      <MarketingNav lang="de" />
       <main>
         <section id="top" className="mx-auto max-w-4xl px-6 pb-16 pt-8 lg:pb-24 lg:pt-12">
           <h1 className="max-w-2xl text-balance font-headline text-[clamp(3rem,6vw,5.75rem)] font-semibold leading-[0.98] tracking-[-0.03em] text-on-surface">
@@ -225,24 +218,7 @@ export default function VideoPage() {
         </section>
       </main>
 
-      {/* Footer auf das gesetzlich Notwendige reduziert: nur Datenschutz + Impressum,
-          keine Links zu den anderen Neuronic-Automation-Produkten, kein Kontakt-Link
-          (die CTAs auf der Seite decken das ab). */}
-      <footer className="mt-24 border-t border-slate-100 bg-white/50">
-        <div className="mx-auto max-w-6xl px-6 py-10">
-          <div className="flex flex-wrap items-center justify-between gap-6 text-sm">
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              <a href="https://www.neuronic-automation.ai/datenschutz" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900">
-                Datenschutz
-              </a>
-              <a href="https://www.neuronic-automation.ai/impressum" target="_blank" rel="noopener noreferrer" className="text-slate-600 hover:text-slate-900">
-                Impressum
-              </a>
-            </div>
-            <span className="text-xs text-slate-400">© {new Date().getFullYear()} · Alle Rechte vorbehalten</span>
-          </div>
-        </div>
-      </footer>
+      <MarketingFooter lang="de" />
     </div>
   );
 }

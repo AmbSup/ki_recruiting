@@ -1,22 +1,14 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { t } from "../_lib/t";
 import { MarketingNav } from "../_components/marketing-nav";
-import { Hero } from "../_components/hero";
-import { LogoCloud } from "../_components/logo-cloud";
-import { SplitFocus } from "../_components/split-focus";
-import { HowItWorks } from "../_components/how-it-works";
-import { DogfoodCTA } from "../_components/dogfood-cta";
-import { ShowcaseTeaser } from "../_components/showcase-teaser";
-import { CTAFooter } from "../_components/cta-footer";
+import { ExpertHome } from "../_components/expert-home";
 import { MarketingFooter } from "../_components/marketing-footer";
-import { StickyCTABar } from "../_components/sticky-cta-bar";
 
 export const metadata: Metadata = {
-  title: "AI Funnel Expert — The AI Call in 30 Seconds",
+  title: "Neuronic — AI Experts & Freelancers for Your AI Project",
   description:
-    "AI funnels for Sales and Recruiting. Your lead or candidate gets called back within 30 seconds. Fully automated. 24/7.",
+    "AI strategy, AI Act, GenAI, AI agents, automation, machine learning and training: Neuronic connects you with experienced AI freelancers from Austria, Germany and Switzerland.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/en",
     languages: {
@@ -29,15 +21,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://app.neuronic-automation.ai/en",
-    title: "AI Funnel Expert — The AI Call in 30 Seconds",
+    title: "Neuronic — AI Experts & Freelancers for Your AI Project",
     description:
-      "AI funnels for Sales and Recruiting. Your lead or candidate gets called back within 30 seconds. Fully automated. 24/7.",
+      "AI strategy, AI Act, GenAI, AI agents, automation, machine learning and training: Neuronic connects you with experienced AI freelancers from Austria, Germany and Switzerland.",
   },
   twitter: {
     card: "summary",
-    title: "AI Funnel Expert — The AI Call in 30 Seconds",
+    title: "Neuronic — AI Experts & Freelancers for Your AI Project",
     description:
-      "AI funnels for Sales and Recruiting. Your lead or candidate gets called back within 30 seconds. Fully automated. 24/7.",
+      "AI strategy, AI Act, GenAI, AI agents, automation, machine learning and training: Neuronic connects you with experienced AI freelancers from Austria, Germany and Switzerland.",
   },
 };
 
@@ -52,35 +44,9 @@ export default async function EnHomePage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       <MarketingNav lang={lang} />
       <main>
-        <Hero
-          lang={lang}
-          eyebrowKey="home.eyebrow"
-          headlineKey="home.headline"
-          headlineAccentKey="home.headline_accent"
-          subKey="home.sub"
-          primaryCtaKey="home.primary_cta"
-          primaryHref="#dogfood"
-          secondaryCtaKey="home.secondary_cta"
-          secondaryHref="https://cal.com/martin-amon-l2hybo/30min"
-          photo={{
-            src: "/marketing/home-hero.jpg",
-            alt: "Woman smiling while taking a call on her phone",
-            slogan: t(lang, "home.hero_photo_slogan"),
-            priority: true,
-          }}
-        />
-        <LogoCloud lang={lang} sectionKey="shared.clients" />
-        <LogoCloud lang={lang} sectionKey="shared.competence" />
-        <SplitFocus lang={lang} />
-        <ShowcaseTeaser lang={lang} />
-        <HowItWorks lang={lang} sectionKey="home.how_it_works" />
-        <div id="dogfood">
-          <DogfoodCTA lang={lang} variant="home" />
-        </div>
-        <CTAFooter lang={lang} sectionKey="home.final_cta" />
+        <ExpertHome lang={lang} />
       </main>
       <MarketingFooter lang={lang} />
-      <StickyCTABar lang={lang} variant="home" />
     </div>
   );
 }
