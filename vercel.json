@@ -4,5 +4,9 @@
       "path": "/api/cron/retention-purge",
       "schedule": "0 3 * * *"
     }
+  ],
+  "redirects": [
+    { "source": "/pricing", "destination": "/", "permanent": false },
+    { "source": "/en/pricing", "destination": "/en", "permanent": false }
   ]
 }

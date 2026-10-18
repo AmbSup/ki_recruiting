@@ -17,7 +17,6 @@ const ENTRIES: Entry[] = [
   { de: "/", en: "/en", priority: 1, changeFrequency: "weekly" },
   { de: "/recruiting", en: "/en/recruiting", priority: 0.9, changeFrequency: "weekly" },
   { de: "/sales", en: "/en/sales", priority: 0.9, changeFrequency: "weekly" },
-  { de: "/pricing", en: "/en/pricing", priority: 0.8, changeFrequency: "monthly" },
   { de: "/kmu", en: "/en/kmu", priority: 0.7, changeFrequency: "monthly" },
   { de: "/wissen", en: "/en/wissen", priority: 0.7, changeFrequency: "monthly" },
   { de: "/aria", en: "/en/aria", priority: 0.7, changeFrequency: "monthly" },

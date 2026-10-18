@@ -13,7 +13,6 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
   const blogHref = lang === "de" ? "/blog" : "/en/blog";
   const pilotHref = lang === "de" ? "/pilot-30-tage" : "/en/pilot-30-tage";
   const toolsHref = lang === "de" ? "/innovations-werkzeuge" : "/en/innovations-werkzeuge";
-  const pricingHref = lang === "de" ? "/pricing" : "/en/pricing";
   const email = t(lang, "footer.contact.email");
   const phone = t(lang, "footer.contact.phone");
   const phoneHref = `tel:${phone.replace(/\s+/g, "")}`;
@@ -81,11 +80,6 @@ export function MarketingFooter({ lang }: { lang: Lang }) {
               <li>
                 <Link href={toolsHref} className="text-slate-600 hover:text-slate-900">
                   {t(lang, "footer.links.tools")}
-                </Link>
-              </li>
-              <li>
-                <Link href={pricingHref} className="text-slate-600 hover:text-slate-900">
-                  {t(lang, "footer.links.pricing")}
                 </Link>
               </li>
               <li>

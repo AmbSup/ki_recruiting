@@ -10,7 +10,7 @@ import { t, type Lang } from "../_lib/t";
 import { BRAND_COLOR } from "../_lib/brand";
 
 // Sticky Top Nav. Logo (Home), zwei Dropdown-Gruppen (Lösungen, Ressourcen),
-// Live-Funnels, Preise, LangSwitcher, Login, Demo-CTA. Mit 10+ Links passt
+// Live-Funnels, LangSwitcher, Login, Demo-CTA. Mit 10+ Links passt
 // eine flache Leiste nicht in max-w-6xl — daher gruppiert ab lg, darunter
 // Burger-Menü mit allen Links. Aktive Seite (bzw. Gruppe mit aktiver Seite)
 // bekommt einen Unterstrich in Markenfarbe.
@@ -50,7 +50,6 @@ export function MarketingNav({ lang }: { lang: Lang }) {
 
   const topItems: NavItem[] = [
     { href: "/showcase", labelKey: "nav.showcase" },
-    { href: p("/pricing"), labelKey: "nav.pricing" },
   ];
 
   const [openGroup, setOpenGroup] = useState<string | null>(null);
