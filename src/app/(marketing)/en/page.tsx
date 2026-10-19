@@ -6,9 +6,9 @@ import { ExpertHome } from "../_components/expert-home";
 import { MarketingFooter } from "../_components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "Neuronic — AI Experts & Freelancers for Your AI Project",
+  title: "AI Experts — The AI Consultancy for Your Project, Your Business and Your Drive Forward",
   description:
-    "AI strategy, AI Act, GenAI, AI agents, automation, machine learning and training: Neuronic connects you with experienced AI freelancers from Austria, Germany and Switzerland.",
+    "AI consulting from strategy to production: AI Act, generative AI, AI agents, automation, machine learning and training — for companies in Austria, Germany and Switzerland.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/en",
     languages: {
@@ -21,15 +21,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://app.neuronic-automation.ai/en",
-    title: "Neuronic — AI Experts & Freelancers for Your AI Project",
+    title: "AI Experts — The AI Consultancy for Your Project, Your Business and Your Drive Forward",
     description:
-      "AI strategy, AI Act, GenAI, AI agents, automation, machine learning and training: Neuronic connects you with experienced AI freelancers from Austria, Germany and Switzerland.",
+      "AI consulting from strategy to production: AI Act, generative AI, AI agents, automation, machine learning and training — for companies in Austria, Germany and Switzerland.",
   },
   twitter: {
     card: "summary",
-    title: "Neuronic — AI Experts & Freelancers for Your AI Project",
+    title: "AI Experts — The AI Consultancy for Your Project, Your Business and Your Drive Forward",
     description:
-      "AI strategy, AI Act, GenAI, AI agents, automation, machine learning and training: Neuronic connects you with experienced AI freelancers from Austria, Germany and Switzerland.",
+      "AI consulting from strategy to production: AI Act, generative AI, AI agents, automation, machine learning and training — for companies in Austria, Germany and Switzerland.",
   },
 };
 

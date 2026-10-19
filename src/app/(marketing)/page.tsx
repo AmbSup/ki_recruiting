@@ -6,12 +6,12 @@ import { ExpertHome } from "./_components/expert-home";
 import { MarketingFooter } from "./_components/marketing-footer";
 
 // DE Home (Root /) — Auth-aware: eingeloggter Operator → Dashboard.
-// Für alle sonst: Marketing-Landing als KI-Expert:innen-Netzwerk (ExpertHome).
+// Für alle sonst: Marketing-Landing als KI-Beratung (ExpertHome).
 
 export const metadata: Metadata = {
-  title: "Neuronic — KI-Expert:innen & Freelancer für dein KI-Projekt",
+  title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
   description:
-    "KI-Strategie, AI Act, GenAI, KI-Agenten, Automatisierung, Machine Learning und Trainings: Neuronic vermittelt erfahrene KI-Freelancer aus Österreich, Deutschland und der Schweiz.",
+    "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/",
     languages: {
@@ -24,15 +24,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     url: "https://app.neuronic-automation.ai/",
-    title: "Neuronic — KI-Expert:innen & Freelancer für dein KI-Projekt",
+    title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
     description:
-      "KI-Strategie, AI Act, GenAI, KI-Agenten, Automatisierung, Machine Learning und Trainings: Neuronic vermittelt erfahrene KI-Freelancer aus Österreich, Deutschland und der Schweiz.",
+      "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
   },
   twitter: {
     card: "summary",
-    title: "Neuronic — KI-Expert:innen & Freelancer für dein KI-Projekt",
+    title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
     description:
-      "KI-Strategie, AI Act, GenAI, KI-Agenten, Automatisierung, Machine Learning und Trainings: Neuronic vermittelt erfahrene KI-Freelancer aus Österreich, Deutschland und der Schweiz.",
+      "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
   },
 };
 

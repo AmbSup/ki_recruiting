@@ -49,6 +49,7 @@ export function MarketingNav({ lang }: { lang: Lang }) {
   ];
 
   const topItems: NavItem[] = [
+    { href: p("/netzwerk"), labelKey: "nav.network" },
     { href: "/showcase", labelKey: "nav.showcase" },
   ];
 

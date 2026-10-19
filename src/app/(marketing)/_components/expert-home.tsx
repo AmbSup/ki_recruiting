@@ -1,10 +1,10 @@
 import Link from "next/link";
 import {
+  ArrowRight,
   Bot,
   Brain,
   Briefcase,
   Check,
-  Cloud,
   Compass,
   Cpu,
   GraduationCap,
@@ -15,18 +15,17 @@ import {
 } from "lucide-react";
 import { dict, type Lang } from "../_lib/dict";
 import { BRAND_COLOR } from "../_lib/brand";
-import { EXPERTS, expertSlug, type Area } from "../_lib/experts";
 import { LogoCloud } from "./logo-cloud";
 import { Faq } from "./faq";
 import { FaqJsonLd } from "./json-ld";
 import { CTAFooter } from "./cta-footer";
+import { AREA_STYLE, CAL_HREF, SectionHead, type OfferGroup } from "./expert-shared";
 
-// Startseite als KI-Expert:innen-Netzwerk (Aufbau angelehnt an klassische
-// KI-Beratungs-Sites: Hero mit Kennzahlen → Logos → Leistungen → Angebot im
-// Detail (mit verlinkten Berater:innen) → Warum → Netzwerk → Ablauf → Zielgruppen → eigene Produkte → FAQ → CTA).
+// Startseite als KI-Beratung (angelehnt an klassische KI-Beratungs-Sites):
+// Hero mit Schwerpunkten → Logos → Leistungen → Leistungsspektrum → Warum →
+// Team-Teaser (Link /netzwerk) → Ablauf → Zielgruppen → eigene Produkte → FAQ → CTA.
+// Bewusst ohne Personen/Namen — die stehen auf /netzwerk (NetworkPage).
 // Wird von "/", "/home" und "/en" geteilt; Copy liegt in dict.expert_home.
-
-const CAL_HREF = "https://cal.com/martin-amon-l2hybo/30min";
 
 const ICONS: Record<string, LucideIcon> = {
   compass: Compass,
@@ -40,77 +39,16 @@ const ICONS: Record<string, LucideIcon> = {
   briefcase: Briefcase,
 };
 
-// Tags in experts.ts sind meist Eigennamen; nur die deutschen Begriffe übersetzen.
-const TAG_EN: Record<string, string> = {
-  Strategie: "Strategy",
-  Ethik: "Ethics",
-  Architektur: "Architecture",
-  "Open-Source-LLMs": "Open-source LLMs",
-};
-
-// "Dr.-Ing. Derek M." → "DM": Titel (enthalten einen Punkt, kein Initial) überspringen.
-function initials(name: string): string {
-  return name
-    .split(" ")
-    .filter((part) => !/\.\S/.test(part) && !/^(Dr|Prof)\.?$/.test(part))
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-// Farbe je Angebotsblock. Alle Töne dunkel genug für weiße Schrift (WCAG AA ≥ 4.5:1).
-const AREA_STYLE: Record<Area, { color: string; icon: LucideIcon }> = {
-  consulting: { color: "#1A3A6E", icon: Scale },
-  agents: { color: "#006B80", icon: Bot },
-  automation: { color: "#0E6E5A", icon: Workflow },
-  ml: { color: "#5B21B6", icon: Brain },
-  cloud: { color: "#9A3412", icon: Cloud },
-};
-
 const PRODUCT_COLORS = ["#1A3A6E", "#0E6E5A", "#006B80", "#5B21B6", "#9A3412"];
 
-type Stat = { value: string; label: string };
-type OfferGroup = { area: Area; title: string; body: string; items: string[] };
 type Card = { icon?: string; title: string; body: string; href?: string };
 type Step = { title: string; body: string };
-
-function SectionHead({
-  eyebrow,
-  headline,
-  sub,
-  dark = false,
-}: {
-  eyebrow: string;
-  headline: string;
-  sub?: string;
-  dark?: boolean;
-}) {
-  return (
-    <div className="mx-auto mb-12 max-w-2xl text-center">
-      <p
-        className="mb-3 font-label text-[13px] font-bold uppercase tracking-[0.18em]"
-        style={{ color: dark ? "#5FD4EA" : BRAND_COLOR }}
-      >
-        {eyebrow}
-      </p>
-      <h2
-        className={`font-headline text-3xl font-semibold leading-tight tracking-[-0.02em] text-balance sm:text-[2.6rem] ${
-          dark ? "text-white" : "text-slate-900"
-        }`}
-      >
-        {headline}
-      </h2>
-      {sub && (
-        <p className={`mt-4 font-body text-lg leading-relaxed ${dark ? "text-white/70" : "text-slate-600"}`}>{sub}</p>
-      )}
-    </div>
-  );
-}
 
 export function ExpertHome({ lang }: { lang: Lang }) {
   const c = dict[lang].expert_home;
   const hero = c.hero;
+  const groups = c.stack.groups as OfferGroup[];
+  const networkHref = lang === "de" ? "/netzwerk" : "/en/netzwerk";
 
   return (
     <>
@@ -127,7 +65,7 @@ export function ExpertHome({ lang }: { lang: Lang }) {
           style={{ background: "radial-gradient(circle, #5B21B6, transparent 70%)" }}
         />
         <div className="relative mx-auto max-w-7xl px-5 pb-16 pt-14 sm:px-6 sm:pb-20 sm:pt-20">
-          <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:gap-16">
+          <div className="grid gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:items-center lg:gap-16">
             <div className="text-center lg:text-left">
               <p
                 className="mb-5 inline-flex items-center gap-2 rounded-full px-4 py-1.5 font-label text-xs font-bold uppercase tracking-[0.16em] text-white"
@@ -136,9 +74,8 @@ export function ExpertHome({ lang }: { lang: Lang }) {
                 <span className="h-1.5 w-1.5 rounded-full bg-[#5FD4EA]" aria-hidden />
                 {hero.eyebrow}
               </p>
-              <h1 className="mb-6 font-headline text-[clamp(2.75rem,6vw,5rem)] font-semibold leading-[1.02] tracking-[-0.03em] text-[#101820] text-balance">
-                {hero.headline}
-                <br />
+              <h1 className="mb-6 font-headline text-[clamp(2.5rem,5.2vw,4.5rem)] font-semibold leading-[1.04] tracking-[-0.03em] text-[#101820] text-balance">
+                {hero.headline}{" "}
                 <span
                   className="bg-clip-text text-transparent"
                   style={{ backgroundImage: `linear-gradient(90deg, ${BRAND_COLOR}, #5B21B6)` }}
@@ -159,7 +96,7 @@ export function ExpertHome({ lang }: { lang: Lang }) {
                   {hero.primary_cta}
                 </a>
                 <a
-                  href="#expertise"
+                  href="#leistungen"
                   className="inline-flex min-h-12 items-center rounded-xl border border-slate-300 bg-white px-6 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-500 hover:text-slate-950"
                 >
                   {hero.secondary_cta}
@@ -180,6 +117,7 @@ export function ExpertHome({ lang }: { lang: Lang }) {
               </ul>
             </div>
 
+            {/* Schwerpunkte statt Kennzahlen — verlinkt auf die Blöcke im Leistungsspektrum */}
             <div
               className="relative overflow-hidden rounded-3xl p-7 text-white shadow-[0_30px_70px_-30px_rgba(10,26,31,0.75)] sm:p-9"
               style={{ background: "linear-gradient(145deg, #0A1A1F 0%, #0B3440 60%, #1E1B4B 100%)" }}
@@ -190,19 +128,28 @@ export function ExpertHome({ lang }: { lang: Lang }) {
                 style={{ backgroundColor: BRAND_COLOR }}
               />
               <p className="relative font-label text-xs font-bold uppercase tracking-[0.16em] text-white/60">{hero.card_title}</p>
-              <dl className="relative mt-6 grid grid-cols-2 gap-4">
-                {(hero.stats as Stat[]).map((s) => (
-                  <div key={s.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                    <dt className="sr-only">{s.label}</dt>
-                    <dd>
-                      <span className="block font-headline text-4xl font-semibold tracking-tight text-[#5FD4EA] sm:text-5xl">
-                        {s.value}
-                      </span>
-                      <span className="mt-1 block text-sm text-white/75">{s.label}</span>
-                    </dd>
-                  </div>
-                ))}
-              </dl>
+              <ul className="relative mt-5 space-y-2.5">
+                {groups.map((group) => {
+                  const { color, icon: Icon } = AREA_STYLE[group.area];
+                  return (
+                    <li key={group.area}>
+                      <a
+                        href={`#area-${group.area}`}
+                        className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 transition hover:bg-white/10"
+                      >
+                        <span
+                          className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-white"
+                          style={{ backgroundColor: color }}
+                        >
+                          <Icon className="h-4 w-4" aria-hidden />
+                        </span>
+                        <span className="flex-1 text-sm font-medium text-white">{group.title}</span>
+                        <ArrowRight className="h-4 w-4 text-white/40 transition group-hover:translate-x-0.5 group-hover:text-white" aria-hidden />
+                      </a>
+                    </li>
+                  );
+                })}
+              </ul>
               <p className="relative mt-6 border-t border-white/10 pt-5 text-sm text-white/75">{hero.card_note}</p>
             </div>
           </div>
@@ -212,7 +159,7 @@ export function ExpertHome({ lang }: { lang: Lang }) {
       <LogoCloud lang={lang} sectionKey="shared.clients" />
 
       {/* Leistungen */}
-      <section id="expertise" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-20">
+      <section id="leistungen" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-20">
         <SectionHead eyebrow={c.expertise.eyebrow} headline={c.expertise.headline} sub={c.expertise.sub} />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {(c.expertise.items as Card[]).map((item) => {
@@ -236,18 +183,18 @@ export function ExpertHome({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      {/* Angebot im Detail: alle Angebote aus der Berater-Liste, je Block die passenden Berater:innen verlinkt */}
+      {/* Leistungsspektrum: Blöcke je Themenbereich, Link zu den passenden Expert:innen auf /netzwerk */}
       <section className="bg-slate-100/70 py-20">
         <div className="mx-auto max-w-6xl px-6">
           <SectionHead eyebrow={c.stack.eyebrow} headline={c.stack.headline} sub={c.stack.sub} />
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-            {(c.stack.groups as OfferGroup[]).map((group) => {
-              const experts = EXPERTS.filter((e) => e.areas.includes(group.area));
+            {groups.map((group) => {
               const { color, icon: Icon } = AREA_STYLE[group.area];
               return (
                 <div
                   key={group.area}
-                  className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-20px_rgba(15,23,42,0.35)] ring-1 ring-slate-200"
+                  id={`area-${group.area}`}
+                  className="flex scroll-mt-28 flex-col overflow-hidden rounded-2xl bg-white shadow-[0_12px_32px_-20px_rgba(15,23,42,0.35)] ring-1 ring-slate-200"
                 >
                   <div className="flex items-center gap-3 px-6 py-4 text-white" style={{ backgroundColor: color }}>
                     <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/15">
@@ -269,33 +216,16 @@ export function ExpertHome({ lang }: { lang: Lang }) {
                         </li>
                       ))}
                     </ul>
-                    {experts.length > 0 && (
-                      <div className="mt-auto pt-6">
-                        <p className="mb-2.5 border-t border-slate-100 pt-4 font-label text-[11px] font-bold uppercase tracking-widest text-slate-500">
-                          {c.stack.experts_label} · {experts.length}
-                        </p>
-                        <ul className="flex flex-wrap gap-1.5">
-                          {experts.map((e) => (
-                            <li key={e.name}>
-                              <a
-                                href={`#expert-${expertSlug(e.name)}`}
-                                className="inline-flex items-center gap-1.5 rounded-full border bg-white px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-950"
-                                style={{ borderColor: `${color}55` }}
-                              >
-                                <span
-                                  className="flex h-4 w-4 items-center justify-center rounded-full text-[8px] font-bold text-white"
-                                  style={{ backgroundColor: color }}
-                                  aria-hidden
-                                >
-                                  {initials(e.name)}
-                                </span>
-                                {e.name}
-                              </a>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    <div className="mt-auto pt-6">
+                      <Link
+                        href={`${networkHref}#area-${group.area}`}
+                        className="inline-flex items-center gap-1.5 border-t border-slate-100 pt-4 text-sm font-semibold transition hover:gap-2.5"
+                        style={{ color }}
+                      >
+                        {c.stack.network_link}
+                        <ArrowRight className="h-4 w-4" aria-hidden />
+                      </Link>
+                    </div>
                   </div>
                 </div>
               );
@@ -324,53 +254,39 @@ export function ExpertHome({ lang }: { lang: Lang }) {
         </div>
       </section>
 
-      {/* Netzwerk (Vorname + Initial, keine Kontaktdaten — siehe _lib/experts.ts) */}
-      <section id="netzwerk" className="mx-auto max-w-6xl scroll-mt-24 px-6 py-20">
-        <SectionHead eyebrow={c.network.eyebrow} headline={c.network.headline} sub={c.network.sub} />
-        <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {EXPERTS.map((expert) => {
-            const color = AREA_STYLE[expert.areas[0]].color;
-            return (
-              <li
-                key={expert.name}
-                id={`expert-${expertSlug(expert.name)}`}
-                className="flex scroll-mt-28 gap-4 rounded-2xl border border-slate-200 bg-white p-5 transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_-18px_rgba(15,23,42,0.35)] target:border-primary target:ring-4 target:ring-primary/30"
-              >
+      {/* Team-Teaser → /netzwerk */}
+      <section className="mx-auto max-w-6xl px-6 py-20">
+        <div className="grid items-center gap-10 overflow-hidden rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 lg:grid-cols-[1.2fr_0.8fr]">
+          <div>
+            <p className="mb-3 font-label text-[13px] font-bold uppercase tracking-[0.18em]" style={{ color: BRAND_COLOR }}>
+              {c.team.eyebrow}
+            </p>
+            <h2 className="font-headline text-3xl font-semibold leading-tight tracking-[-0.02em] text-slate-900 text-balance sm:text-[2.4rem]">
+              {c.team.headline}
+            </h2>
+            <p className="mt-4 font-body text-lg leading-relaxed text-slate-600">{c.team.sub}</p>
+            <Link
+              href={networkHref}
+              className="mt-7 inline-flex min-h-12 items-center gap-2 rounded-xl bg-[#0A1A1F] px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-[#0B3440]"
+            >
+              {c.team.cta}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          </div>
+          <div className="flex flex-wrap justify-center gap-3 lg:justify-end" aria-hidden>
+            {groups.map((group) => {
+              const { color, icon: Icon } = AREA_STYLE[group.area];
+              return (
                 <span
-                  className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full font-headline text-sm font-semibold text-white shadow-sm"
+                  key={group.area}
+                  className="flex h-16 w-16 items-center justify-center rounded-2xl text-white shadow-md sm:h-20 sm:w-20"
                   style={{ backgroundColor: color }}
-                  aria-hidden
                 >
-                  {initials(expert.name)}
+                  <Icon className="h-7 w-7 sm:h-8 sm:w-8" />
                 </span>
-                <div className="min-w-0">
-                  <p className="font-headline font-semibold text-slate-900">{expert.name}</p>
-                  <p className="text-xs text-slate-500">{c.network.country[expert.country]}</p>
-                  <p className="mt-2 text-sm leading-snug text-slate-700">{expert.focus[lang]}</p>
-                  <ul className="mt-3 flex flex-wrap gap-1.5">
-                    {expert.tags.map((tag) => (
-                      <li
-                        key={tag}
-                        className="rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
-                        style={{ backgroundColor: color }}
-                      >
-                        {lang === "en" ? (TAG_EN[tag] ?? tag) : tag}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        <div className="mt-10 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-slate-300 bg-white/60 px-6 py-5 text-center sm:flex-row">
-          <p className="text-sm text-slate-700">{c.network.join}</p>
-          <a
-            href="mailto:office@neuronic-automation.ai"
-            className="inline-flex items-center rounded-full bg-primary-dim px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#00586a]"
-          >
-            {c.network.join_cta}
-          </a>
+              );
+            })}
+          </div>
         </div>
       </section>
 
