@@ -4,7 +4,7 @@ import { NetworkPage } from "../../_components/network-page";
 import { MarketingFooter } from "../../_components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "Our network — The AI experts behind Neuronic",
+  title: { absolute: "Our network – The AI experts behind Neuronic | AI Consulting Vienna" },
   description:
     "The experts Neuronic delivers AI projects with: AI strategy, AI Act, AI agents, automation, machine learning and cloud AI.",
   alternates: {

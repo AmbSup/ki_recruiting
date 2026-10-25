@@ -4,7 +4,7 @@ import { NetworkPage } from "../_components/network-page";
 import { MarketingFooter } from "../_components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "Unser Netzwerk — Die KI Expert:innen hinter Neuronic",
+  title: { absolute: "Unser Netzwerk – Die KI Expert:innen hinter Neuronic | KI-Beratung Wien" },
   description:
     "Die Expert:innen, mit denen Neuronic KI-Projekte umsetzt: KI-Strategie, AI Act, KI-Agenten, Automatisierung, Machine Learning und Cloud-KI.",
   alternates: {
