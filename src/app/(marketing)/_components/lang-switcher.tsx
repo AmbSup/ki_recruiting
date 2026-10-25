@@ -26,7 +26,7 @@ export function LangSwitcher({ current }: { current: Lang }) {
 }
 
 // DE-only Routen ohne EN-Pendant → Switcher fällt auf EN-Home zurück.
-const DE_ONLY = ["/video"];
+const DE_ONLY = ["/video", "/ki-agenten", "/ki-schulung", "/ai-act"];
 
 function mapPath(pathname: string, from: Lang, to: Lang): string {
   if (to === "en") {

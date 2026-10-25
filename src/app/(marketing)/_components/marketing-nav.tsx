@@ -25,6 +25,16 @@ export function MarketingNav({ lang }: { lang: Lang }) {
 
   const groups: NavGroup[] = [
     {
+      id: "consulting",
+      labelKey: "nav.group_consulting",
+      items: [
+        // Themenseiten existieren nur auf Deutsch — kein /en-Präfix.
+        { href: "/ki-agenten", labelKey: "nav.ki_agenten" },
+        { href: "/ki-schulung", labelKey: "nav.ki_schulung" },
+        { href: "/ai-act", labelKey: "nav.ai_act" },
+      ],
+    },
+    {
       id: "solutions",
       labelKey: "nav.group_solutions",
       items: [

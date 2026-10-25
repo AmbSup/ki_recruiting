@@ -11,9 +11,9 @@ import { MarketingFooter } from "./_components/marketing-footer";
 export const metadata: Metadata = {
   // Bing Webmaster Tools (zusätzlich zu public/BingSiteAuth.xml)
   verification: { other: { "msvalidate.01": "F0E78849D1F22B73C1FA7D6B65E6A163" } },
-  title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
+  title: { absolute: "KI-Beratung & KI-Agentur in Wien | KI Expert:innen – Neuronic" },
   description:
-    "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
+    "KI Expert:innen aus Wien: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU und Unternehmen in Österreich, Deutschland und der Schweiz – von der Strategie bis zum produktiven System.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/",
     languages: {
@@ -26,15 +26,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     url: "https://app.neuronic-automation.ai/",
-    title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
+    title: "KI-Beratung & KI-Agentur in Wien | KI Expert:innen – Neuronic",
     description:
-      "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
+      "KI Expert:innen aus Wien: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU und Unternehmen in Österreich, Deutschland und der Schweiz – von der Strategie bis zum produktiven System.",
   },
   twitter: {
     card: "summary",
-    title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
+    title: "KI-Beratung & KI-Agentur in Wien | KI Expert:innen – Neuronic",
     description:
-      "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
+      "KI Expert:innen aus Wien: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU und Unternehmen in Österreich, Deutschland und der Schweiz – von der Strategie bis zum produktiven System.",
   },
 };
 

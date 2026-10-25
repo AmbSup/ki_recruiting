@@ -15,9 +15,9 @@ import { StickyCTABar } from "../_components/sticky-cta-bar";
 const SALES_COLOR = "#1A3A6E";
 
 export const metadata: Metadata = {
-  title: "Für Vertrieb: KI ruft deinen Lead in 30 Sekunden zurück",
+  title: { absolute: "KI-Telefonassistent für den Vertrieb – ruft jeden Lead in 30 Sekunden zurück | Neuronic" },
   description:
-    "Speed-to-Lead ist die #1-Vertriebs-Kennzahl. Unser KI-Voice-Agent ruft jeden Funnel-Submit binnen Sekunden zurück — 24/7, vollautomatisch.",
+    "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wien.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/sales",
     languages: {
@@ -30,15 +30,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     url: "https://app.neuronic-automation.ai/sales",
-    title: "Für Vertrieb: KI ruft deinen Lead in 30 Sekunden zurück",
+    title: "KI-Telefonassistent für den Vertrieb – ruft jeden Lead in 30 Sekunden zurück | Neuronic",
     description:
-      "Speed-to-Lead ist die #1-Vertriebs-Kennzahl. Unser KI-Voice-Agent ruft jeden Funnel-Submit binnen Sekunden zurück — 24/7, vollautomatisch.",
+      "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wien.",
   },
   twitter: {
     card: "summary",
-    title: "Für Vertrieb: KI ruft deinen Lead in 30 Sekunden zurück",
+    title: "KI-Telefonassistent für den Vertrieb – ruft jeden Lead in 30 Sekunden zurück | Neuronic",
     description:
-      "Speed-to-Lead ist die #1-Vertriebs-Kennzahl. Unser KI-Voice-Agent ruft jeden Funnel-Submit binnen Sekunden zurück — 24/7, vollautomatisch.",
+      "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wien.",
   },
 };
 

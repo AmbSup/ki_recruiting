@@ -6,9 +6,9 @@ import { ExpertHome } from "../_components/expert-home";
 import { MarketingFooter } from "../_components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "AI Experts — The AI Consultancy for Your Project, Your Business and Your Drive Forward",
+  title: { absolute: "AI Consulting & AI Agency in Vienna | AI Experts – Neuronic" },
   description:
-    "AI consulting from strategy to production: AI Act, generative AI, AI agents, automation, machine learning and training — for companies in Austria, Germany and Switzerland.",
+    "AI experts from Vienna: AI consulting, AI agents, AI training and AI Act support for SMBs and companies in Austria, Germany and Switzerland – from strategy to production.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/en",
     languages: {
@@ -21,15 +21,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://app.neuronic-automation.ai/en",
-    title: "AI Experts — The AI Consultancy for Your Project, Your Business and Your Drive Forward",
+    title: "AI Consulting & AI Agency in Vienna | AI Experts – Neuronic",
     description:
-      "AI consulting from strategy to production: AI Act, generative AI, AI agents, automation, machine learning and training — for companies in Austria, Germany and Switzerland.",
+      "AI experts from Vienna: AI consulting, AI agents, AI training and AI Act support for SMBs and companies in Austria, Germany and Switzerland – from strategy to production.",
   },
   twitter: {
     card: "summary",
-    title: "AI Experts — The AI Consultancy for Your Project, Your Business and Your Drive Forward",
+    title: "AI Consulting & AI Agency in Vienna | AI Experts – Neuronic",
     description:
-      "AI consulting from strategy to production: AI Act, generative AI, AI agents, automation, machine learning and training — for companies in Austria, Germany and Switzerland.",
+      "AI experts from Vienna: AI consulting, AI agents, AI training and AI Act support for SMBs and companies in Austria, Germany and Switzerland – from strategy to production.",
   },
 };
 

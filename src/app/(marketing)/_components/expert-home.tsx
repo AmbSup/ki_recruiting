@@ -164,11 +164,10 @@ export function ExpertHome({ lang }: { lang: Lang }) {
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {(c.expertise.items as Card[]).map((item) => {
             const Icon = ICONS[item.icon ?? ""] ?? Sparkles;
-            return (
-              <div
-                key={item.title}
-                className="rounded-2xl border border-slate-200 bg-white p-6 transition duration-200 hover:-translate-y-1 hover:border-transparent hover:shadow-[0_18px_40px_-18px_rgba(15,23,42,0.3)]"
-              >
+            const cardClass =
+              "flex flex-col rounded-2xl border border-slate-200 bg-white p-6 transition duration-200 hover:-translate-y-1 hover:border-transparent hover:shadow-[0_18px_40px_-18px_rgba(15,23,42,0.3)]";
+            const content = (
+              <>
                 <span
                   className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-xl text-white shadow-sm"
                   style={{ background: `linear-gradient(135deg, ${BRAND_COLOR}, #006B80)` }}
@@ -176,7 +175,21 @@ export function ExpertHome({ lang }: { lang: Lang }) {
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
                 <h3 className="mb-2 font-headline text-lg font-semibold text-slate-900">{item.title}</h3>
-                <p className="font-body text-sm leading-relaxed text-slate-600">{item.body}</p>
+                <p className="flex-1 font-body text-sm leading-relaxed text-slate-600">{item.body}</p>
+                {item.href && (
+                  <span className="mt-4 text-sm font-semibold" style={{ color: "#006B80" }}>
+                    {c.expertise.more}
+                  </span>
+                )}
+              </>
+            );
+            return item.href ? (
+              <Link key={item.title} href={item.href} className={cardClass}>
+                {content}
+              </Link>
+            ) : (
+              <div key={item.title} className={cardClass}>
+                {content}
               </div>
             );
           })}
