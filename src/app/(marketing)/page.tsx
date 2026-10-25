@@ -9,6 +9,8 @@ import { MarketingFooter } from "./_components/marketing-footer";
 // Für alle sonst: Marketing-Landing als KI-Beratung (ExpertHome).
 
 export const metadata: Metadata = {
+  // Bing Webmaster Tools (zusätzlich zu public/BingSiteAuth.xml)
+  verification: { other: { "msvalidate.01": "F0E78849D1F22B73C1FA7D6B65E6A163" } },
   title: "KI Expert:innen — Die KI-Beratung für Ihr Projekt, Ihr KMU und Ihren Drive forward",
   description:
     "KI-Beratung von der Strategie bis zum produktiven System: AI Act, Generative AI, KI-Agenten, Automatisierung, Machine Learning und Schulungen — für Unternehmen in Österreich, Deutschland und der Schweiz.",
