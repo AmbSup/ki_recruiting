@@ -17,7 +17,7 @@ const SALES_COLOR = "#1A3A6E";
 export const metadata: Metadata = {
   title: { absolute: "KI-Telefonassistent für den Vertrieb – ruft jeden Lead in 30 Sekunden zurück | Neuronic" },
   description:
-    "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wien.",
+    "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wiener Neustadt, für ganz Österreich.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/sales",
     languages: {
@@ -32,13 +32,13 @@ export const metadata: Metadata = {
     url: "https://app.neuronic-automation.ai/sales",
     title: "KI-Telefonassistent für den Vertrieb – ruft jeden Lead in 30 Sekunden zurück | Neuronic",
     description:
-      "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wien.",
+      "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wiener Neustadt, für ganz Österreich.",
   },
   twitter: {
     card: "summary",
     title: "KI-Telefonassistent für den Vertrieb – ruft jeden Lead in 30 Sekunden zurück | Neuronic",
     description:
-      "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wien.",
+      "KI-Telefonassistent für den Vertrieb: Unser KI-Voice-Agent ruft jeden neuen Lead binnen 30 Sekunden zurück, qualifiziert ihn und bucht Termine – 24/7, vollautomatisch. Aus Wiener Neustadt, für ganz Österreich.",
   },
 };
 

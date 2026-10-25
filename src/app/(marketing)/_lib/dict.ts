@@ -42,12 +42,12 @@ export const dict: Record<Lang, Dict> = {
         eyebrow: "KI Expert:innen",
         headline: "Die KI-Beratung für Ihr Projekt, Ihr KMU",
         headline_accent: "und Ihren Drive forward.",
-        sub: "Wir begleiten Unternehmen von der ersten KI-Idee bis zum produktiven System — mit Strategie, AI-Act-Compliance, KI-Agenten, Automatisierung, Machine Learning und Schulungen. Beratung und Umsetzung aus Wien — ein Ansprechpartner, ein eingespieltes Team, klare Ergebnisse.",
+        sub: "Wir begleiten Unternehmen von der ersten KI-Idee bis zum produktiven System — mit Strategie, AI-Act-Compliance, KI-Agenten, Automatisierung, Machine Learning und Schulungen. Beratung und Umsetzung aus Wiener Neustadt für Wien und ganz Österreich — ein Ansprechpartner, ein eingespieltes Team, klare Ergebnisse.",
         primary_cta: "Projekt besprechen",
         secondary_cta: "Leistungen ansehen",
         trust: [
           "Strategie, Umsetzung und Training aus einer Hand",
-          "KI-Beratung & KI-Agentur aus Wien — für KMU, Mittelstand und Konzerne in AT, DE und CH",
+          "KI-Beratung & KI-Agentur für Wien, Niederösterreich und den DACH-Raum — für KMU, Mittelstand und Konzerne",
           "Zertifizierte KI-Beauftragte für AI Act & DSGVO",
         ],
         card_title: "Unsere Schwerpunkte",
@@ -168,10 +168,10 @@ export const dict: Record<Lang, Dict> = {
     // Blöcke werden generisch von TopicPage gerendert (type: cards | chips | bullets | steps | timeline | text).
     topics: {
       ki_agenten: {
-        eyebrow: "KI-Agenten · Beratung & Entwicklung aus Wien",
+        eyebrow: "KI-Agenten · Beratung & Entwicklung für Wien & NÖ",
         headline: "KI-Agenten für Unternehmen,",
         headline_accent: "die in Ihren Systemen arbeiten.",
-        sub: "Wir entwickeln KI-Agenten (AI Agents), die recherchieren, Entscheidungen vorbereiten und Aufgaben direkt in Ihren bestehenden Systemen erledigen — von E-Mail und CRM bis ERP. Beratung und Umsetzung aus Wien für Unternehmen in Österreich, Deutschland und der Schweiz.",
+        sub: "Wir entwickeln KI-Agenten (AI Agents), die recherchieren, Entscheidungen vorbereiten und Aufgaben direkt in Ihren bestehenden Systemen erledigen — von E-Mail und CRM bis ERP. Beratung und Umsetzung aus Wiener Neustadt — für Unternehmen in Wien, Niederösterreich und im gesamten DACH-Raum.",
         primary_cta: "KI-Agenten-Projekt besprechen",
         secondary_cta: "Einsatzbereiche ansehen",
         blocks: [
@@ -221,10 +221,10 @@ export const dict: Record<Lang, Dict> = {
         final_cta: { eyebrow: "KI-Agenten", headline: "Welche Aufgabe soll Ihr erster KI-Agent übernehmen?", sub: "In 30 Minuten klären wir Use Case, Systeme und Rahmen. Danach erhalten Sie einen konkreten Vorschlag.", cta: "Termin buchen" },
       },
       ki_schulung: {
-        eyebrow: "KI-Schulung & Workshops · Wien und remote",
+        eyebrow: "KI-Schulung & Workshops · Wien, NÖ und remote",
         headline: "KI-Schulung für Unternehmen,",
         headline_accent: "praxisnah für Ihr Team.",
-        sub: "Schulungen und Workshops für Mitarbeitende und Führungskräfte — vor Ort in Wien und Österreich oder remote. Ihr Team lernt, KI sicher und produktiv im Arbeitsalltag einzusetzen, abgestimmt auf Ihre Abläufe und Tools.",
+        sub: "Schulungen und Workshops für Mitarbeitende und Führungskräfte — vor Ort in Wien, Niederösterreich und ganz Österreich oder remote. Ihr Team lernt, KI sicher und produktiv im Arbeitsalltag einzusetzen, abgestimmt auf Ihre Abläufe und Tools.",
         primary_cta: "Schulung anfragen",
         secondary_cta: "Formate ansehen",
         blocks: [
@@ -259,7 +259,7 @@ export const dict: Record<Lang, Dict> = {
           heading: "Häufige Fragen zur KI-Schulung",
           items: [
             { q: "Für wen sind die Schulungen gedacht?", a: "Für Mitarbeitende ohne Vorkenntnisse, für Fachabteilungen, die KI konkret einsetzen wollen, und für Führungskräfte, die über KI-Projekte entscheiden." },
-            { q: "Finden die Schulungen vor Ort oder online statt?", a: "Beides ist möglich: vor Ort bei Ihnen in Wien und Österreich bzw. im DACH-Raum oder remote." },
+            { q: "Finden die Schulungen vor Ort oder online statt?", a: "Beides ist möglich: vor Ort bei Ihnen in Wien, Niederösterreich und ganz Österreich bzw. im DACH-Raum oder remote." },
             { q: "Hilft die Schulung bei der KI-Kompetenzpflicht des AI Act?", a: "Artikel 4 des AI Act verpflichtet Anbieter und Betreiber von KI-Systemen seit 2. Februar 2025, für ausreichende KI-Kompetenz ihres Personals zu sorgen. Unsere Schulungen können ein Baustein dafür sein — Umfang und Dokumentation stimmen wir mit Ihnen ab." },
             { q: "Was kostet eine KI-Schulung?", a: "Das hängt von Format, Dauer und Teilnehmerzahl ab. Nach einem kurzen Abstimmungsgespräch erhalten Sie ein konkretes Angebot." },
           ],
@@ -1738,7 +1738,7 @@ export const dict: Record<Lang, Dict> = {
         phone: "+43 677 63165057",
         linkedin: "LinkedIn",
       },
-      copyright: "Neuronic Automation — Wien, Österreich",
+      copyright: "Neuronic Automation — Wiener Neustadt, Österreich",
     },
   },
   en: {
@@ -1771,7 +1771,7 @@ export const dict: Record<Lang, Dict> = {
         eyebrow: "AI Experts",
         headline: "The AI consultancy for your project, your business",
         headline_accent: "and your drive forward.",
-        sub: "We guide companies from the first AI idea to a production system — with strategy, AI Act compliance, AI agents, automation, machine learning and training. Consulting and delivery from Vienna — one point of contact, a well-rehearsed team, clear results.",
+        sub: "We guide companies from the first AI idea to a production system — with strategy, AI Act compliance, AI agents, automation, machine learning and training. Consulting and delivery from Wiener Neustadt for Vienna and all of Austria — one point of contact, a well-rehearsed team, clear results.",
         primary_cta: "Discuss your project",
         secondary_cta: "See our services",
         trust: [
@@ -3099,7 +3099,7 @@ export const dict: Record<Lang, Dict> = {
         phone: "+43 677 63165057",
         linkedin: "LinkedIn",
       },
-      copyright: "Neuronic Automation — Vienna, Austria",
+      copyright: "Neuronic Automation — Wiener Neustadt, Austria",
     },
   },
 };

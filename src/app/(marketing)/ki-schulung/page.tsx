@@ -5,15 +5,15 @@ import { MarketingFooter } from "../_components/marketing-footer";
 
 // SEO-Themenseite (nur DE). Inhalt: dict.de.topics.ki_schulung
 export const metadata: Metadata = {
-  title: { absolute: "KI-Schulung & Workshops für Unternehmen in Wien und remote | Neuronic" },
-  description: "KI-Schulung für Mitarbeitende und Führungskräfte: praxisnahe Workshops zu ChatGPT, Copilot, Automatisierung und KI-Kompetenz nach Art. 4 AI Act – in Wien, Österreich oder remote.",
+  title: { absolute: "KI-Schulung & Workshops für Unternehmen in Wien, NÖ und remote | Neuronic" },
+  description: "KI-Schulung für Mitarbeitende und Führungskräfte: praxisnahe Workshops zu ChatGPT, Copilot, Automatisierung und KI-Kompetenz nach Art. 4 AI Act – vor Ort in Wien, Niederösterreich und ganz Österreich oder remote.",
   alternates: { canonical: "https://app.neuronic-automation.ai/ki-schulung" },
   openGraph: {
     type: "website",
     locale: "de_AT",
     url: "https://app.neuronic-automation.ai/ki-schulung",
-    title: "KI-Schulung & Workshops für Unternehmen in Wien und remote | Neuronic",
-    description: "KI-Schulung für Mitarbeitende und Führungskräfte: praxisnahe Workshops zu ChatGPT, Copilot, Automatisierung und KI-Kompetenz nach Art. 4 AI Act – in Wien, Österreich oder remote.",
+    title: "KI-Schulung & Workshops für Unternehmen in Wien, NÖ und remote | Neuronic",
+    description: "KI-Schulung für Mitarbeitende und Führungskräfte: praxisnahe Workshops zu ChatGPT, Copilot, Automatisierung und KI-Kompetenz nach Art. 4 AI Act – vor Ort in Wien, Niederösterreich und ganz Österreich oder remote.",
   },
 };
 

@@ -6,9 +6,9 @@ import { ExpertHome } from "../_components/expert-home";
 import { MarketingFooter } from "../_components/marketing-footer";
 
 export const metadata: Metadata = {
-  title: { absolute: "AI Consulting & AI Agency in Vienna | AI Experts – Neuronic" },
+  title: { absolute: "AI Consulting & AI Agency for Vienna & Wiener Neustadt | Neuronic" },
   description:
-    "AI experts from Vienna: AI consulting, AI agents, AI training and AI Act support for SMBs and companies in Austria, Germany and Switzerland – from strategy to production.",
+    "AI experts from Wiener Neustadt, Austria: AI consulting, AI agents, AI training and AI Act support for SMBs in Vienna, Lower Austria and across Austria – from strategy to production.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/en",
     languages: {
@@ -21,15 +21,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
     url: "https://app.neuronic-automation.ai/en",
-    title: "AI Consulting & AI Agency in Vienna | AI Experts – Neuronic",
+    title: "AI Consulting & AI Agency for Vienna & Wiener Neustadt | Neuronic",
     description:
-      "AI experts from Vienna: AI consulting, AI agents, AI training and AI Act support for SMBs and companies in Austria, Germany and Switzerland – from strategy to production.",
+      "AI experts from Wiener Neustadt, Austria: AI consulting, AI agents, AI training and AI Act support for SMBs in Vienna, Lower Austria and across Austria – from strategy to production.",
   },
   twitter: {
     card: "summary",
-    title: "AI Consulting & AI Agency in Vienna | AI Experts – Neuronic",
+    title: "AI Consulting & AI Agency for Vienna & Wiener Neustadt | Neuronic",
     description:
-      "AI experts from Vienna: AI consulting, AI agents, AI training and AI Act support for SMBs and companies in Austria, Germany and Switzerland – from strategy to production.",
+      "AI experts from Wiener Neustadt, Austria: AI consulting, AI agents, AI training and AI Act support for SMBs in Vienna, Lower Austria and across Austria – from strategy to production.",
   },
 };
 

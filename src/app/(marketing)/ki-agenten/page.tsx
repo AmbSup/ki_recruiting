@@ -5,15 +5,15 @@ import { MarketingFooter } from "../_components/marketing-footer";
 
 // SEO-Themenseite (nur DE). Inhalt: dict.de.topics.ki_agenten
 export const metadata: Metadata = {
-  title: { absolute: "KI-Agenten für Unternehmen – Beratung & Entwicklung in Wien | Neuronic" },
-  description: "KI-Agenten (AI Agents) für Unternehmen: Wir entwickeln KI-Agenten, die in CRM, E-Mail und ERP arbeiten – sicher, DSGVO-konform, mit Mensch im Loop. KI-Beratung aus Wien.",
+  title: { absolute: "KI-Agenten für Unternehmen – Beratung & Entwicklung für Wien & NÖ | Neuronic" },
+  description: "KI-Agenten (AI Agents) für Unternehmen: Wir entwickeln KI-Agenten, die in CRM, E-Mail und ERP arbeiten – sicher, DSGVO-konform, mit Mensch im Loop. KI-Beratung für Wien und Niederösterreich.",
   alternates: { canonical: "https://app.neuronic-automation.ai/ki-agenten" },
   openGraph: {
     type: "website",
     locale: "de_AT",
     url: "https://app.neuronic-automation.ai/ki-agenten",
-    title: "KI-Agenten für Unternehmen – Beratung & Entwicklung in Wien | Neuronic",
-    description: "KI-Agenten (AI Agents) für Unternehmen: Wir entwickeln KI-Agenten, die in CRM, E-Mail und ERP arbeiten – sicher, DSGVO-konform, mit Mensch im Loop. KI-Beratung aus Wien.",
+    title: "KI-Agenten für Unternehmen – Beratung & Entwicklung für Wien & NÖ | Neuronic",
+    description: "KI-Agenten (AI Agents) für Unternehmen: Wir entwickeln KI-Agenten, die in CRM, E-Mail und ERP arbeiten – sicher, DSGVO-konform, mit Mensch im Loop. KI-Beratung für Wien und Niederösterreich.",
   },
 };
 

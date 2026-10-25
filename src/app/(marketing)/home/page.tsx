@@ -10,9 +10,9 @@ import { MarketingFooter } from "../_components/marketing-footer";
 // Canonical zeigt auf "/", damit Google das nicht als Duplicate Content wertet.
 
 export const metadata: Metadata = {
-  title: { absolute: "KI-Beratung & KI-Agentur in Wien | KI Expert:innen – Neuronic" },
+  title: { absolute: "KI-Beratung & KI-Agentur für Wien & Wiener Neustadt | Neuronic" },
   description:
-    "KI Expert:innen aus Wien: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU und Unternehmen in Österreich, Deutschland und der Schweiz – von der Strategie bis zum produktiven System.",
+    "KI Expert:innen aus Wiener Neustadt: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU in Wien, Niederösterreich und ganz Österreich – von der Strategie bis zum produktiven System.",
   alternates: {
     canonical: "https://app.neuronic-automation.ai/",
     languages: {
@@ -25,15 +25,15 @@ export const metadata: Metadata = {
     type: "website",
     locale: "de_DE",
     url: "https://app.neuronic-automation.ai/home",
-    title: "KI-Beratung & KI-Agentur in Wien | KI Expert:innen – Neuronic",
+    title: "KI-Beratung & KI-Agentur für Wien & Wiener Neustadt | Neuronic",
     description:
-      "KI Expert:innen aus Wien: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU und Unternehmen in Österreich, Deutschland und der Schweiz – von der Strategie bis zum produktiven System.",
+      "KI Expert:innen aus Wiener Neustadt: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU in Wien, Niederösterreich und ganz Österreich – von der Strategie bis zum produktiven System.",
   },
   twitter: {
     card: "summary",
-    title: "KI-Beratung & KI-Agentur in Wien | KI Expert:innen – Neuronic",
+    title: "KI-Beratung & KI-Agentur für Wien & Wiener Neustadt | Neuronic",
     description:
-      "KI Expert:innen aus Wien: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU und Unternehmen in Österreich, Deutschland und der Schweiz – von der Strategie bis zum produktiven System.",
+      "KI Expert:innen aus Wiener Neustadt: KI-Beratung, KI-Agenten, KI-Schulung und AI-Act-Begleitung für KMU in Wien, Niederösterreich und ganz Österreich – von der Strategie bis zum produktiven System.",
   },
 };
 
